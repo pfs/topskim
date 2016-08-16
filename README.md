@@ -3,5 +3,5 @@
 ## Installation
 
 ```
-git clone git@github.com:mverwe/topskim.git topskim
+git clone git@github.com:LuukVermunt/topskim.git summer2016
 ```
