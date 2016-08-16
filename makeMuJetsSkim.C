@@ -49,7 +49,7 @@ void makeMuJetsSkim(const std::string outFileName = "", const std::string inFile
 
   TChain *lepTree_p = new TChain("ggHiNtuplizer/EventTree");
   TChain *jetTree_p = new TChain("akCs2PFJetAnalyzer/t");
-  TChain *genTree_p = new TChain("HiGenParticleAna/hi");
+//  TChain *genTree_p = new TChain("HiGenParticleAna/hi");
   TChain *hiTree_p = new TChain("hiEvtAnalyzer/HiTree");
   TChain *hltTree_p = new TChain("hltanalysis/HltTree");
   TChain *pfTree_p = new TChain("pfcandAnalyzerCS/pfTree");
@@ -61,7 +61,7 @@ void makeMuJetsSkim(const std::string outFileName = "", const std::string inFile
     std::cout << "On file: " << fileIter << "/" << nFiles << "  " << inFileNames_p->at(fileIter).c_str()  << std::endl;
     lepTree_p->Add(inFileNames_p->at(fileIter).c_str());
     jetTree_p->Add(inFileNames_p->at(fileIter).c_str());
-    genTree_p->Add(inFileNames_p->at(fileIter).c_str());
+//    genTree_p->Add(inFileNames_p->at(fileIter).c_str());
     hiTree_p->Add(inFileNames_p->at(fileIter).c_str());
     hltTree_p->Add(inFileNames_p->at(fileIter).c_str());
     pfTree_p->Add(inFileNames_p->at(fileIter).c_str());
@@ -139,7 +139,7 @@ void makeMuJetsSkim(const std::string outFileName = "", const std::string inFile
   jetTree_p->SetBranchAddress("discr_tcHighEff", discr_tcHighEff);
   jetTree_p->SetBranchAddress("discr_tcHighPur", discr_tcHighPur);
   jetTree_p->SetBranchAddress("refparton_flavorForB", refparton_flavorForB);
-
+/*
   genTree_p->SetBranchStatus("*", 0);
   genTree_p->SetBranchStatus("pdg", 1);
   genTree_p->SetBranchStatus("pt", 1);
@@ -152,7 +152,7 @@ void makeMuJetsSkim(const std::string outFileName = "", const std::string inFile
   genTree_p->SetBranchAddress("eta", &geneta);
   genTree_p->SetBranchAddress("phi", &genphi);
   genTree_p->SetBranchAddress("chg", &genchg);
-    
+*/    
   hiTree_p->SetBranchStatus("*", 0);
   hiTree_p->SetBranchStatus("run", 1);
   hiTree_p->SetBranchStatus("evt", 1);
@@ -187,7 +187,7 @@ void makeMuJetsSkim(const std::string outFileName = "", const std::string inFile
     
   int nEntries = (int)lepTree_p->GetEntries();
   //nEntries = 5000;
-  //nEntries = 300;
+  nEntries = 100;
   int entryDiv = ((int)(nEntries/20));
     
   if(isDebug) std::cout << __LINE__ << std::endl;
@@ -208,7 +208,7 @@ void makeMuJetsSkim(const std::string outFileName = "", const std::string inFile
     hiTree_p->GetEntry(entry);
     lepTree_p->GetEntry(entry);
     jetTree_p->GetEntry(entry);
-    genTree_p->GetEntry(entry);
+//    genTree_p->GetEntry(entry);
     hltTree_p->GetEntry(entry);
     pfTree_p->GetEntry(entry);
     skimAnaTree_p->GetEntry(entry);
@@ -371,14 +371,14 @@ void makeMuJetsSkim(const std::string outFileName = "", const std::string inFile
     if(nJt_<minNJets) continue; //need at least 2 b jets (t->Wb) and 2 light jets (W->qqbar)
     t8++;
     m14 += lepIter;
-
+/*
     std::copy(genpdg->begin(), genpdg->end(), genPdg_);
     std::copy(genpt->begin(), genpt->end(), genPt_);
     std::copy(geneta->begin(), geneta->end(), genEta_);
     std::copy(genphi->begin(), genphi->end(), genPhi_);
     std::copy(genchg->begin(), genchg->end(), genChg_);
     nGen_ = (int)genpdg->size();
-
+*/
     skimTree_p->Fill();
     
   }//entries loop
