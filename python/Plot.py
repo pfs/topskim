@@ -67,21 +67,21 @@ class Plot(object):
         self.frameMin=0.01
         self.frameMax=1.45
         self.mcUnc=0
+        self.forceRange=None
 
     def add(self, h, title, color, isData, spImpose, isSyst, doDivideByBinWidth=False):
-
-        if 'ratevsrun' in self.name and not isData: return
 
         h.SetTitle(title)
 
         #add overflows
-        try:
-            if not h.InheritsFrom('TH2') and not h.InheritsFrom('TGraph'):
-                fixExtremities(h=h,addOverflow=True,addUnderflow=True)
-            if doDivideByBinWidth:
-                divideByBinWidth(h=h)
-        except:
-            pass
+        if not 'ratevsrun' in self.name:
+            try:
+                if not h.InheritsFrom('TH2') and not h.InheritsFrom('TGraph'):
+                    fixExtremities(h=h,addOverflow=True,addUnderflow=True)
+                if doDivideByBinWidth:
+                    divideByBinWidth(h=h)
+            except:
+                pass
 
         #check if color is given in hexadec format
         try:
@@ -395,7 +395,7 @@ class Plot(object):
 
         for m in self.spimpose:
             if self.spimposeWithErrors:
-                self.spimpose[m].Draw('e1same')
+                self.spimpose[m].Draw('psame')
             else:
                 self.spimpose[m].Draw('histsame')
 
@@ -521,6 +521,10 @@ class Plot(object):
                     gr.Draw('p')
                 except:
                     pass
+
+        if self.forceRange :
+            frame.GetYaxis().SetRangeUser(self.forceRange[0],self.forceRange[1])
+
         #all done
         if p1: p1.RedrawAxis()
         c.cd()
@@ -528,12 +532,10 @@ class Plot(object):
         c.Update()
 
         #save
-        if lumi == 1: frame.GetYaxis().SetRangeUser(0,0.8)
         for ext in self.plotformats : c.SaveAs(os.path.join(outDir, self.name+'.'+ext))
         if self.savelog:
             p1.cd()
             frame.GetYaxis().SetRangeUser(1,maxY*50)
-            if lumi == 1: frame.GetYaxis().SetRangeUser(0.001,1)
             p1.SetLogy()
             c.cd()
             c.Modified()

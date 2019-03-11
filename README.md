@@ -15,7 +15,7 @@ runTTto2Lselection --in /eos/cms/store/group/phys_top/PbPbTTbar_2018/SkimElectro
 ```
 
 To loop over all the available forest trees better to use condor and then merge the outputs.
-Jobs finalize in approx. 40min if queues are empty.
+Jobs finalize in approximately 30min if queues are empty.
 ```
 dir=/eos/cms/store/cmst3/group/top/PbPb
 a=(`ls ${dir}`)
@@ -36,7 +36,7 @@ python scripts/mergeOutputs.py plots
 
 Plot the results
 ```
-FIXME
+python scripts/makeAnalysisPlots.py plots/
 ```
 
 ## Luminosity

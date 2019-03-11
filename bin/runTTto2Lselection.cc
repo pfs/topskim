@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
   ht.addHist("mll",      new TH1F("mll",      ";Dilepton invariant mass [GeV];Events",20,20,200));
   ht.addHist("ptll",     new TH1F("ptll",     ";Dilepton transverse momentum [GeV];Events",20,0,200));
   ht.addHist("dphill",   new TH1F("dphill",   ";#Delta#phi(l,l');Events",20,0,3.15));
-  ht.addHist("detall",   new TH1F("detall",   ";#Delta#eta(l,l');Events",20,0,5));
+  ht.addHist("detall",   new TH1F("detall",   ";#Delta#eta(l,l');Events",20,0,4));
   ht.addHist("chrho",    new TH1F("chrho",    ";#rho_{ch};Events",25,0,25));
   for(size_t i=0; i<2; i++) {
     TString pf(i==0 ? "tk" : "pf");
@@ -436,13 +436,15 @@ int main(int argc, char* argv[])
     bge.set_particles(pseudoParticles);
     float tkrho=bge.rho();
 
+    int ntkjets(0);
     std::vector<PseudoJet> tkjets = sorted_by_pt(cs.inclusive_jets());
     for(auto j : tkjets) {
       if(j.constituents().size()<2) continue;
       TLorentzVector p4(j.px(),j.py(),j.pz(),j.e());
       if(p4.DeltaR(selLeptons[0])<0.4 || p4.DeltaR(selLeptons[1])<0.4) continue;
-      if(fabs(p4.Eta())<2.4) continue;
-      tkJetsP4.push_back(p4);
+      if(fabs(p4.Eta())>2.4) continue;
+      if(p4.Pt()<15) continue;
+      ntkjets ++;
     }
    
     //b-tag jet the track jets by matching in deltaR to PF jets
@@ -457,6 +459,7 @@ int main(int argc, char* argv[])
 
       TLorentzVector jp4(0,0,0,0);
       jp4.SetPtEtaPhiM( fForestJets.jtpt[jetIter],fForestJets.jteta[jetIter],fForestJets.jtphi[jetIter],fForestJets.jtm[jetIter]);
+      if(jp4.DeltaR(selLeptons[0])<0.4 || jp4.DeltaR(selLeptons[1])<0.4) continue;            
 
       float csvVal=fForestJets.discr_csvV2[jetIter];
       int nsvtxTk=fForestJets.svtxntrk[jetIter];
@@ -539,8 +542,8 @@ int main(int argc, char* argv[])
       if(isBTagged && fabs(jp4.Eta())>1.2) allPFBInEB=false;
 
       if(npfjets==1){
-        float dphi2ll(ll.DeltaPhi(jp4));
-        if(fabs(dphi2ll)>2*TMath::Pi()/3.) hasAwayPFJet=true;
+        float dr2ll(ll.DeltaR(jp4));
+        if(fabs(dr2ll)>2*TMath::Pi()/3.) hasAwayPFJet=true;
       }
     }
     std::sort(pfJetsIdx.begin(),      pfJetsIdx.end(),      orderByBtagInfo);
@@ -549,20 +552,19 @@ int main(int argc, char* argv[])
     //finalize analysing track jets
     std::sort(matchedJetsIdx.begin(), matchedJetsIdx.end(), orderByBtagInfo);
     bool allTkBInEB(true),hasAwayTkJet(false);
-    float ntkjets(0),nbtkjets(0);
+    float nbtkjets(0);
     for(size_t ij=0; ij<min(matchedJetsIdx.size(),size_t(2)); ij++) {     
       int idx(std::get<integral(JetInfo::index)>(matchedJetsIdx[ij]));
       float csv(std::get<integral(JetInfo::csvV2)>(matchedJetsIdx[ij]));
       TLorentzVector p4=tkJetsP4[idx];
-      if(p4.Pt()<15) continue;
+      tkJetsP4.push_back(p4);
       bool isBTagged(csv>csvWP);
-      ntkjets ++;
       nbtkjets += isBTagged;
       if(isBTagged && fabs(p4.Eta())>1.2) allTkBInEB=false;
       
-      if(ntkjets==1){
-        float dphi2ll(ll.DeltaPhi(p4));
-        if(fabs(dphi2ll)>2*TMath::Pi()/3.) hasAwayTkJet=true;
+      if(ij==0){
+        float dr2ll(ll.DeltaR(p4));
+        if(fabs(dr2ll)>2*TMath::Pi()/3.) hasAwayTkJet=true;
       }
     }
 
@@ -581,14 +583,13 @@ int main(int argc, char* argv[])
 
       categs.push_back(dilCat+etaCateg);
       if(isZ) {
-        categs.push_back(dilCat+etaCateg+"Z");
         if(ntkjets==1 && hasAwayTkJet) {
-          categs.push_back(dilCat+"Zawaytkj");
-          categs.push_back(dilCat+etaCateg+"Zawaytkj");
+          categs.push_back(dilCat+"awaytkj");
+          categs.push_back(dilCat+etaCateg+"awaytkj");
         }
         if(npfjets==1 && hasAwayPFJet) {
-          categs.push_back(dilCat+"Zawaypfj");
-          categs.push_back(dilCat+etaCateg+"Zawaypfj");
+          categs.push_back(dilCat+"awaypfj");
+          categs.push_back(dilCat+etaCateg+"awaypfj");
         }
       }
     }
@@ -744,8 +745,8 @@ int main(int argc, char* argv[])
       ht.fill( "tk"+ppf+"PfNEM", PfNEM,                     plotWgt, categs);
 
     }
-    ht.fill( "tkrho", tkrho,            plotWgt, categs);
-    
+    ht.fill( "chrho", tkrho,            plotWgt, categs);
+
     for(size_t ij=0; ij<min(pfJetsIdx.size(),size_t(2)); ij++) {     
       int idx(std::get<integral(JetInfo::index)>(pfJetsIdx[ij]));
       int ntks(std::get<integral(JetInfo::ntks)>(pfJetsIdx[ij]));
@@ -791,7 +792,7 @@ int main(int argc, char* argv[])
 
       TLorentzVector p4=pfJetsP4[idx];
       TString ppf(ij==1 ? "1" : "2");
-      ht.fill( "pf"+ppf+"jbalance",  p4.Pt()/ll.Pt(), plotWgt, categs);
+      ht.fill( "pf"+ppf+"jbalance", p4.Pt()/ll.Pt(), plotWgt, categs);
       ht.fill( "pf"+ppf+"jpt",      p4.Pt(),         plotWgt, categs);
       ht.fill( "pf"+ppf+"jeta",     fabs(p4.Eta()),  plotWgt, categs);
       ht.fill( "pf"+ppf+"jsvtxm",   ntks,            plotWgt, categs);
