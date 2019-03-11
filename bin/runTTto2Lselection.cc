@@ -205,15 +205,15 @@ int main(int argc, char* argv[])
   hltTree_p->Add(inURL);
   int etrig(0),mtrig(0);
   if(isPP){
-    hltTree_p->SetBranchStatus("HLT_HIL3Mu20_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIL3Mu20_v1",&mtrig);
-    hltTree_p->SetBranchStatus("HLT_HIEle20_WPLoose_Gsf_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIEle20_WPLoose_Gsf_v1",&etrig);
+    hltTree_p->SetBranchStatus("HLT_HIL3Mu20_v*",1);
+    hltTree_p->SetBranchAddress("HLT_HIL3Mu20_v*",&mtrig);
+    hltTree_p->SetBranchStatus("HLT_HIEle20_WPLoose_Gsf_v*",1);
+    hltTree_p->SetBranchAddress("HLT_HIEle20_WPLoose_Gsf_v*",&etrig);
   }else{
-    hltTree_p->SetBranchStatus("HLT_HIL3Mu15_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIL3Mu15_v1",&mtrig);
-    hltTree_p->SetBranchStatus("HLT_HIEle20Gsf_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIEle20Gsf_v1",&etrig);    
+    hltTree_p->SetBranchStatus("HLT_HIL3Mu15_v*",1);
+    hltTree_p->SetBranchAddress("HLT_HIL3Mu15_v*",&mtrig);
+    hltTree_p->SetBranchStatus("HLT_HIEle20Gsf_v*",1);
+    hltTree_p->SetBranchAddress("HLT_HIEle20Gsf_v*",&etrig);    
   }
     
   Float_t wgtSum(0);
