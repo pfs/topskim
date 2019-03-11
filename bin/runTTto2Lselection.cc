@@ -35,14 +35,44 @@ const float csvWP = 0.8838;
 using namespace std;
 using namespace fastjet;
 
+
+//note that it is constexpr function
+template <typename T>
+constexpr typename std::underlying_type<T>::type integral(T value) 
+{
+  return static_cast<typename std::underlying_type<T>::type>(value);
+}
+
 // index, ntks in svtx, m svtx, csv
-typedef std::tuple<int,int,float,float> BtagInfo_t;
-static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
+enum class JetInfo{
+                    index=0, ntks=1, msvtx=2, csvV2=3,
+                    phi=4, pu=5, mass=6,
+                    trackMax=7,   trackSum=8,   trackN=9, trackHardSum=10, trackHardN=11, 
+	            chargedMax=12, chargedSum=13, chargedN=14, chargedHardSum=15, chargedHardN=16, 
+	            photonMax=17, photonSum=18, photonHardSum=19, photonHardN=20,
+	            neutralMax=21,neutralSum=22,neutralN=23,
+		    hcalSum=24,   ecalSum=25, 
+		    eMax=26,      eSum=27, eN=28, muMax=29,muSum=30, muN=31,
+		    PfCHF=32, PfNHF=33, PfCEF=34, PfNEF=35, PfMUF=36, PfCHM=37, PfNHM=38, PfCEM=39, PfNEM=40
+		    };
+		    
+typedef std::tuple<int, int, float, float,
+		   float, float, float,
+		   float, float, int, float, int,
+		   float, float, int, float, int,
+		   float, float, float, int,
+		   float, float, int, 
+		   float, float, 
+		   float, float, int, float, float, int,
+		   float, float, float, float, float, int, int, int, int
+		   > JetInfo_t;
+
+static bool orderByBtagInfo(const JetInfo_t &a, const JetInfo_t &b)
 {
   //int ntks_a(std::get<1>(a)), ntks_b(std::get<1>(b));
   //if(ntks_a>ntks_b) return true;
 
-  float csv_a(std::get<3>(a)), csv_b(std::get<3>(b));
+  float csv_a(std::get<integral(JetInfo::csvV2)>(a)), csv_b(std::get<integral(JetInfo::csvV2)>(b));
   if(csv_a>csv_b) return true;
   return false;
 }
@@ -80,10 +110,10 @@ int main(int argc, char* argv[])
   for(int i=0; i<2; i++) {
     TString pf(Form("l%d",i+1));
     ht.addHist(pf+"pt",        new TH1F(pf+"pt",       ";Lepton transverse momentum [GeV];Events",20,20,200));
-    ht.addHist(pf+"eta",       new TH1F(pf+"eta",      ";Lepton pseudo-rapidity;Events",20,0,2.5));
-    ht.addHist(pf+"chreliso",  new TH1F(pf+"chreliso", ";Relative PF charged isolation;Leptons",20,0,2.0));
-    ht.addHist(pf+"phoreliso", new TH1F(pf+"phoreliso",";Relative PF photon isolation;Leptons",20,0,1.0));
-    ht.addHist(pf+"neureliso", new TH1F(pf+"neureliso",";Relative PF neutral hadron isolation;Leptons",20,0,1.0));
+    ht.addHist(pf+"eta",       new TH1F(pf+"eta",      ";Lepton pseudo-rapidity;Events",40,0,5.0));
+    ht.addHist(pf+"chreliso",  new TH1F(pf+"chreliso", ";Relative PF charged isolation;Leptons",50,0,5.0));
+    ht.addHist(pf+"phoreliso", new TH1F(pf+"phoreliso",";Relative PF photon isolation;Leptons",50,0,5.0));
+    ht.addHist(pf+"neureliso", new TH1F(pf+"neureliso",";Relative PF neutral hadron isolation;Leptons",50,0,5.0));
     ht.addHist(pf+"chrelisovscen",  new TH2F(pf+"chrelisovscen", ";Relative PF charged isolation;Centrality bin;Leptons",20,0,2.0,5,0,100));
     ht.addHist(pf+"phorelisovscen", new TH2F(pf+"phorelisovscen",";Relative PF photon isolation;Centrality bin;Leptons",20,0,1.0,5,0,100));
     ht.addHist(pf+"neurelisovscen", new TH2F(pf+"neurelisovscen",";Relative PF neutral hadron isolation;Centrality bin;Leptons",20,0,1.0,5,0,100));
@@ -95,17 +125,57 @@ int main(int argc, char* argv[])
   ht.addHist("chrho",    new TH1F("chrho",    ";#rho_{ch};Events",25,0,25));
   for(size_t i=0; i<2; i++) {
     TString pf(i==0 ? "tk" : "pf");
-    ht.addHist("n"+pf+"jets",    new TH1F("n"+pf+"jets",    ";Jet multiplicity;Events",8,0,8));
-    ht.addHist("n"+pf+"bjets",   new TH1F("n"+pf+"bjets",   ";b-jet multiplicity;Events",5,0,5));    
-    ht.addHist("n"+pf+"svtx",    new TH1F("n"+pf+"svtx",    ";Secondary vertex multiplicity;Events",5,0,5));
+    ht.addHist("n"+pf+"jets",    new TH1F("n"+pf+"jets",    ";Jet multiplicity;Events",25,0,25));
+    ht.addHist("n"+pf+"bjets",   new TH1F("n"+pf+"bjets",   ";b-jet multiplicity;Events",25,0,25));    
+    ht.addHist("n"+pf+"svtx",    new TH1F("n"+pf+"svtx",    ";Secondary vertex multiplicity;Events",15,0,15));
     for(size_t j=1; j<=2; j++){
       TString ppf(j==1 ? "1" : "2");
-      ht.addHist(pf+ppf+"jbalance",    new TH1F(pf+ppf+"jbalance", ";R = p_{T}(j)/p_{T}(ll);Events",50,0,3));
-      ht.addHist(pf+ppf+"jpt",         new TH1F(pf+ppf+"jpt",      ";Jet transverse momentum [GeV];Events",30,00,300));
-      ht.addHist(pf+ppf+"jeta",        new TH1F(pf+ppf+"jeta",     ";Jet pseudo-rapidity;Events",20,0,2.5));
-      ht.addHist(pf+ppf+"jsvtxm",      new TH1F(pf+ppf+"jsvtxm",   ";Secondary vertex mass;Events",25,0,6));
-      ht.addHist(pf+ppf+"jsvtxntk",    new TH1F(pf+ppf+"jsvtxntk", ";Secondary vertex track multiplicity;Events",5,0,5));
-      ht.addHist(pf+ppf+"jcsv",        new TH1F(pf+ppf+"jcsv",     ";CSVv2;Events",25,0,1));
+      ht.addHist(pf+ppf+"jbalance",    new TH1F(pf+ppf+"jbalance", ";R = p_{T}(ll)/p_{T}(j);Events",150,0,5.5));
+      ht.addHist(pf+ppf+"jpt",         new TH1F(pf+ppf+"jpt",      ";Jet transverse momentum [GeV];Events",20,30,200));
+      ht.addHist(pf+ppf+"jeta",        new TH1F(pf+ppf+"jeta",     ";Jet pseudo-rapidity;Events",40,0,5.0));
+      ht.addHist(pf+ppf+"jphi",        new TH1F(pf+ppf+"jphi",     ";Jet azimuthal angle;Events",40,-3.15,3.15));
+      ht.addHist(pf+ppf+"jpu",         new TH1F(pf+ppf+"jpu",      ";Jet pu [GeV];Events",20,0,100));
+      ht.addHist(pf+ppf+"jm",          new TH1F(pf+ppf+"jm",       ";Jet mass [GeV];Events",20,0,20));
+      ht.addHist(pf+ppf+"jPfCHF",      new TH1F(pf+ppf+"jPfCHF",    ";Jet PfCHF;Events",25,0,1.));
+      ht.addHist(pf+ppf+"jPfNHF",      new TH1F(pf+ppf+"jPfNHF",    ";Jet PfNHF;Events",25,0,1.));
+      ht.addHist(pf+ppf+"jPfCEF",      new TH1F(pf+ppf+"jPfCEF",    ";Jet PfCEF;Events",25,0,1.));
+      ht.addHist(pf+ppf+"jPfNEF",      new TH1F(pf+ppf+"jPfNEF",    ";Jet PfNEF;Events",25,0,1.));
+      ht.addHist(pf+ppf+"jPfMUF",      new TH1F(pf+ppf+"jPfMUF",    ";Jet PfMUF;Events",25,0,1.));
+      ht.addHist(pf+ppf+"jPfCHM",      new TH1F(pf+ppf+"jPfCHM",    ";Jet PfCHM;Events",25,0,50));
+      ht.addHist(pf+ppf+"jPfNHM",      new TH1F(pf+ppf+"jPfNHM",    ";Jet PfNHM;Events",10,0,10));
+      ht.addHist(pf+ppf+"jPfCEM",      new TH1F(pf+ppf+"jPfCEM",    ";Jet PfCEM;Events",10,0,10));
+      ht.addHist(pf+ppf+"jPfNEM",      new TH1F(pf+ppf+"jPfNEM",    ";Jet PfNEM,;Events",20,0,20));
+      ht.addHist(pf+ppf+"jPfMUM",      new TH1F(pf+ppf+"jPfMUM",    ";Jet PfMUM;Events",10,0,10));
+      ht.addHist(pf+ppf+"jtrackMax",   new TH1F(pf+ppf+"jtrackMax", ";Jet trackMax [GeV];Events",25,0,200));
+      ht.addHist(pf+ppf+"jtrackSum",   new TH1F(pf+ppf+"jtrackSum", ";Jet trackSum [GeV];Events",25,0,200));
+      ht.addHist(pf+ppf+"jtrackN",     new TH1F(pf+ppf+"jtrackN",   ";Jet trackN;Events",25,0,200));
+      ht.addHist(pf+ppf+"jtrackHardSum",     new TH1F(pf+ppf+"jtrackHardSum",    ";Jet trackHardSum [GeV];Events",25,0,200));
+      ht.addHist(pf+ppf+"jtrackHardN",       new TH1F(pf+ppf+"jtrackHardN",    ";Jet trackHardN;Events",10,0,10.));
+      ht.addHist(pf+ppf+"chargedMax",        new TH1F(pf+ppf+"jchargedMax",    ";Jet chargedMax [GeV];Events",25,0,200.));
+      ht.addHist(pf+ppf+"chargedSum",        new TH1F(pf+ppf+"jchargedSum",    ";Jet chargedSum [GeV];Events",25,0,200));
+      ht.addHist(pf+ppf+"chargedN",          new TH1F(pf+ppf+"jchargedN",    ";Jet chargedN;Events",25,0,200));
+      ht.addHist(pf+ppf+"chargedHardSum",    new TH1F(pf+ppf+"jchargedHardSum",    ";Jet chargedHardSum [GeV],;Events",20,0,200));
+      ht.addHist(pf+ppf+"chargedHardN",      new TH1F(pf+ppf+"jchargedHardN",    ";Jet chargedHardN;Events",10,0,10));
+      ht.addHist(pf+ppf+"photonMax",         new TH1F(pf+ppf+"jphotonMax",    ";Jet photonMax [GeV];Events",25,0,200));
+      ht.addHist(pf+ppf+"photonSum",         new TH1F(pf+ppf+"jphotonSum",    ";Jet photonSum [GeV];Events",25,0,200));
+      ht.addHist(pf+ppf+"photonN",           new TH1F(pf+ppf+"jphotonN",    ";Jet photonN;Events",25,0,200.));
+      ht.addHist(pf+ppf+"photonHardSum",     new TH1F(pf+ppf+"jphotonHardSum",    ";Jet photonHardSum [GeV];Events",25,0,200));
+      ht.addHist(pf+ppf+"photonHardN",       new TH1F(pf+ppf+"jphotonHardN",    ";Jet photonHardN;Events",10,0,10.));
+      ht.addHist(pf+ppf+"neutralMax",        new TH1F(pf+ppf+"jneutralMax",    ";Jet neutralMax [GeV];Events",25,0,200.));
+      ht.addHist(pf+ppf+"neutralSum",        new TH1F(pf+ppf+"jneutralSum",    ";Jet neutralSum [GeV];Events",25,0,200));
+      ht.addHist(pf+ppf+"neutralN",          new TH1F(pf+ppf+"jneutralN",    ";Jet neutralN;Events",10,0,10));
+      ht.addHist(pf+ppf+"hcalSum",           new TH1F(pf+ppf+"jhcalSum",    ";Jet hcalSum [GeV];Events",20,0,200));
+      ht.addHist(pf+ppf+"ecalSum",           new TH1F(pf+ppf+"jecalSum",    ";Jet ecalSum;Events",20,0,200));
+      ht.addHist(pf+ppf+"eMax",              new TH1F(pf+ppf+"jeMax",    ";Jet eMax [GeV];Events",25,0,200.));
+      ht.addHist(pf+ppf+"eSum",              new TH1F(pf+ppf+"jeSum",    ";Jet eSum [GeV];Events",25,0,200.));
+      ht.addHist(pf+ppf+"eN",                new TH1F(pf+ppf+"jeN",    ";Jet eN;Events",10,0,10.));
+      ht.addHist(pf+ppf+"muMax",             new TH1F(pf+ppf+"jmuMax",    ";Jet muMax [GeV];Events",25,0,200.));
+      ht.addHist(pf+ppf+"muSum",             new TH1F(pf+ppf+"jmuSum",    ";Jet muSum [GeV];Events",10,0,10));
+      ht.addHist(pf+ppf+"muN",               new TH1F(pf+ppf+"jmuN",    ";Jet muN;Events",10,0,10));
+      ht.addHist(pf+ppf+"jsvtxm",            new TH1F(pf+ppf+"jsvtxm",   ";Secondary vertex mass;Events",25,0,6));
+      ht.addHist(pf+ppf+"jsvtxntk",          new TH1F(pf+ppf+"jsvtxntk", ";Secondary vertex track multiplicity;Events",5,0,5));
+      ht.addHist(pf+ppf+"jcsv",              new TH1F(pf+ppf+"jcsv",     ";CSVv2;Events",25,0,1));
+      
     }
   }
 
@@ -135,15 +205,15 @@ int main(int argc, char* argv[])
   hltTree_p->Add(inURL);
   int etrig(0),mtrig(0);
   if(isPP){
-    hltTree_p->SetBranchStatus("HLT_HIL3Mu20_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIL3Mu20_v1",&mtrig);
-    hltTree_p->SetBranchStatus("HLT_HIEle20_WPLoose_Gsf_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIEle20_WPLoose_Gsf_v1",&etrig);
+    hltTree_p->SetBranchStatus("HLT_HIL3Mu20_v*",1);
+    hltTree_p->SetBranchAddress("HLT_HIL3Mu20_v*",&mtrig);
+    hltTree_p->SetBranchStatus("HLT_HIEle20_WPLoose_Gsf_v*",1);
+    hltTree_p->SetBranchAddress("HLT_HIEle20_WPLoose_Gsf_v*",&etrig);
   }else{
-    hltTree_p->SetBranchStatus("HLT_HIL3Mu15_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIL3Mu15_v1",&mtrig);
-    hltTree_p->SetBranchStatus("HLT_HIEle20Gsf_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIEle20Gsf_v1",&etrig);    
+    hltTree_p->SetBranchStatus("HLT_HIL3Mu15_v*",1);
+    hltTree_p->SetBranchAddress("HLT_HIL3Mu15_v*",&mtrig);
+    hltTree_p->SetBranchStatus("HLT_HIEle20Gsf_v*",1);
+    hltTree_p->SetBranchAddress("HLT_HIEle20Gsf_v*",&etrig);    
   }
     
   Float_t wgtSum(0);
@@ -153,11 +223,16 @@ int main(int argc, char* argv[])
   for(int entry = 0; entry < nEntries; entry++){
     
     if(entry%entryDiv == 0 && nEntries >= 10000) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
-    
+    //cout << "debug 1" << endl;
     lepTree_p->GetEntry(entry);
+    //cout << "debug 2" << endl;
+    //pfCandTree_p -> Print();
     pfCandTree_p->GetEntry(entry);
+    //cout << "debug 3" << endl;
     jetTree_p->GetEntry(entry);    
+    //cout << "debug 4" << endl;
     hltTree_p->GetEntry(entry);
+    //cout << "debug 5" << endl;
     hiTree_p->GetEntry(entry);
 
     wgtSum += fForestTree.weight;
@@ -373,7 +448,7 @@ int main(int argc, char* argv[])
     }
    
     //b-tag jet the track jets by matching in deltaR to PF jets
-    std::vector<BtagInfo_t> matchedJetsIdx,pfJetsIdx;
+    std::vector<JetInfo_t> matchedJetsIdx,pfJetsIdx;
     std::vector<TLorentzVector> pfJetsP4;
     int npfjets(0),npfbjets(0); 
     bool allPFBInEB(true),hasAwayPFJet(true);
@@ -389,17 +464,78 @@ int main(int argc, char* argv[])
       float csvVal=fForestJets.discr_csvV2[jetIter];
       int nsvtxTk=fForestJets.svtxntrk[jetIter];
       float msvtx=fForestJets.svtxm[jetIter];
+      float phi=fForestJets.jtphi[jetIter];
+      float pu=fForestJets.jtpu[jetIter];
+      float mass=fForestJets.jtm[jetIter];
+      float trackMax=fForestJets.trackMax[jetIter];
+      float trackSum=fForestJets.trackSum[jetIter];
+      int trackN=fForestJets.trackN[jetIter];
+      float trackHardSum=fForestJets.trackHardSum[jetIter];
+      int trackHardN=fForestJets.trackHardN[jetIter];
+      float chargedMax=fForestJets.chargedMax[jetIter];
+      float chargedSum=fForestJets.chargedSum[jetIter];
+      int chargedN=fForestJets.chargedN[jetIter];
+      float chargedHardSum=fForestJets.chargedHardSum[jetIter];
+      float chargedHardN=fForestJets.chargedHardN[jetIter];
+      float photonMax=fForestJets.photonMax[jetIter];
+      float photonSum=fForestJets.photonSum[jetIter];
+      float photonHardSum=fForestJets.photonHardSum[jetIter];
+      int photonHardN=fForestJets.photonHardN[jetIter];
+      float neutralMax=fForestJets.neutralMax[jetIter];
+      float neutralSum=fForestJets.neutralSum[jetIter];
+      int neutralN=fForestJets.neutralN[jetIter];
+      float hcalSum=fForestJets.hcalSum[jetIter];
+      float ecalSum=fForestJets.ecalSum[jetIter];
+      float eMax=fForestJets.eMax[jetIter];
+      float eSum=fForestJets.eSum[jetIter];
+      int eN=fForestJets.eN[jetIter];
+      float muMax=fForestJets.muMax[jetIter];
+      float muSum=fForestJets.muSum[jetIter];
+      int muN=fForestJets.muN[jetIter];
+      int   PfCHF=fForestJets.jtPfCHF[jetIter];
+      float PfNHF=fForestJets.jtPfNHF[jetIter];
+      float PfCEF=fForestJets.jtPfCEF[jetIter];
+      float PfNEF=fForestJets.jtPfNEF[jetIter];
+      int PfMUF=fForestJets.jtPfMUF[jetIter];
+      int PfCHM=fForestJets.jtPfCHM[jetIter];
+      int PfNHM=fForestJets.jtPfNHM[jetIter];
+      int  PfCEM=fForestJets.jtPfCEM[jetIter];
+      int PfNEM=fForestJets.jtPfNEM[jetIter];
+
 
       for(size_t ij=0; ij<tkJetsP4.size(); ij++) {
         if(jp4.DeltaR( tkJetsP4[ij] ) >0.4) continue;
-        matchedJetsIdx.push_back(std::make_tuple(ij,nsvtxTk,msvtx,csvVal));
-        break;
+        matchedJetsIdx.push_back(std::make_tuple(
+						 ij,nsvtxTk,msvtx,csvVal,
+						 phi, pu, mass,
+						 trackMax,   trackSum,   trackN, trackHardSum, trackHardN,
+						 chargedMax, chargedSum, chargedN, chargedHardSum, chargedHardN,
+						 photonMax, photonSum, photonHardSum, photonHardN,
+						 neutralMax,neutralSum,neutralN,
+						 hcalSum,   ecalSum,
+						 eMax,      eSum, eN, muMax,muSum, muN,
+						 PfCHF, PfNHF, PfCEF, PfNEF, PfMUF, PfCHM, PfNHM, PfCEM, PfNEM
+						 ));
+	break;
       }
+
 
       if(jp4.Pt()<30.) continue;
       if(fabs(jp4.Eta())>2.4) continue;
-      bool isBTagged(csvVal>csvWP);      
-      pfJetsIdx.push_back(std::make_tuple(jetIter,nsvtxTk,msvtx,csvVal));
+      if(jp4.DeltaR(selLeptons[0])<0.4 || jp4.DeltaR(selLeptons[1])<0.4) continue;            
+      bool isBTagged(csvVal>csvWP);
+      
+      pfJetsIdx.push_back(std::make_tuple(
+					  jetIter,nsvtxTk,msvtx,csvVal,
+					  phi, pu, mass,
+					  trackMax,   trackSum,   trackN, trackHardSum, trackHardN,
+					  chargedMax, chargedSum, chargedN, chargedHardSum, chargedHardN,
+					  photonMax, photonSum, photonHardSum, photonHardN,
+					  neutralMax,neutralSum,neutralN,
+					  hcalSum,   ecalSum,
+					  eMax,      eSum, eN, muMax,muSum, muN,
+					  PfCHF, PfNHF, PfCEF, PfNEF, PfMUF, PfCHM, PfNHM, PfCEM, PfNEM
+					  ));
       pfJetsP4.push_back(jp4);
       npfjets++;
       npfbjets += isBTagged;
@@ -418,8 +554,8 @@ int main(int argc, char* argv[])
     bool allTkBInEB(true),hasAwayTkJet(false);
     float nbtkjets(0);
     for(size_t ij=0; ij<min(matchedJetsIdx.size(),size_t(2)); ij++) {     
-      int idx(std::get<0>(matchedJetsIdx[ij]));
-      float csv(std::get<3>(matchedJetsIdx[ij]));
+      int idx(std::get<integral(JetInfo::index)>(matchedJetsIdx[ij]));
+      float csv(std::get<integral(JetInfo::csvV2)>(matchedJetsIdx[ij]));
       TLorentzVector p4=tkJetsP4[idx];
       tkJetsP4.push_back(p4);
       bool isBTagged(csv>csvWP);
@@ -432,7 +568,7 @@ int main(int argc, char* argv[])
       }
     }
 
-
+    
     //fill control histograms
     std::vector<TString> categs;
     categs.push_back(dilCat);
@@ -520,12 +656,49 @@ int main(int argc, char* argv[])
     ht.fill( "ntkbjets",  nbtkjets,                                    plotWgt, categs);
 
     for(size_t ij=0; ij<min(matchedJetsIdx.size(),size_t(2)); ij++) {     
-      int idx(std::get<0>(matchedJetsIdx[ij]));
-      int ntks(std::get<1>(matchedJetsIdx[ij]));
-      float svm(std::get<2>(matchedJetsIdx[ij]));
-      float csv(std::get<3>(matchedJetsIdx[ij]));
-      TLorentzVector p4=tkJetsP4[idx];
+      int idx(std::get<integral(JetInfo::index)>(matchedJetsIdx[ij]));
+      int ntks(std::get<integral(JetInfo::ntks)>(matchedJetsIdx[ij]));
+      float svm(std::get<integral(JetInfo::msvtx)>(matchedJetsIdx[ij]));
+      float csv(std::get<integral(JetInfo::csvV2)>(matchedJetsIdx[ij]));
+      float phi(std::get<integral(JetInfo::phi)>(matchedJetsIdx[ij]));
+      float pu(std::get<integral(JetInfo::pu)>(matchedJetsIdx[ij]));
+      float mass(std::get<integral(JetInfo::mass)>(matchedJetsIdx[ij]));
+      float trackMax(std::get<integral(JetInfo::trackMax)>(matchedJetsIdx[ij]));
+      float trackSum(std::get<integral(JetInfo::trackSum)>(matchedJetsIdx[ij]));
+      int trackN(std::get<integral(JetInfo::trackN)>(matchedJetsIdx[ij]));
+      float trackHardSum(std::get<integral(JetInfo::trackHardSum)>(matchedJetsIdx[ij]));
+      int trackHardN(std::get<integral(JetInfo::trackHardN)>(matchedJetsIdx[ij]));
+      float chargedMax(std::get<integral(JetInfo::chargedMax)>(matchedJetsIdx[ij]));
+      float chargedSum(std::get<integral(JetInfo::chargedSum)>(matchedJetsIdx[ij]));
+      int chargedN(std::get<integral(JetInfo::chargedN)>(matchedJetsIdx[ij]));
+      float chargedHardSum(std::get<integral(JetInfo::chargedHardSum)>(matchedJetsIdx[ij]));
+      float chargedHardN(std::get<integral(JetInfo::chargedHardN)>(matchedJetsIdx[ij]));
+      float photonMax(std::get<integral(JetInfo::photonMax)>(matchedJetsIdx[ij]));
+      float photonSum(std::get<integral(JetInfo::photonSum)>(matchedJetsIdx[ij]));
+      float photonHardSum(std::get<integral(JetInfo::photonHardSum)>(matchedJetsIdx[ij]));
+      int photonHardN(std::get<integral(JetInfo::photonHardN)>(matchedJetsIdx[ij]));
+      float neutralMax(std::get<integral(JetInfo::neutralMax)>(matchedJetsIdx[ij]));
+      float neutralSum(std::get<integral(JetInfo::neutralSum)>(matchedJetsIdx[ij]));
+      int neutralN(std::get<integral(JetInfo::neutralN)>(matchedJetsIdx[ij]));
+      float hcalSum(std::get<integral(JetInfo::hcalSum)>(matchedJetsIdx[ij]));
+      float ecalSum(std::get<integral(JetInfo::ecalSum)>(matchedJetsIdx[ij]));
+      float eMax(std::get<integral(JetInfo::eMax)>(matchedJetsIdx[ij]));
+      float eSum(std::get<integral(JetInfo::eSum)>(matchedJetsIdx[ij]));
+      int eN(std::get<integral(JetInfo::eN)>(matchedJetsIdx[ij]));
+      float muMax(std::get<integral(JetInfo::muMax)>(matchedJetsIdx[ij]));
+      float muSum(std::get<integral(JetInfo::muSum)>(matchedJetsIdx[ij]));
+      int muN(std::get<integral(JetInfo::muN)>(matchedJetsIdx[ij]));
+      int   PfCHF(std::get<integral(JetInfo::PfCHF)>(matchedJetsIdx[ij]));
+      float PfNHF(std::get<integral(JetInfo::PfNHF)>(matchedJetsIdx[ij]));
+      float PfCEF(std::get<integral(JetInfo::PfCEF)>(matchedJetsIdx[ij]));
+      float PfNEF(std::get<integral(JetInfo::PfNEF)>(matchedJetsIdx[ij]));
+      int PfMUF(std::get<integral(JetInfo::PfMUF)>(matchedJetsIdx[ij]));
+      int PfCHM(std::get<integral(JetInfo::PfCHM)>(matchedJetsIdx[ij]));
+      int PfNHM(std::get<integral(JetInfo::PfNHM)>(matchedJetsIdx[ij]));
+      int PfCEM(std::get<integral(JetInfo::PfCEM)>(matchedJetsIdx[ij]));
+      int PfNEM(std::get<integral(JetInfo::PfNEM)>(matchedJetsIdx[ij]));
 
+      TLorentzVector p4=tkJetsP4[idx];
       TString ppf(ij==1 ? "1" : "2");
       ht.fill( "tk"+ppf+"jbalance",  p4.Pt()/ll.Pt(),  plotWgt, categs);
       ht.fill( "tk"+ppf+"jpt",      p4.Pt(),          plotWgt, categs);
@@ -533,14 +706,90 @@ int main(int argc, char* argv[])
       ht.fill( "tk"+ppf+"jsvtxm",   ntks,             plotWgt, categs);
       ht.fill( "tk"+ppf+"jsvtxntk", svm,              plotWgt, categs);
       ht.fill( "tk"+ppf+"jcsv",     csv,              plotWgt, categs);
+      ht.fill( "tk"+ppf+"jphi",     phi,              plotWgt, categs);
+      ht.fill( "tk"+ppf+"pu",       pu,               plotWgt, categs);
+      ht.fill( "tk"+ppf+"mass",     mass,             plotWgt, categs);
+      ht.fill( "tk"+ppf+"trackMax", trackMax,         plotWgt, categs);
+      ht.fill( "tk"+ppf+"trackSum", trackSum,         plotWgt, categs);
+      ht.fill( "tk"+ppf+"trackN",   trackN,           plotWgt, categs);
+      ht.fill( "tk"+ppf+"trackHardSum",  trackHardSum,plotWgt, categs);
+      ht.fill( "tk"+ppf+"trackHardN",    trackHardN, plotWgt, categs);
+      ht.fill( "tk"+ppf+"chargedMax",    chargedMax, plotWgt, categs);
+      ht.fill( "tk"+ppf+"chargedSum", chargedSum,     plotWgt, categs);
+      ht.fill( "tk"+ppf+"chargedN", chargedN,         plotWgt, categs);
+      ht.fill( "tk"+ppf+"chargedHardSum",  chargedHardSum,  plotWgt, categs);
+      ht.fill( "tk"+ppf+"chargedHardN",   chargedHardN,     plotWgt, categs);
+      ht.fill( "tk"+ppf+"photonMax",      photonMax,        plotWgt, categs);
+      ht.fill( "tk"+ppf+"photonSum",     photonSum,         plotWgt, categs);
+      ht.fill( "tk"+ppf+"photonHardSum", photonHardSum,     plotWgt, categs);
+      ht.fill( "tk"+ppf+"photonHardN", photonHardN,         plotWgt, categs);
+      ht.fill( "tk"+ppf+"neutralMax",   neutralMax,         plotWgt, categs);
+      ht.fill( "tk"+ppf+"neutralSum",  neutralSum,          plotWgt, categs);
+      ht.fill( "tk"+ppf+"neutralN",  neutralN,              plotWgt, categs);
+      ht.fill( "tk"+ppf+"hcalSum",   hcalSum,               plotWgt, categs);
+      ht.fill( "tk"+ppf+"ecalSum", ecalSum,                 plotWgt, categs);
+      ht.fill( "tk"+ppf+"eMax", eMax,                       plotWgt, categs);
+      ht.fill( "tk"+ppf+"eSum",  eSum,                      plotWgt, categs);
+      ht.fill( "tk"+ppf+"eN", eN,                           plotWgt, categs);
+      ht.fill( "tk"+ppf+"muMax", muMax,                     plotWgt, categs);
+      ht.fill( "tk"+ppf+"muSum", muSum,                     plotWgt, categs);
+      ht.fill( "tk"+ppf+"muN",   muN,                       plotWgt, categs);
+      ht.fill( "tk"+ppf+"PfCHF",  PfCHF,                    plotWgt, categs);
+      ht.fill( "tk"+ppf+"PfNHF",  PfNHF,                    plotWgt, categs);
+      ht.fill( "tk"+ppf+"PfCEF",  PfCEF,                    plotWgt, categs);
+      ht.fill( "tk"+ppf+"PfNEF", PfNEF,                     plotWgt, categs);
+      ht.fill( "tk"+ppf+"PfMUF", PfMUF,                     plotWgt, categs);
+      ht.fill( "tk"+ppf+"PfCHM",  PfCHM,                    plotWgt, categs);
+      ht.fill( "tk"+ppf+"PfNHM", PfNHM,                     plotWgt, categs);
+      ht.fill( "tk"+ppf+"PfCEM", PfCEM,                     plotWgt, categs);
+      ht.fill( "tk"+ppf+"PfNEM", PfNEM,                     plotWgt, categs);
+
     }
     ht.fill( "chrho", tkrho,            plotWgt, categs);
 
     for(size_t ij=0; ij<min(pfJetsIdx.size(),size_t(2)); ij++) {     
-      int idx(std::get<0>(pfJetsIdx[ij]));
-      int ntks(std::get<1>(pfJetsIdx[ij]));
-      float svm(std::get<2>(pfJetsIdx[ij]));
-      float csv(std::get<3>(pfJetsIdx[ij]));
+      int idx(std::get<integral(JetInfo::index)>(pfJetsIdx[ij]));
+      int ntks(std::get<integral(JetInfo::ntks)>(pfJetsIdx[ij]));
+      float svm(std::get<integral(JetInfo::msvtx)>(pfJetsIdx[ij]));
+      float csv(std::get<integral(JetInfo::csvV2)>(pfJetsIdx[ij]));
+      float phi(std::get<integral(JetInfo::phi)>(pfJetsIdx[ij]));
+      float pu(std::get<integral(JetInfo::pu)>(pfJetsIdx[ij]));
+      float mass(std::get<integral(JetInfo::mass)>(pfJetsIdx[ij]));
+      float trackMax(std::get<integral(JetInfo::trackMax)>(pfJetsIdx[ij]));
+      float trackSum(std::get<integral(JetInfo::trackSum)>(pfJetsIdx[ij]));
+      int trackN(std::get<integral(JetInfo::trackN)>(pfJetsIdx[ij]));
+      float trackHardSum(std::get<integral(JetInfo::trackHardSum)>(pfJetsIdx[ij]));
+      int trackHardN(std::get<integral(JetInfo::trackHardN)>(pfJetsIdx[ij]));
+      float chargedMax(std::get<integral(JetInfo::chargedMax)>(pfJetsIdx[ij]));
+      float chargedSum(std::get<integral(JetInfo::chargedSum)>(pfJetsIdx[ij]));
+      int chargedN(std::get<integral(JetInfo::chargedN)>(pfJetsIdx[ij]));
+      float chargedHardSum(std::get<integral(JetInfo::chargedHardSum)>(pfJetsIdx[ij]));
+      float chargedHardN(std::get<integral(JetInfo::chargedHardN)>(pfJetsIdx[ij]));
+      float photonMax(std::get<integral(JetInfo::photonMax)>(pfJetsIdx[ij]));
+      float photonSum(std::get<integral(JetInfo::photonSum)>(pfJetsIdx[ij]));
+      float photonHardSum(std::get<integral(JetInfo::photonHardSum)>(pfJetsIdx[ij]));
+      int photonHardN(std::get<integral(JetInfo::photonHardN)>(pfJetsIdx[ij]));
+      float neutralMax(std::get<integral(JetInfo::neutralMax)>(pfJetsIdx[ij]));
+      float neutralSum(std::get<integral(JetInfo::neutralSum)>(pfJetsIdx[ij]));
+      int neutralN(std::get<integral(JetInfo::neutralN)>(pfJetsIdx[ij]));
+      float hcalSum(std::get<integral(JetInfo::hcalSum)>(pfJetsIdx[ij]));
+      float ecalSum(std::get<integral(JetInfo::ecalSum)>(pfJetsIdx[ij]));
+      float eMax(std::get<integral(JetInfo::eMax)>(pfJetsIdx[ij]));
+      float eSum(std::get<integral(JetInfo::eSum)>(pfJetsIdx[ij]));
+      int eN(std::get<integral(JetInfo::eN)>(pfJetsIdx[ij]));
+      float muMax(std::get<integral(JetInfo::muMax)>(pfJetsIdx[ij]));
+      float muSum(std::get<integral(JetInfo::muSum)>(pfJetsIdx[ij]));
+      int muN(std::get<integral(JetInfo::muN)>(pfJetsIdx[ij]));
+      int   PfCHF(std::get<integral(JetInfo::PfCHF)>(pfJetsIdx[ij]));
+      float PfNHF(std::get<integral(JetInfo::PfNHF)>(pfJetsIdx[ij]));
+      float PfCEF(std::get<integral(JetInfo::PfCEF)>(pfJetsIdx[ij]));
+      float PfNEF(std::get<integral(JetInfo::PfNEF)>(pfJetsIdx[ij]));
+      int PfMUF(std::get<integral(JetInfo::PfMUF)>(pfJetsIdx[ij]));
+      int PfCHM(std::get<integral(JetInfo::PfCHM)>(pfJetsIdx[ij]));
+      int PfNHM(std::get<integral(JetInfo::PfNHM)>(pfJetsIdx[ij]));
+      int PfCEM(std::get<integral(JetInfo::PfCEM)>(pfJetsIdx[ij]));
+      int PfNEM(std::get<integral(JetInfo::PfNEM)>(pfJetsIdx[ij]));
+
       TLorentzVector p4=pfJetsP4[idx];
       TString ppf(ij==1 ? "1" : "2");
       ht.fill( "pf"+ppf+"jbalance", p4.Pt()/ll.Pt(), plotWgt, categs);
@@ -549,6 +798,44 @@ int main(int argc, char* argv[])
       ht.fill( "pf"+ppf+"jsvtxm",   ntks,            plotWgt, categs);
       ht.fill( "pf"+ppf+"jsvtxntk", svm,             plotWgt, categs);
       ht.fill( "pf"+ppf+"jcsv",     csv,             plotWgt, categs);
+      ht.fill( "pf"+ppf+"jphi",     phi,              plotWgt, categs);
+      ht.fill( "pf"+ppf+"pu",       pu,               plotWgt, categs);
+      ht.fill( "pf"+ppf+"mass",     mass,             plotWgt, categs);
+      ht.fill( "pf"+ppf+"trackMax", trackMax,         plotWgt, categs);
+      ht.fill( "pf"+ppf+"trackSum", trackSum,         plotWgt, categs);
+      ht.fill( "pf"+ppf+"trackN",   trackN,           plotWgt, categs);
+      ht.fill( "pf"+ppf+"trackHardSum",  trackHardSum,plotWgt, categs);
+      ht.fill( "pf"+ppf+"trackHardN",    trackHardN, plotWgt, categs);
+      ht.fill( "pf"+ppf+"chargedMax",    chargedMax, plotWgt, categs);
+      ht.fill( "pf"+ppf+"chargedSum", chargedSum,     plotWgt, categs);
+      ht.fill( "pf"+ppf+"chargedN", chargedN,         plotWgt, categs);
+      ht.fill( "pf"+ppf+"chargedHardSum",  chargedHardSum,  plotWgt, categs);
+      ht.fill( "pf"+ppf+"chargedHardN",   chargedHardN,     plotWgt, categs);
+      ht.fill( "pf"+ppf+"photonMax",      photonMax,        plotWgt, categs);
+      ht.fill( "pf"+ppf+"photonSum",     photonSum,         plotWgt, categs);
+      ht.fill( "pf"+ppf+"photonHardSum", photonHardSum,     plotWgt, categs);
+      ht.fill( "pf"+ppf+"photonHardN", photonHardN,         plotWgt, categs);
+      ht.fill( "pf"+ppf+"neutralMax",   neutralMax,         plotWgt, categs);
+      ht.fill( "pf"+ppf+"neutralSum",  neutralSum,          plotWgt, categs);
+      ht.fill( "pf"+ppf+"neutralN",  neutralN,              plotWgt, categs);
+      ht.fill( "pf"+ppf+"hcalSum",   hcalSum,               plotWgt, categs);
+      ht.fill( "pf"+ppf+"ecalSum", ecalSum,                 plotWgt, categs);
+      ht.fill( "pf"+ppf+"eMax", eMax,                       plotWgt, categs);
+      ht.fill( "pf"+ppf+"eSum",  eSum,                      plotWgt, categs);
+      ht.fill( "pf"+ppf+"eN", eN,                           plotWgt, categs);
+      ht.fill( "pf"+ppf+"muMax", muMax,                     plotWgt, categs);
+      ht.fill( "pf"+ppf+"muSum", muSum,                     plotWgt, categs);
+      ht.fill( "pf"+ppf+"muN",   muN,                       plotWgt, categs);
+      ht.fill( "pf"+ppf+"PfCHF",  PfCHF,                    plotWgt, categs);
+      ht.fill( "pf"+ppf+"PfNHF",  PfNHF,                    plotWgt, categs);
+      ht.fill( "pf"+ppf+"PfCEF",  PfCEF,                    plotWgt, categs);
+      ht.fill( "pf"+ppf+"PfNEF", PfNEF,                     plotWgt, categs);
+      ht.fill( "pf"+ppf+"PfMUF", PfMUF,                     plotWgt, categs);
+      ht.fill( "pf"+ppf+"PfCHM",  PfCHM,                    plotWgt, categs);
+      ht.fill( "pf"+ppf+"PfNHM", PfNHM,                     plotWgt, categs);
+      ht.fill( "pf"+ppf+"PfCEM", PfCEM,                     plotWgt, categs);
+      ht.fill( "pf"+ppf+"PfNEM", PfNEM,                     plotWgt, categs);
+
     }
 
   }

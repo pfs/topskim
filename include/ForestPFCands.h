@@ -34,16 +34,16 @@ public :
 
   ~ForestPFCands() {}
 
-   std::vector<int>     *pfId;
-   std::vector<float>   *pfPt;
-   std::vector<float>   *pfEta;
-   std::vector<float>   *pfPhi;
-   std::vector<float>   *pfM;
-   std::vector<int>     *trkAlgo;
-   std::vector<float>   *trkPtError;
-   std::vector<float>   *trkNHit;
-   std::vector<float>   *trkChi2;
-   std::vector<float>   *trkNdof;
+   std::vector<int>     *pfId =0;
+   std::vector<float>   *pfPt =0;
+   std::vector<float>   *pfEta =0;
+   std::vector<float>   *pfPhi =0;
+   std::vector<float>   *pfM =0;
+   std::vector<int>     *trkAlgo =0;
+   std::vector<float>   *trkPtError =0;
+   std::vector<float>   *trkNHit =0;
+   std::vector<float>   *trkChi2 =0;
+   std::vector<float>   *trkNdof =0;
 };
 
 
