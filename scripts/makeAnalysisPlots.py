@@ -318,7 +318,7 @@ def doIsolationROCs(url,ch='ee'):
             px=sig.ProfileX()
             px.SetMarkerStyle(20)            
             if not 'isop' in iso:
-                func=ROOT.TF1('func','[0]/([1]+x)+[2]',0,2)
+                func=ROOT.TF1('func','[0]*([1]/([2]+x)+1.0)',0,2)
                 px.Fit(func)
             sig.Draw('colz')
             px.Draw('e1same')
@@ -328,6 +328,9 @@ def doIsolationROCs(url,ch='ee'):
             txt.SetTextSize(0.045)
             txt.SetTextAlign(12)
             txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
+            if not 'isop' in iso:
+                txt.DrawLatex(0.15,0.88,
+                              '<UE>(#rho)=%3.3f#times(1+#frac{%3.3f}{%3.3f+#rho})'%(func.GetParameter(0),func.GetParameter(1),func.GetParameter(2)))
             cnv.Modified()
             cnv.Update()
             for ext in ['png','pdf']:

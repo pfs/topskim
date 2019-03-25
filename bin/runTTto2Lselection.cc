@@ -35,11 +35,23 @@ const float csvWP = 0.8838;
 using namespace std;
 using namespace fastjet;
 
-//subtracts the UE pedestal from the charged isolatioin
-float subtractedChIso(float chiso,float chrho){
-  double ue=92.2-8765.8/(98.83+chrho);
-  return max(chiso-ue,0.);
+//subtracts the UE pedestal from the isolation
+float getCorrectedIsolation(float chiso,float phoiso,float nhiso,float chrho,float phorho,float nhrho){
+
+  float chue=941.1*(1.0-2822.1/(2824.3+chrho));
+  chiso=max(chiso-chue,float(0.));
+  
+  float phoue=116.2*(1.0-230.9/(233.9+phorho));
+  phoiso=max(phoiso-phoue,float(0.));
+  
+  float nhue=3.4*(1.0-1.8/(1.8+nhrho));
+  nhiso=max(nhiso-nhue,float(0.));
+                  
+  return chiso+phoiso+nhiso;
 } 
+
+
+
 
 //dispersion of rapidities of the final state
 std::vector<float> getRapidityMoments(std::vector<TLorentzVector> & coll){
@@ -123,11 +135,16 @@ int main(int argc, char* argv[])
       TString comp("ch");
       if(j==1) comp="pho";
       if(j==2) comp="nh";
-      ht.addHist(pf+comp+"iso",      new TH1F(pf+comp+"iso",      ";PF "+comp+" isolation;Leptons",50,0,250));
-      ht.addHist(pf+comp+"reliso",   new TH1F(pf+comp+"reliso",   ";Relative PF "+comp+" isolation;Leptons",50,0,2.0));
-      ht.addHist(pf+comp+"isovscen", new TH2F(pf+comp+"isovscen", ";Centrality bin;PF "+comp+" isolation [GeV];Leptons",10,0,100,50,0,75));
-      ht.addHist(pf+comp+"isovsrho", new TH2F(pf+comp+"isovsrho", ";#rho_{"+comp+"};PF "+comp+" isolation [GeV];Leptons",10,0,100,20,0,75));
+      ht.addHist(pf+comp+"isovscen",  new TH2F(pf+comp+"isovscen", ";Centrality bin;PF "+comp+" isolation [GeV];Leptons",10,0,100,50,0,75));
+      ht.addHist(pf+comp+"isovsrho",  new TH2F(pf+comp+"isovsrho", ";#rho_{"+comp+"};PF "+comp+" isolation [GeV];Leptons",10,0,100,20,0,75));
     }    
+
+    ht.addHist(pf+"iso",       new TH1F(pf+"iso",       ";PF isolation [GeV];Leptons",50,0,100));
+    ht.addHist(pf+"reliso" ,   new TH1F(pf+"reliso",    ";Relative PF isolation;Leptons",50,0,2.0));
+    ht.addHist(pf+"isovscen",  new TH2F(pf+"isovscen",  ";Centrality bin;PF isolation [GeV];Leptons",10,0,100,50,0,75));
+    ht.addHist(pf+"isop",      new TH1F(pf+"isop",      ";PF isolation' [GeV];Leptons",50,0,25));
+    ht.addHist(pf+"relisop",   new TH1F(pf+"relisop",   ";Relative PF isolation';Leptons",50,0,1.0));
+    ht.addHist(pf+"isopvscen", new TH2F(pf+"isopvscen", ";Centrality bin;PF isolation' [GeV];Leptons",10,0,100,50,0,25));
   }
 
   //electron specific
@@ -438,7 +455,7 @@ int main(int argc, char* argv[])
     int charge(0);    
     TLorentzVector ll(0,0,0,0);
     vector< std::tuple<float,float,float> > liso;
-    bool hasIsoElecs(true);
+    //FIXME bool hasIsoElecs(true);
     if(mu.size()>1 && mtrig>0) {
 
       //muon final states from the muon PD only
@@ -475,13 +492,10 @@ int main(int argc, char* argv[])
 
       liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
       chIso=fForestEle.elePFChIso03->at(lIdx[1]);
-      float chIsoP( subtractedChIso(chIso,chrho) );
-      chIsoP=subtractedChIso(chIso,chrho);
-      //hasIsoElecs &= (chIso<0.95*selLeptons[0].Pt());
-      //hasIsoElecs &= (chIsoP<0.25*selLeptons[0].Pt());
-      hasIsoElecs &= (chIsoP<8.5);
       phoIso=fForestEle.elePFPhoIso03->at(lIdx[1]);
       neutIso=fForestEle.elePFNeuIso03->at(lIdx[1]);        
+      // float isop=getCorrectedIsolation(chIso,phoIso,neutIso,chrho,phorho,nhrho);
+      //FIXME hasIsoElecs &= (isop<AAA);
       liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
     }
     else if(ele.size()>1 && etrig>0) {
@@ -497,12 +511,10 @@ int main(int argc, char* argv[])
       charge=fForestEle.eleCharge->at(eleIdx[0])*fForestEle.eleCharge->at(eleIdx[1]);
       for(size_t i=0; i<2; i++){
         float chIso=fForestEle.elePFChIso03->at(eleIdx[i]);
-        float chIsoP( subtractedChIso(chIso,chrho) );
-        //hasIsoElecs &= (chIso<0.95*selLeptons[i].Pt());
-        //hasIsoElecs &= (chIsoP<0.25*selLeptons[i].Pt());
-        hasIsoElecs &= (chIsoP<8.5);
         float phoIso=fForestEle.elePFPhoIso03->at(eleIdx[i]);
-        float neutIso=fForestEle.elePFNeuIso03->at(eleIdx[i]);        
+        float neutIso=fForestEle.elePFNeuIso03->at(eleIdx[i]);
+        //float isop=getCorrectedIsolation(chIso,phoIso,neutIso,chrho,phorho,nhrho);
+        //FIXME hasIsoElecs &= (chIsoP<AAA);        
         liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
       }
     }else{
@@ -603,8 +615,8 @@ int main(int argc, char* argv[])
     std::vector<TString> categs;
     categs.push_back(dilCat);
 
-    if(ll.Pt()>20)
-      categs.push_back(dilCat+"hpur");
+    //if(ll.Pt()>20)
+    //  categs.push_back(dilCat+"hpur");
 
     //monitor where the electrons are reconstructed
     if(dilCode==11*11 || dilCode==11*13){
@@ -651,8 +663,8 @@ int main(int argc, char* argv[])
       //addCategs.push_back(c+tkbcat); 
       if(npfbjets==0) addCategs.push_back(c+"0pfb"); 
       if(npfbjets>0) addCategs.push_back(c+"geq1pfb"); 
-      if(npfbjets==1) addCategs.push_back(c+"eq1pfb"); 
-      if(npfbjets>1) addCategs.push_back(c+"geq2pfb");         
+      //if(npfbjets==1) addCategs.push_back(c+"eq1pfb"); 
+      //if(npfbjets>1) addCategs.push_back(c+"geq2pfb");         
     }
     categs=addCategs;
 
@@ -676,20 +688,22 @@ int main(int argc, char* argv[])
       float phoiso(std::get<1>(liso[i]));
       float nhiso(std::get<2>(liso[i]));
 
-      ht.fill(pf+"chiso",          chiso,     plotWgt, categs);
-      ht.fill(pf+"chreliso",       chiso/pt,  plotWgt, categs);
-      ht.fill2D(pf+"chisovscen",   cenBin,    chiso,   plotWgt, categs);
-      ht.fill2D(pf+"chisovsrho",   chrho,     chiso,   plotWgt, categs);
+      ht.fill2D(pf+"chisovscen",  cenBin, chiso,   plotWgt, categs);
+      ht.fill2D(pf+"chisovsrho",  chrho,  chiso,   plotWgt, categs);
+      ht.fill2D(pf+"phoisovscen", cenBin, phoiso,  plotWgt, categs);
+      ht.fill2D(pf+"phoisovsrho", phorho, phoiso,  plotWgt, categs);
+      ht.fill2D(pf+"nhisovscen",  cenBin, nhiso,   plotWgt, categs);
+      ht.fill2D(pf+"nhisovsrho",  nhrho,  nhiso,   plotWgt, categs);
 
-      ht.fill(pf+"phoiso",        phoiso,     plotWgt,  categs);
-      ht.fill(pf+"phoreliso",     phoiso/pt,  plotWgt,  categs);
-      ht.fill2D(pf+"phoisovscen", cenBin,     phoiso,   plotWgt, categs);
-      ht.fill2D(pf+"phoisovsrho", phorho,     phoiso,   plotWgt, categs);
+      float iso=chiso+phoiso+nhiso;
+      ht.fill(pf+"iso",      iso, plotWgt, categs);
+      ht.fill(pf+"reliso",   iso/pt, plotWgt, categs);
+      ht.fill2D(pf+"isovscen", cenBin,iso,   plotWgt, categs);
 
-      ht.fill(pf+"nhiso",        nhiso,     plotWgt, categs);
-      ht.fill(pf+"nhreliso",     nhiso/pt,  plotWgt, categs);
-      ht.fill2D(pf+"nhisovscen", cenBin,    nhiso,   plotWgt, categs);
-      ht.fill2D(pf+"nhisovsrho", nhrho,     nhiso,   plotWgt, categs);
+      float isop=getCorrectedIsolation(chiso,phoiso,nhiso,chrho,phorho,nhrho);
+      ht.fill(pf+"isop",      isop, plotWgt, categs);
+      ht.fill(pf+"relisop",   isop/pt, plotWgt, categs);
+      ht.fill2D(pf+"isopvscen", cenBin,isop,   plotWgt, categs);
     }
 
     ht.fill( "acopl",     1-fabs(selLeptons[0].DeltaPhi(selLeptons[1]))/TMath::Pi(), plotWgt, categs);
