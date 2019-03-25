@@ -76,6 +76,7 @@ def showRateVsRun(url,catList=['e','m']):
     p=Plot('ratevsrun',com='5.02 TeV')
     p.spimposeWithErrors=True
     p.forceRange=[0,5000]
+    p.plotformats = ['pdf','png','root']
     for c in catList:
 
         rates=np.array([[i+1,histos[c].GetBinContent(i+1)] for i in range(histos[c].GetNbinsX())])
@@ -277,7 +278,7 @@ def doMuIDPlots(url):
 
 def doIsolationROCs(url,ch='ee'):
 
-    cats=['z'+ch,'ssz'+ch]
+    cats=['z'+ch,'ssz'+ch,'ss'+ch]
 
     #read all isolation plots and sum the contributions of the two leptons
     data={}
@@ -303,7 +304,6 @@ def doIsolationROCs(url,ch='ee'):
             p.savelog=True
             p.show(outDir='./',lumi=LUMI)
 
-    return
     cnv=ROOT.TCanvas('c','c',500,500)
     cnv.SetLeftMargin(0.12)
     cnv.SetTopMargin(0.05)
@@ -312,11 +312,9 @@ def doIsolationROCs(url,ch='ee'):
     for c in ['ch','pho','nh']:
         for d in ['isovscen','isovsrho']:
             iso=c+d
-
             #subtract combinatorial background
             sig=data[iso]['z'+ch].Clone('sig'+iso)
-            bkg=data[iso]['ssz'+ch].Clone('bkg'+iso)
-            sig.Add(bkg,-1)
+            sig.Add(data[iso]['ssz'+ch],-1)
             px=sig.ProfileX()
             px.SetMarkerStyle(20)            
             if not 'isop' in iso:
@@ -336,7 +334,7 @@ def doIsolationROCs(url,ch='ee'):
                 cnv.SaveAs('%s.%s'%(iso,ext))
 
 
-
+                
 #    #add the two leptons and subtract to the signal
 #    rocs=[]
 #
@@ -460,7 +458,7 @@ doIsolationROCs(url,'ee')
 
 #showRateVsRun(url)
 
-dySF=computeDYScaleFactors(url)
+#dySF=computeDYScaleFactors(url)
 
 #compareElectrons(url,'mll')
 #compareElectrons(url,'ptll')

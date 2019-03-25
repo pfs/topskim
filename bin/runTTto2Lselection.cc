@@ -125,8 +125,8 @@ int main(int argc, char* argv[])
       if(j==2) comp="nh";
       ht.addHist(pf+comp+"iso",      new TH1F(pf+comp+"iso",      ";PF "+comp+" isolation;Leptons",50,0,250));
       ht.addHist(pf+comp+"reliso",   new TH1F(pf+comp+"reliso",   ";Relative PF "+comp+" isolation;Leptons",50,0,2.0));
-      ht.addHist(pf+comp+"isovscen", new TH2F(pf+comp+"isovscen", ";Centrality bin;PF "+comp+" isolation [GeV];Leptons",10,0,100,50,0,100));
-      ht.addHist(pf+comp+"isovsrho", new TH2F(pf+comp+"isovsrho", ";#rho_{"+comp+"};PF "+comp+" isolation [GeV];Leptons",10,0,100,20,0,100));
+      ht.addHist(pf+comp+"isovscen", new TH2F(pf+comp+"isovscen", ";Centrality bin;PF "+comp+" isolation [GeV];Leptons",10,0,100,50,0,75));
+      ht.addHist(pf+comp+"isovsrho", new TH2F(pf+comp+"isovsrho", ";#rho_{"+comp+"};PF "+comp+" isolation [GeV];Leptons",10,0,100,20,0,75));
     }    
   }
 
@@ -255,9 +255,8 @@ int main(int argc, char* argv[])
       //consider pions, photons and K0L
       float mass(0.13957);
       bool isCH(true),isPho(false),isNH(false);
-      if(id==22) { mass=0.; isCH=false; isPho=true; isNH=false; }
-      if(id==130 || id==2112 || id==1 || id==2) { mass=0.497; isCH=false; isPho=false; isNH=true; }
-
+      if(id==4) { mass=0.; isCH=false; isPho=true; isNH=false; }
+      if(id>=5) { mass=0.497; isCH=false; isPho=false; isNH=true; }
       p4.SetPtEtaPhiM(fForestPF.pfPt->at(ipf),fForestPF.pfEta->at(ipf),fForestPF.pfPhi->at(ipf),mass);
 
       //some basic kinematic cuts
@@ -286,9 +285,8 @@ int main(int argc, char* argv[])
     JetMedianBackgroundEstimator nhbge(sel_rapmax, jet_def_for_rho, area_def);
     nhbge.set_particles(nhCands);
     float chrho=chbge.rho();
-    float nhrho=phobge.rho();
-    float phorho=nhbge.rho();
-
+    float phorho=phobge.rho();
+    float nhrho=nhbge.rho();
 
     //monitor trigger and centrality
     float cenBin=0;
