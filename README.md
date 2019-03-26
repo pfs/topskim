@@ -29,6 +29,11 @@ for tag in ${a[@]}; do
 done   
 ```
 
+Check that all the jobs ran fine and re-run locally if needed
+```
+python scripts/checkCondorJobs.py ./
+```
+
 Merge the outputs (hadds all the chunks according to the tag defined)
 ```
 python scripts/mergeOutputs.py plots

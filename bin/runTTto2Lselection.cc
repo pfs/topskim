@@ -455,7 +455,7 @@ int main(int argc, char* argv[])
     int charge(0);    
     TLorentzVector ll(0,0,0,0);
     vector< std::tuple<float,float,float> > liso;
-    //FIXME bool hasIsoElecs(true);
+    bool hasIsoElecs(true);
     if(mu.size()>1 && mtrig>0) {
 
       //muon final states from the muon PD only
@@ -494,8 +494,8 @@ int main(int argc, char* argv[])
       chIso=fForestEle.elePFChIso03->at(lIdx[1]);
       phoIso=fForestEle.elePFPhoIso03->at(lIdx[1]);
       neutIso=fForestEle.elePFNeuIso03->at(lIdx[1]);        
-      // float isop=getCorrectedIsolation(chIso,phoIso,neutIso,chrho,phorho,nhrho);
-      //FIXME hasIsoElecs &= (isop<AAA);
+      float isop=getCorrectedIsolation(chIso,phoIso,neutIso,chrho,phorho,nhrho);
+      hasIsoElecs &= (isop<0.3);
       liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
     }
     else if(ele.size()>1 && etrig>0) {
@@ -513,8 +513,8 @@ int main(int argc, char* argv[])
         float chIso=fForestEle.elePFChIso03->at(eleIdx[i]);
         float phoIso=fForestEle.elePFPhoIso03->at(eleIdx[i]);
         float neutIso=fForestEle.elePFNeuIso03->at(eleIdx[i]);
-        //float isop=getCorrectedIsolation(chIso,phoIso,neutIso,chrho,phorho,nhrho);
-        //FIXME hasIsoElecs &= (chIsoP<AAA);        
+        float isop=getCorrectedIsolation(chIso,phoIso,neutIso,chrho,phorho,nhrho);
+        hasIsoElecs &= (isop<0.3);        
         liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
       }
     }else{
@@ -615,8 +615,8 @@ int main(int argc, char* argv[])
     std::vector<TString> categs;
     categs.push_back(dilCat);
 
-    //if(ll.Pt()>20)
-    //  categs.push_back(dilCat+"hpur");
+    if(hasIsoElecs) //&& ll.Pt()>20)
+      categs.push_back(dilCat+"hpur");
 
     //monitor where the electrons are reconstructed
     if(dilCode==11*11 || dilCode==11*13){

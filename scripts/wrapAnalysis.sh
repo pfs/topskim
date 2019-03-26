@@ -11,6 +11,7 @@ eval `scram r -sh`
 cd $HOME
 input=${2}
 output=${3}
+localout=`basename ${output}`
 
 extraOpts=""
 isMC=${4}
@@ -21,9 +22,9 @@ isPP=${5}
 if [ ! -z "${isPP}" ]; then
     extraOpts="${extraOpts} --pp"
 fi
-opts="--in ${input} --out tto2l.root ${extraOpts}"
+opts="--in ${input} --out ${localout} ${extraOpts}"
 
 echo "Calling runTTto2Lselection with [${opts}]"
 runTTto2Lselection ${opts}
-cp -v tto2l.root ${output}
+cp -v ${localout} ${output}
 

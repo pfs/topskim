@@ -191,7 +191,6 @@ def computeDYScaleFactors(url):
     cats=['zee','zmm','ee','mm','em']
     data=getDataSummedUp(url,cats,'mll','Skim',False)
     dy=getDataSummedUp(url,cats,'mll','DYJetsToLL_MLL-50_TuneCP5_5020GeV-amcatnloFXFX-pythia8',True)
-
     nin={}
     nout={}
     ndyin={}
@@ -282,43 +281,34 @@ def doIsolationROCs(url,ch='ee'):
 
     #read all isolation plots and sum the contributions of the two leptons
     data={}
-    for c in ['ch','pho','nh']:
-        for d in ['reliso','isovscen','isovsrho']:
+    for c in ['ch','pho','nh','']:
+        for d in ['isovscen','isovsrho','isopvscen','iso','reliso','isop','relisop']:
             dist=c+d 
             for l in ['l1','l2']:
                 plots=getDataSummedUp(url,cats,l+dist,'Skim',False)
-                print plots
                 if l=='l1':
                     data[dist]=plots
                 else:
                     for key in data[dist]:                           
                         data[dist][key].Add( plots[key] )
 
-            #show the plots for simple variables
-            if 'isovs' in d : continue
-            p=Plot('%s'%dist,com='5.02 TeV')
-            p.add(data[dist]['z'+ch],title='Z#rightarrow%s'%ch,color=1,isData=True,spImpose=False,isSyst=False)
-            data[dist]['ssz'+ch].SetFillStyle(3001)
-            data[dist]['ssz'+ch].SetFillColor(17)
-            p.add(data[dist]['ssz'+ch],title='Comb. (data)',color=17,isData=False,spImpose=False,isSyst=False)
-            p.savelog=True
-            p.show(outDir='./',lumi=LUMI)
-
     cnv=ROOT.TCanvas('c','c',500,500)
     cnv.SetLeftMargin(0.12)
     cnv.SetTopMargin(0.05)
     cnv.SetBottomMargin(0.11)
     cnv.SetRightMargin(0.12)
-    for c in ['ch','pho','nh']:
-        for d in ['isovscen','isovsrho']:
+    for c in ['ch','pho','nh','']:
+        for d in ['isovscen','isovsrho','isopvscen']:
             iso=c+d
             #subtract combinatorial background
+            if not iso in data: continue
+            if not 'z'+ch in data[iso]: continue
             sig=data[iso]['z'+ch].Clone('sig'+iso)
             sig.Add(data[iso]['ssz'+ch],-1)
             px=sig.ProfileX()
             px.SetMarkerStyle(20)            
-            if not 'isop' in iso:
-                func=ROOT.TF1('func','[0]*([1]/([2]+x)+1.0)',0,2)
+            if not 'isop' in iso and 'vsrho' in iso:
+                func=ROOT.TF1('func','[0]*([1]/([2]+x)+1.0)',0,2)                
                 px.Fit(func)
             sig.Draw('colz')
             px.Draw('e1same')
@@ -328,79 +318,78 @@ def doIsolationROCs(url,ch='ee'):
             txt.SetTextSize(0.045)
             txt.SetTextAlign(12)
             txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
-            if not 'isop' in iso:
+            if not 'isop' in iso and 'vsrho' in iso:
                 txt.DrawLatex(0.15,0.88,
-                              '<UE>(#rho)=%3.3f#times(1+#frac{%3.3f}{%3.3f+#rho})'%(func.GetParameter(0),func.GetParameter(1),func.GetParameter(2)))
+                              '<UE>(#rho)=%3.3f#times(1+#frac{%3.3f}{%3.3f+#rho})'%(func.GetParameter(0),func.GetParameter(1),func.GetParameter(2)))                
             cnv.Modified()
             cnv.Update()
             for ext in ['png','pdf']:
                 cnv.SaveAs('%s.%s'%(iso,ext))
 
-
                 
-#    #add the two leptons and subtract to the signal
-#    rocs=[]
-#
-#    isoDists={'chreliso':(1,"I_{ch}^{rel}"),
-#              'chrelisop':(4,"I_{ch}^{rel}'"),
-#              'chisop':(2,"I_{ch}'"),
-#              'phoreliso':(8,"I_{#gamma}^{rel}"),
-#              'neureliso':(6,"I_{n.had.}^{rel}")}
-#    for iso in ['chreliso','chrelisop','chisop','phoreliso','neureliso']:
-#        print iso
-#        sig=data['l1%s'%iso]['z'+ch].Clone('sig'+iso)
-#        sig.Add(data['l2%s'%iso]['z'+ch])
-#        bkg=data['l1%s'%iso]['ssz'+ch].Clone('bkg'+iso)
-#        bkg.Add(data['l2%s'%iso]['ssz'+ch])
-#        sig.Add(bkg,-1)
-#
-#        color,title=isoDists[iso]
-#    
-#        rocs.append( ROOT.TGraph() )
-#        tot_sig=sig.Integral()
-#        tot_bkg=bkg.Integral()
-#        nbins=sig.GetNbinsX()
-#        best_effsig=0
-#        best_xbin=nbins+1
-#        for xbin in range(nbins+1):
-#            effsig=sig.Integral(0,xbin+1)/tot_sig
-#            rocs[-1].SetPoint(xbin,effsig,bkg.Integral(0,xbin+1)/tot_bkg)
-#            if abs(effsig-0.9)>abs(best_effsig-0.9) : continue
-#            best_effsig=effsig
-#            best_xbin=xbin
-#        print iso,best_effsig,best_xbin,sig.GetXaxis().GetBinCenter(best_xbin+1)
-#        rocs[-1].SetTitle(title)
-#        rocs[-1].SetLineColor(color)
-#        rocs[-1].SetMarkerColor(color)
-#        rocs[-1].SetLineWidth(2)
-#
-#    c=ROOT.TCanvas('c','c',500,500)
-#    c.SetLeftMargin(0.12)
-#    c.SetRightMargin(0.03)
-#    c.SetTopMargin(0.05)
-#    c.SetBottomMargin(0.11)
-#    mg=ROOT.TMultiGraph()
-#    for g in rocs: mg.Add(g,'l')
-#    mg.Draw('al')
-#    mg.GetXaxis().SetRangeUser(0,1)
-#    mg.GetYaxis().SetRangeUser(0,1)
-#    mg.GetXaxis().SetTitle('Signal efficency')
-#    mg.GetYaxis().SetTitle('Background efficency')
-#    leg=c.BuildLegend(0.15,0.94,0.4,0.6)
-#    leg.SetBorderSize(0)
-#    leg.SetTextFont(42)
-#    leg.SetTextSize(0.05)
-#    leg.SetFillStyle(0)
-#    txt=ROOT.TLatex()
-#    txt.SetNDC(True)
-#    txt.SetTextFont(42)
-#    txt.SetTextSize(0.045)
-#    txt.SetTextAlign(12)
-#    txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
-#    for ext in ['png','pdf']:
-#        c.SaveAs('isorocs_%s.%s'%(ch,ext))
-#
-#
+    #add the two leptons and subtract to the signal
+    rocs=[]
+                
+    isoDists={
+        'iso':(1,'I'),
+        'reliso':(4,"I_{rel}"),
+        'isop':(2,"I'"),
+        'relisop':(8,"I_{rel}'"),
+        }
+    for iso in ['iso','reliso','isop','relisop']:
+
+        sig=data[iso]['z'+ch].Clone('sig'+iso)
+        sig.Add(data[iso]['ssz'+ch],-1)
+        bkg=data[iso]['ss'+ch].Clone('bkg'+iso)
+        sig.Rebin()
+        bkg.Rebin()
+        color,title=isoDists[iso]
+    
+        rocs.append( ROOT.TGraph() )
+        tot_sig=sig.Integral()
+        tot_bkg=bkg.Integral()
+        nbins=sig.GetNbinsX()
+        best_effsig=0
+        best_xbin=nbins+1
+        for xbin in range(nbins+1):
+            effsig=sig.Integral(0,xbin+1)/tot_sig
+            rocs[-1].SetPoint(xbin,effsig,bkg.Integral(0,xbin+1)/tot_bkg)
+            if abs(effsig-0.9)>abs(best_effsig-0.9) : continue
+            best_effsig=effsig
+            best_xbin=xbin
+        print iso,best_effsig,best_xbin,sig.GetXaxis().GetBinCenter(best_xbin+1)
+        rocs[-1].SetTitle(title)
+        rocs[-1].SetLineColor(color)
+        rocs[-1].SetMarkerColor(color)
+        rocs[-1].SetLineWidth(2)
+
+    c=ROOT.TCanvas('c','c',500,500)
+    c.SetLeftMargin(0.12)
+    c.SetRightMargin(0.03)
+    c.SetTopMargin(0.05)
+    c.SetBottomMargin(0.11)
+    mg=ROOT.TMultiGraph()
+    for g in rocs: mg.Add(g,'l')
+    mg.Draw('al')
+    mg.GetXaxis().SetRangeUser(0,1)
+    mg.GetYaxis().SetRangeUser(0,1)
+    mg.GetXaxis().SetTitle('Signal efficency')
+    mg.GetYaxis().SetTitle('Background efficency')
+    leg=c.BuildLegend(0.15,0.94,0.4,0.6)
+    leg.SetBorderSize(0)
+    leg.SetTextFont(42)
+    leg.SetTextSize(0.05)
+    leg.SetFillStyle(0)
+    txt=ROOT.TLatex()
+    txt.SetNDC(True)
+    txt.SetTextFont(42)
+    txt.SetTextSize(0.045)
+    txt.SetTextAlign(12)
+    txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
+    for ext in ['png','pdf']:
+        c.SaveAs('isorocs_%s.%s'%(ch,ext))
+
+
 
 def doJetHotSpots(url,cats):
 
@@ -454,14 +443,14 @@ def checkAcceptance(url):
 
 
 url=sys.argv[1]
-#doEleIDPlots(url)
+doEleIDPlots(url)
 doIsolationROCs(url,'ee')
-#doMuIDPlots(url)
+doMuIDPlots(url)
 #doIsolationROCs(url,'mm')
 
-#showRateVsRun(url)
+showRateVsRun(url)
 
-#dySF=computeDYScaleFactors(url)
+dySF=computeDYScaleFactors(url)
 
 #compareElectrons(url,'mll')
 #compareElectrons(url,'ptll')
@@ -472,33 +461,29 @@ doIsolationROCs(url,'ee')
 #doJetHotSpots(url,['zmm','zee','em'])
 
 cats=[]
-#cats+=['zee','zmm','mm','em','ee']
-#cats+=['zeehpur','zmmhpur']
+cats+=['zee','zmm','mm','em','ee']
+cats+=['zeehpur','zmmhpur']
 cats+=['mm','em','ee']
 cats+=['mmhpur','emhpur','eehpur']
 cats+=['mm0pfb','mmgeq1pfb','em0pfb','emgeq1pfb','ee0pfb','eegeq1pfb',]
 cats+=['mmhpur0pfb','mmhpurgeq1pfb','emhpur0pfb','emhpurgeq1pfb','eehpur0pfb','eehpurgeq1pfb',]
 for cat in cats:
     for d in ['mll','ptll','l1pt','l1eta','l2pt','l2eta']:                        
-        continue
         makeControlPlot(url,cat,d,1,True,dySF)
 
 fIn=ROOT.TFile.Open('plotter.root','RECREATE')
 fIn.Close()
 for cat in cats:
     for d in ['acopl', 'detall','drll']:
-        continue
         makeControlPlot(url,cat,d,1,True,dySF,'plotter.root',rebin=2) #,saveTeX=True)
 
 
 for cat in cats:
     for d in ['npfjets','npfbjets','pf1jpt','pf1jeta','pf1jcsv','pf2jpt','pf2jeta','pf2jcsv','pfrapavg','pfraprms','pfrapmaxspan']:
-        continue
         makeControlPlot(url,cat,d,2,True,dySF)
 
 for cat in cats:
     for d in ['pfht','pfmht']:        
-        continue
         makeControlPlot(url,cat,d,2,True,dySF,rebin=2)
               
 
