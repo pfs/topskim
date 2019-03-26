@@ -224,10 +224,15 @@ int main(int argc, char* argv[])
   hltTree_p->Add(inURL);
   int etrig(0),mtrig(0);
   if(isPP){
-    hltTree_p->SetBranchStatus("HLT_HIL3Mu20_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIL3Mu20_v1",&mtrig);
-    hltTree_p->SetBranchStatus("HLT_HIEle20_WPLoose_Gsf_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIEle20_WPLoose_Gsf_v1",&etrig);
+    TString muTrig("HLT_HIL3Mu20_v1");
+    if( !hltTree_p->FindBranch(muTrig) ) muTrig="HLT_HIL3Mu15ForPPRef_v1";
+    hltTree_p->SetBranchStatus(muTrig,1);
+    hltTree_p->SetBranchAddress(muTrig,&mtrig);
+    TString eTrig("HLT_HIEle20_WPLoose_Gsf_v1");
+    if( !hltTree_p->FindBranch(eTrig) ) eTrig="HLT_HISinglePhoton20_Eta3p1ForPPRef_v1";
+    hltTree_p->SetBranchStatus(eTrig,1);
+    hltTree_p->SetBranchAddress(eTrig,&etrig);
+    cout << "Using " << muTrig << " " << eTrig << " as MC triggers" << endl;
   }else{
     hltTree_p->SetBranchStatus("HLT_HIL3Mu15_v1",1);
     hltTree_p->SetBranchAddress("HLT_HIL3Mu15_v1",&mtrig);
