@@ -43,6 +43,20 @@ def getBaseNames(dirname):
             names.add(filename)
     return names
 
+def mergePacked(args):
+    outputdir,basename,files=args
+    filenames = " ".join(files)
+    target = os.path.join(outputdir,"%s.root" % basename)
+
+    # merging:
+    print '... processing', basename
+    if noTrees:
+        cmd = 'hadd -f -T %s %s' % (target, filenames)
+    else:
+        cmd = 'hadd -f %s %s' % (target, filenames)
+    os.system(cmd)
+
+
 try:
     inputdir = sys.argv[1]
     if not os.path.isdir(inputdir):
@@ -67,18 +81,14 @@ print 'Will process the following samples:', basenames
 
 os.system('mkdir -p %s' % chunkdir)
 
+task_list=[]
 for basename, files in counters.iteritems():
+    task_list.append((outputdir,basename,files))
 
-    filenames = " ".join(files)
-    target = os.path.join(outputdir,"%s.root" % basename)
+import multiprocessing as MP
+pool = MP.Pool(8)
+pool.map( mergePacked, task_list)
 
-    # merging:
-    print '... processing', basename
-    if noTrees:
-        cmd = 'hadd -f -T %s %s' % (target, filenames)
-    else:
-        cmd = 'hadd -f %s %s' % (target, filenames)
-    os.system(cmd)
 
 if (len(badFiles) > 0):
     print '-----------------------'

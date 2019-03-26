@@ -179,8 +179,9 @@ def makeControlPlot(url,cat,pname,dyFromData,combFromData,dySF,plotter=None,rebi
               title=proc,
               color=plotsPerProc[proc].GetLineColor(),
               isData=True if proc=='Data' else False,
-              spImpose=False,
+              spImpose=False if proc!='t#bar{t}' else True,
               isSyst=False)
+            
     p.savelog=True
     p.show(outDir='./',lumi=ilumi,saveTeX=saveTeX if saveTeX else False)
     if plotter : p.appendTo(plotter)
@@ -448,7 +449,7 @@ url=sys.argv[1]
 #doMuIDPlots(url)
 #doIsolationROCs(url,'mm')
 
-#showRateVsRun(url)
+showRateVsRun(url)
 
 dySF=computeDYScaleFactors(url)
 
@@ -462,11 +463,9 @@ dySF=computeDYScaleFactors(url)
 
 cats=[]
 cats+=['zee','zmm','mm','em','ee']
-cats+=['zeehpur','zmmhpur']
-cats+=['mm','em','ee']
-cats+=['mmhpur','emhpur','eehpur']
-cats+=['mm0pfb','mmgeq1pfb','em0pfb','emgeq1pfb','ee0pfb','eegeq1pfb',]
-cats+=['mmhpur0pfb','mmhpurgeq1pfb','emhpur0pfb','emhpurgeq1pfb','eehpur0pfb','eehpurgeq1pfb',]
+cats+=['zeehpur','zmmhpur','mmhpur','emhpur','eehpur']
+#cats+=['mm0pfb','mmgeq1pfb','em0pfb','emgeq1pfb','ee0pfb','eegeq1pfb',]
+#cats+=['mmhpur0pfb','mmhpurgeq1pfb','emhpur0pfb','emhpurgeq1pfb','eehpur0pfb','eehpurgeq1pfb',]
 for cat in cats:
     for d in ['mll','ptll','l1pt','l1eta','l2pt','l2eta']:                        
         makeControlPlot(url,cat,d,1,True,dySF)
@@ -475,15 +474,18 @@ fIn=ROOT.TFile.Open('plotter.root','RECREATE')
 fIn.Close()
 for cat in cats:
     for d in ['acopl', 'detall','drll']:
+        continue
         makeControlPlot(url,cat,d,1,True,dySF,'plotter.root',rebin=2) #,saveTeX=True)
 
 
 for cat in cats:
     for d in ['npfjets','npfbjets','pf1jpt','pf1jeta','pf1jcsv','pf2jpt','pf2jeta','pf2jcsv','pfrapavg','pfraprms','pfrapmaxspan']:
+        continue
         makeControlPlot(url,cat,d,2,True,dySF)
 
 for cat in cats:
     for d in ['pfht','pfmht']:        
+        continue
         makeControlPlot(url,cat,d,2,True,dySF,rebin=2)
               
 
