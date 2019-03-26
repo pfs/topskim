@@ -500,7 +500,7 @@ int main(int argc, char* argv[])
       phoIso=fForestEle.elePFPhoIso03->at(lIdx[1]);
       neutIso=fForestEle.elePFNeuIso03->at(lIdx[1]);        
       float isop=getCorrectedIsolation(chIso,phoIso,neutIso,chrho,phorho,nhrho);
-      hasIsoElecs &= (isop<0.3);
+      hasIsoElecs &= (isop<0.3*selLeptons[1].Pt());
       liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
     }
     else if(ele.size()>1 && etrig>0) {
@@ -519,7 +519,7 @@ int main(int argc, char* argv[])
         float phoIso=fForestEle.elePFPhoIso03->at(eleIdx[i]);
         float neutIso=fForestEle.elePFNeuIso03->at(eleIdx[i]);
         float isop=getCorrectedIsolation(chIso,phoIso,neutIso,chrho,phorho,nhrho);
-        hasIsoElecs &= (isop<0.3);        
+        hasIsoElecs &= (isop<0.3*selLeptons[i].Pt());        
         liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
       }
     }else{

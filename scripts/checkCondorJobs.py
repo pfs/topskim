@@ -35,6 +35,7 @@ task_list=[]
 condor_dir=sys.argv[1]
 for f in os.listdir(condor_dir):
     if not '.sub' in f : continue
+    if 'Skim' in f : continue
     task_list.append( ( os.path.join(condor_dir,f) ) )
 
 import multiprocessing as MP
