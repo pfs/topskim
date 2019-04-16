@@ -454,9 +454,6 @@ int main(int argc, char* argv[])
       is1bFiducial=(isLeptonFiducial && genBjets.size()>0);
       is2bFiducial=(isLeptonFiducial && genBjets.size()>1);
       
-      cout << fForestTree.ttbar_w->size() << " " <<
-        isLeptonFiducial << " " << is1bFiducial << " " << is2bFiducial << endl;
-
       //event weights and fiducial counters   
       if(fForestTree.ttbar_w->size()) {
         evWgt=fForestTree.ttbar_w->at(0);
