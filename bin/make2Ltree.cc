@@ -99,10 +99,12 @@ int main(int argc, char* argv[])
   bool blind(true);
   TString inURL,outURL;
   bool isMC(false),isPP(false);
+  int maxEvents(-1);
   for(int i=1;i<argc;i++){
     string arg(argv[i]);
     if(arg.find("--in")!=string::npos && i+1<argc)       { inURL=TString(argv[i+1]); i++;}
     else if(arg.find("--out")!=string::npos && i+1<argc) { outURL=TString(argv[i+1]); i++;}
+    else if(arg.find("--max")!=string::npos && i+1<argc) { sscanf(argv[i+1],"%d",&maxEvents); }
     else if(arg.find("--mc")!=string::npos)              { isMC=true;  }
     else if(arg.find("--pp")!=string::npos)              { isPP=true;  }
   }
@@ -118,7 +120,7 @@ int main(int argc, char* argv[])
 
   //book some histograms
   HistTool ht;
-  ht.addHist("fidcounter",  new TH2F("fidcounter", ";Fiducial counter;Events",4,0,4,500,0,500));
+  ht.addHist("fidcounter",  new TH2F("fidcounter", ";Fiducial counter;Events",4,0,4,1080,0,1080));
 
   if(!isMC) ht.addHist("ratevsrun",lumiTool.getLumiMonitor());
 
@@ -411,6 +413,10 @@ int main(int argc, char* argv[])
   int nEntries = (int)lepTree_p->GetEntries();  
   int entryDiv = ((int)(nEntries/20));    
   cout << inURL << " has " << nEntries << " events to process" << endl;
+  if(maxEvents>0) { 
+    nEntries=TMath::Min(nEntries,maxEvents); 
+    cout << "Number of events to process limited to " << nEntries << endl;
+  }
   for(int entry = 0; entry < nEntries; entry++){
     
     if(entry%entryDiv == 0) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
@@ -439,14 +445,14 @@ int main(int argc, char* argv[])
         if( abs(pid)<6  && abs(mom_pid)==6 ) {
           TLorentzVector p4(0,0,0,0);
           p4.SetPtEtaPhiM( fForestGen.mcPt->at(i), fForestGen.mcEta->at(i), fForestGen.mcPhi->at(i), fForestGen.mcMass->at(i) );
-          if(p4.Pt()>30 && fabs(p4.Eta())<2.5) genBjets.push_back(p4);
-          genDileptonCat *= pid;
+          if(p4.Pt()>30 && fabs(p4.Eta())<2.5) genBjets.push_back(p4);          
         }
         
         if( (abs(pid)==11 || abs(pid)==13)  && abs(mom_pid)==24 ) {
           TLorentzVector p4(0,0,0,0);
           p4.SetPtEtaPhiM( fForestGen.mcPt->at(i), fForestGen.mcEta->at(i), fForestGen.mcPhi->at(i), fForestGen.mcMass->at(i) );
           if(p4.Pt()>20 && fabs(p4.Eta())<2.5) genLeptons.push_back(p4);
+          genDileptonCat *= abs(pid);
         }
       }
       
@@ -784,17 +790,17 @@ int main(int argc, char* argv[])
     //for gen fill again fiducial counters
     if(isMC && fForestTree.ttbar_w->size()) {      
       
-      bool isMatchedDilepton(genDileptonCat==abs(dilCode));
+      bool isMatchedDilepton(abs(genDileptonCat)==abs(dilCode));
       if( (genDileptonCat==11*11 && etrig==0) || (genDileptonCat==13*13 && mtrig==0)) 
         isMatchedDilepton=false;
-      
+
       bool isIsoDilepton(true);
       for(size_t i=0; i<2; i++) {
         if( (abs(selLeptons[i].id)==13 && selLeptons[i].isofull<0.26) ||
             (abs(selLeptons[i].id)==11 && selLeptons[i].isofull<0.16) ) continue;
         isIsoDilepton=false;
       }
-      
+
       std::vector<TString> fidCats;
       fidCats.push_back( isMatchedDilepton   ? "lep"    : "fakelep" );
       if(isIsoDilepton) {
