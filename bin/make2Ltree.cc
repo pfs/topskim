@@ -287,6 +287,7 @@ int main(int argc, char* argv[])
   // variables per lepton, including iso
   Int_t t_nlep, t_lep_ind1, t_lep_ind2;
   std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_d0, t_lep_dz, t_lep_d0err, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_isofull, t_lep_miniiso;
+  std::vector<Bool_t> t_lep_matched;
   std::vector<Int_t  > t_lep_pdgId, t_lep_charge;
   outTree->Branch("nlep"       , &t_nlep      , "nlep/I"            );
   outTree->Branch("lep_ind1"   , &t_lep_ind1  , "lep_ind1/I");
@@ -305,6 +306,7 @@ int main(int argc, char* argv[])
   outTree->Branch("lep_charge" , &t_lep_charge);
   outTree->Branch("lep_isofull", &t_lep_isofull);
   outTree->Branch("lep_miniiso", &t_lep_miniiso);
+  outTree->Branch("lep_matched", &t_lep_matched);
 
   // variables from dilepton system
   Float_t t_llpt, t_lleta, t_llphi, t_llm, t_dphi, t_deta, t_sumeta;
@@ -545,6 +547,12 @@ int main(int argc, char* argv[])
       l.d0err   = 0.; //fForestLep.muD0Err->at(muIter); // no d0err for muons!!!
       l.dz      = fForestLep.muDz   ->at(muIter);
       l.origIdx = muIter;
+      l.isMatched=false;
+      for(size_t ig=0;ig<genLeptons.size(); ig++) {
+        if(genLeptons[ig].DeltaR(l.p4)<0.1) continue;
+        l.isMatched=true;
+      }
+
       noIdMu.push_back(l);
 
       //id (Tight muon requirements)
@@ -630,6 +638,12 @@ int main(int argc, char* argv[])
       l.d0err   = fForestLep.eleD0Err->at(eleIter);
       l.dz      = fForestLep.eleDz   ->at(eleIter);
       l.origIdx=eleIter;
+      l.isMatched=false;
+      for(size_t ig=0;ig<genLeptons.size(); ig++) {
+        if(genLeptons[ig].DeltaR(l.p4)<0.1) continue;
+        l.isMatched=true;
+      }
+
       noIdEle.push_back(l);
       
       //electron id (separate for EB and EE, depending on centrality)
@@ -906,6 +920,7 @@ int main(int argc, char* argv[])
     t_lep_rho.clear();    
     t_lep_isofull.clear();
     t_lep_miniiso.clear();
+    t_lep_matched.clear();
     t_nlep = selLeptons.size();
     t_lep_ind1 = -1;
     t_lep_ind2 = -1;
@@ -924,6 +939,7 @@ int main(int argc, char* argv[])
       t_lep_charge.push_back( selLeptons[ilep].charge );
       t_lep_isofull.push_back( selLeptons[ilep].isofull );
       t_lep_miniiso.push_back( selLeptons[ilep].miniiso );
+      t_lep_matched.push_back( selLeptons[ilep].isMatched );
       if(selLeptons[ilep].isofull < 0.16 && t_lep_ind1 < 0) t_lep_ind1 = ilep;
       if(selLeptons[ilep].isofull < 0.16 && t_lep_ind1 > -0.5 && t_lep_ind2 < 0) t_lep_ind2 = ilep;
     }

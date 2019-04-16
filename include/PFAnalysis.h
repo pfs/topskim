@@ -45,18 +45,13 @@ float getRho(SlimmedPFCollection_t &coll, std::vector<int> ids,float minAbsEta=-
 //
 float getMiniIsolation(SlimmedPFCollection_t &pfCands,
                        TLorentzVector p4, int lid,
-                       float r_iso_min=0.05, float r_iso_max=0.2, float kt_scale=10.,
+                       float r_iso_min=0.05, float r_iso_max=0.2, float kt_scale=6.,
                        bool charged_only=false) 
 {
 
   if (p4.Pt()<5.) return 99999.;
   
-  float deadcone_nh(0.), deadcone_ch(0.), deadcone_ph(0.);
-  if(abs(lid)==11) {
-    if (fabs(p4.Eta())>1.479) {deadcone_ch = 0.015; deadcone_ph = 0.08;}
-  } else if(abs(lid)==13) {
-    deadcone_ch = 0.0001; deadcone_ph = 0.01;deadcone_nh = 0.01;  
-  }
+  float deadcone_nh(0.015), deadcone_ch(0.015), deadcone_ph(0.015);
   
   //loop over PF candidates to build isolation components
   float iso_nh(0.), iso_ch(0.), iso_ph(0.);
