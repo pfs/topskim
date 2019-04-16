@@ -11,7 +11,11 @@ It uses directly as inputs the HiForest contents.
 The executable can be compiled with `scram b`.
 To run on a single file for testing one  can give the command
 ```
-make2Ltree --in /eos/cms/store/cmst3/group/hintt/PbPb2018/TTDilepton_TuneZ2_HydjetDrumMB/Chunk_0_ext0.root --out test.root --mc
+make2Ltree --in /eos/cms/store/cmst3/group/hintt/PbPb2018/TTDilepton_TuneZ2_HydjetDrumMB/Chunk_0_ext0.root --out test.root --mc --max 1000
+```
+or to run on a data file:
+```
+make2Ltree --in /eos/cms/store/cmst3/group/hintt/PbPb2018/SkimMuons_PromptRecov1/Chunk_0_ext0.root --out test.root --max 1000
 ```
 
 To loop over all the available forest trees better to use condor and then merge the outputs.
