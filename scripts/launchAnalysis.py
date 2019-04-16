@@ -10,7 +10,7 @@ input=sys.argv[1]
 output=sys.argv[2]
 tag=sys.argv[3]
 cmssw=os.environ['CMSSW_BASE']
-extraOpts=' '.join(sys.argv[4:]) if len(sys.argv)>5 else ''
+extraOpts=' '.join(sys.argv[4:]) if len(sys.argv)>4 else ''
 
 #prepare output
 os.system('mkdir -p %s'%output)
@@ -31,4 +31,4 @@ with open('condor_%s.sub'%tag,'w') as c:
         c.write('queue 1\n')
 
 #submit to condor
-os.system('condor_submit condor_%s.sub'%tag)
+#os.system('condor_submit condor_%s.sub'%tag)
