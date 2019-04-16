@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
 
   //book some histograms
   HistTool ht;
-  ht.addHist("fidcounter",  new TH2F("fidcounter", ";Fiducial counter;Events",4,0,4,250,0,250));
+  ht.addHist("fidcounter",  new TH2F("fidcounter", ";Fiducial counter;Events",4,0,4,500,0,500));
 
   if(!isMC) ht.addHist("ratevsrun",lumiTool.getLumiMonitor());
 
@@ -433,20 +433,20 @@ int main(int argc, char* argv[])
       //gen level selection      
       for(size_t i=0; i<fForestGen.mcPID->size(); i++) {
         int pid=fForestGen.mcPID->at(i);
-        int sta=fForestGen.mcStatus->at(i);
+        //int sta=fForestGen.mcStatus->at(i);
         int mom_pid=fForestGen.mcMomPID->at(i);
         
-        if( abs(pid)<6 && sta==3 && abs(mom_pid)==6 ) {
+        if( abs(pid)<6  && abs(mom_pid)==6 ) {
           TLorentzVector p4(0,0,0,0);
           p4.SetPtEtaPhiM( fForestGen.mcPt->at(i), fForestGen.mcEta->at(i), fForestGen.mcPhi->at(i), fForestGen.mcMass->at(i) );
           if(p4.Pt()>30 && fabs(p4.Eta())<2.5) genBjets.push_back(p4);
           genDileptonCat *= pid;
         }
         
-        if( (abs(pid)==11 || abs(pid)==13) && sta==3 && abs(mom_pid)==24 ) {
+        if( (abs(pid)==11 || abs(pid)==13)  && abs(mom_pid)==24 ) {
           TLorentzVector p4(0,0,0,0);
           p4.SetPtEtaPhiM( fForestGen.mcPt->at(i), fForestGen.mcEta->at(i), fForestGen.mcPhi->at(i), fForestGen.mcMass->at(i) );
-          if(p4.Pt()>20 && fabs(p4.Eta())<2.5) genBjets.push_back(p4);
+          if(p4.Pt()>20 && fabs(p4.Eta())<2.5) genLeptons.push_back(p4);
         }
       }
       
