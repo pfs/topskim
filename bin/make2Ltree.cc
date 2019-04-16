@@ -1020,18 +1020,16 @@ int main(int argc, char* argv[])
     outTree->Write();
 
     //store the weight sum for posterior normalization
-    if(isMC) {
-      TH1D *wgtH=new TH1D("wgtsum","wgtsum",1,0,1);
-      wgtH->SetBinContent(1,wgtSum);
-      wgtH->SetDirectory(fOut);
-      wgtH->Write();
+    TH1D *wgtH=new TH1D("wgtsum","wgtsum",1,0,1);
+    wgtH->SetBinContent(1,wgtSum);
+    wgtH->SetDirectory(fOut);
+    wgtH->Write();
 
-      TH1D *allwgtH=new TH1D("allwgtsum","allwgtsum",allWgtSum.size(),0,allWgtSum.size());
-      for(size_t i=0; i<allWgtSum.size(); i++)
-        allwgtH->SetBinContent(i+1,allWgtSum[i]);
-      allwgtH->SetDirectory(fOut);
-      allwgtH->Write();
-    }
+    TH1D *allwgtH=new TH1D("allwgtsum","allwgtsum",allWgtSum.size(),0,allWgtSum.size());
+    for(size_t i=0; i<allWgtSum.size(); i++)
+      allwgtH->SetBinContent(i+1,allWgtSum[i]);
+    allwgtH->SetDirectory(fOut);
+    allwgtH->Write();
     for (auto& it : ht.getPlots())  { 
       if(it.second->GetEntries()==0) continue;
       it.second->SetDirectory(fOut); it.second->Write(); 
