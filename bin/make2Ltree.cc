@@ -72,7 +72,7 @@ int getRhoIndex(float eta){
 
 
 // index, ntks in svtx, m svtx, csv
-typedef std::tuple<int,int,float,float,TLorentzVector> BtagInfo_t;
+typedef std::tuple<int,int,float,float,TLorentzVector,int,int> BtagInfo_t;
 static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
 {
   //int ntks_a(std::get<1>(a)), ntks_b(std::get<1>(b));
@@ -346,6 +346,10 @@ int main(int argc, char* argv[])
   outTree->Branch("bjet_genphi"   , &t_bjet_matchphi   );
   outTree->Branch("bjet_genmass"  , &t_bjet_matchmass  );
 
+  std::vector<Int_t> t_bjet_flavor, t_bjet_flavorForB;
+  outTree->Branch("bjet_flavor"  , &t_bjet_flavor  );
+  outTree->Branch("bjet_flavorB"  , &t_bjet_flavorForB  );
+
   // constructed variables like ht and stuff
   Float_t t_ht, t_mht, t_apt, t_dphilll2;
   outTree->Branch("ht"     , &t_ht     , "ht/F");
@@ -423,7 +427,7 @@ int main(int argc, char* argv[])
     bool isLeptonFiducial(false),is1bFiducial(false),is2bFiducial(false);    
     if(isMC) {
      
-      //gen level selection
+      //gen level selection      
       for(size_t i=0; i<fForestGen.mcPID->size(); i++) {
         int pid=fForestGen.mcPID->at(i);
         int sta=fForestGen.mcStatus->at(i);
@@ -450,6 +454,8 @@ int main(int argc, char* argv[])
       //event weights and fiducial counters   
       if(fForestTree.ttbar_w->size()) {
         evWgt=fForestTree.ttbar_w->at(0);
+        cout << fForestTree.ttbar_w->size() << " " <<
+          isLeptonFiducial << " " << is1bFiducial << " " << is2bFiducial << endl;
         if(allWgtSum.size()==0) 
           allWgtSum.resize(fForestTree.ttbar_w->size(),0.);
         for(size_t i=0; i<fForestTree.ttbar_w->size(); i++){
@@ -743,22 +749,25 @@ int main(int argc, char* argv[])
 
       // simple matching to the closest jet in dR. require at least dR < 0.3
       TLorentzVector matchjp4(0,0,0,0);
+      int refFlavor(0),refFlavorForB(0);
       if (isMC){
         //std::vector<TLorentzVector> matchedJets;
         for (int genjetIter = 0; genjetIter < fForestJets.ngen; genjetIter++){
           if (jetIter == fForestJets.genmatchindex[genjetIter]) {
             matchjp4.SetPtEtaPhiM( fForestJets.genpt[genjetIter],fForestJets.geneta[genjetIter],fForestJets.genphi[genjetIter],fForestJets.genm[genjetIter]);
           }
-        }
-        
+        }  
+        refFlavor=fForestJets.refparton_flavor[jetIter];
+        refFlavorForB=fForestJets.refparton_flavorForB[jetIter];
       }
-      nodr_pfJetsIdx.push_back( std::make_tuple(nodr_pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4) );
+
+      nodr_pfJetsIdx.push_back( std::make_tuple(nodr_pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4,refFlavor,refFlavorForB) );
       nodr_pfJetsP4.push_back(jp4);
       bool isdrSafe(false);
 
       //cross clean wrt to leptons
       if(jp4.DeltaR(selLeptons[0].p4)<0.4 || jp4.DeltaR(selLeptons[1].p4)<0.4) {
-        pfJetsIdx.push_back(std::make_tuple(pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4));
+        pfJetsIdx.push_back(std::make_tuple(pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4,refFlavor,refFlavorForB));
         pfJetsP4.push_back(jp4);
         npfjets++;
         npfbjets += isBTagged;
@@ -955,6 +964,8 @@ int main(int argc, char* argv[])
     t_bjet_matcheta .clear();
     t_bjet_matchphi .clear();
     t_bjet_matchmass.clear();
+    t_bjet_flavor.clear();
+    t_bjet_flavorForB.clear();
     t_nbjet = nodr_pfJetsIdx.size();
     for (int ij = 0; ij < t_nbjet; ij++) {
       int idx = std::get<0>(nodr_pfJetsIdx[ij]);
@@ -968,6 +979,8 @@ int main(int argc, char* argv[])
       t_bjet_matcheta .push_back( std::get<4>(nodr_pfJetsIdx[ij]).Eta());
       t_bjet_matchphi .push_back( std::get<4>(nodr_pfJetsIdx[ij]).Phi());
       t_bjet_matchmass.push_back( std::get<4>(nodr_pfJetsIdx[ij]).M());
+      t_bjet_flavor.push_back( std::get<5>(nodr_pfJetsIdx[ij]) );
+      t_bjet_flavorForB.push_back( std::get<6>(nodr_pfJetsIdx[ij]) );
     }
 
 

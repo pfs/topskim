@@ -87,6 +87,8 @@ public :
     t->SetBranchAddress("pdiscr_csvV1", pdiscr_csvV1);
     t->SetBranchAddress("pdiscr_csvV2", pdiscr_csvV2);
     t->SetBranchAddress("nsvtx", nsvtx);
+    t->SetBranchAddress("refparton_flavorForB", refparton_flavorForB);
+    t->SetBranchAddress("refparton_flavor", refparton_flavor);
     TLeaf *leaf = t->GetLeaf("svtxntrk");
     if(leaf) {
       TString lname(leaf->GetTypeName());
@@ -210,6 +212,7 @@ public :
    Float_t         svtxdls2d[85];   //[nref]
    Float_t         svtxm[85];   //[nref]
    Float_t         svtxpt[85];   //[nref]
+   Int_t refparton_flavorForB[85],refparton_flavor[85];
    std::vector<std::vector<int> > *svtype_vec;
    std::vector<std::vector<int> > *svtxntrk_vec;
    std::vector<std::vector<float> > *svtxdl_vec;
