@@ -201,7 +201,10 @@ int main(int argc, char* argv[])
   ForestSkim fForestSkim(globalTree_p);
 
   //configure leptons
-  TChain *lepTree_p     = new TChain(isPP && GT.find("75X_mcRun2")!=string::npos ? "ggHiNtuplizer/EventTree" : "ggHiNtuplizerGED/EventTree");
+  TString lepTreeName("ggHiNtuplizerGED/EventTree");
+  if(isPP) lepTreeName="ggHiNtuplizer/EventTree";
+  if(GT.find("75X_mcRun2")!=string::npos) lepTreeName="ggHiNtuplizer/EventTree";
+  TChain *lepTree_p     = new TChain(lepTreeName);
   lepTree_p->Add(inURL);
   ForestLeptons fForestLep(lepTree_p);
   ForestGen fForestGen(lepTree_p);
@@ -451,11 +454,12 @@ int main(int argc, char* argv[])
       is1bFiducial=(isLeptonFiducial && genBjets.size()>0);
       is2bFiducial=(isLeptonFiducial && genBjets.size()>1);
       
+      cout << fForestTree.ttbar_w->size() << " " <<
+        isLeptonFiducial << " " << is1bFiducial << " " << is2bFiducial << endl;
+
       //event weights and fiducial counters   
       if(fForestTree.ttbar_w->size()) {
         evWgt=fForestTree.ttbar_w->at(0);
-        cout << fForestTree.ttbar_w->size() << " " <<
-          isLeptonFiducial << " " << is1bFiducial << " " << is2bFiducial << endl;
         if(allWgtSum.size()==0) 
           allWgtSum.resize(fForestTree.ttbar_w->size(),0.);
         for(size_t i=0; i<fForestTree.ttbar_w->size(); i++){
