@@ -456,7 +456,8 @@ int main(int argc, char* argv[])
           if(p4.Pt()>30 && fabs(p4.Eta())<2.5) genBjets.push_back(p4);          
         }
         
-        if( (abs(pid)==11 || abs(pid)==13)  && abs(mom_pid)==24 ) {
+        //leptons from W->lnu or W->tau->lnu
+        if( (abs(pid)==11 || abs(pid)==13)  && (abs(mom_pid)==24||abs(mom_pid)==15) ) {
           TLorentzVector p4(0,0,0,0);
           p4.SetPtEtaPhiM( fForestGen.mcPt->at(i), fForestGen.mcEta->at(i), fForestGen.mcPhi->at(i), fForestGen.mcMass->at(i) );
           //if(p4.Pt()>20 && fabs(p4.Eta())<2.5) 
