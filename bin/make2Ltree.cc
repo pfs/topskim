@@ -19,6 +19,7 @@
 #include "HeavyIonsAnalysis/topskim/include/PFAnalysis.h"
 #include "HeavyIonsAnalysis/topskim/include/LeptonSummary.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestGen.h"
+#include "HeavyIonsAnalysis/topskim/include/ElectronId.h"
 
 #include "fastjet/ClusterSequence.hh"
 #include "fastjet/tools/JetMedianBackgroundEstimator.hh"
@@ -120,7 +121,13 @@ int main(int argc, char* argv[])
 
   //book some histograms
   HistTool ht;
-  ht.addHist("fidcounter",  new TH2F("fidcounter", ";Fiducial counter;Events",4,0,4,1080,0,1080));
+  ht.addHist("fidcounter",  new TH2F("fidcounter", ";Fiducial counter;Events",5,0,5,1080,0,1080));
+  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(1,"all");
+  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(2,"=2l");
+  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(3,"=2l fid");
+  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(4,"=2l,#geq1b fid");
+  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(5,"=2l,#geq2b fid");
+
 
   if(!isMC) ht.addHist("ratevsrun",lumiTool.getLumiMonitor());
 
@@ -293,13 +300,14 @@ int main(int argc, char* argv[])
   Int_t t_nlep, t_lep_ind1, t_lep_ind2;
   std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_d0, t_lep_dz, t_lep_d0err, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_isofull, t_lep_miniiso;
   std::vector<Bool_t> t_lep_matched;
-  std::vector<Int_t  > t_lep_pdgId, t_lep_charge;
+  std::vector<Int_t  > t_lep_pdgId, t_lep_charge,t_lep_idflags;
   outTree->Branch("nlep"       , &t_nlep      , "nlep/I"            );
   outTree->Branch("lep_ind1"   , &t_lep_ind1  , "lep_ind1/I");
   outTree->Branch("lep_ind2"   , &t_lep_ind2  , "lep_ind2/I");
   outTree->Branch("lep_pt"     , &t_lep_pt);
   outTree->Branch("lep_eta"    , &t_lep_eta);
   outTree->Branch("lep_phi"    , &t_lep_phi);
+  outTree->Branch("lep_idflags", &t_lep_idflags);
   outTree->Branch("lep_d0"    , &t_lep_d0);
   outTree->Branch("lep_d0err"  , &t_lep_d0err);
   outTree->Branch("lep_dz"     , &t_lep_dz);
@@ -433,7 +441,7 @@ int main(int argc, char* argv[])
     float evWgt(1.0);
     int genDileptonCat(1.);
     std::vector<TLorentzVector> genLeptons, genBjets;
-    bool isLeptonFiducial(false),is1bFiducial(false),is2bFiducial(false);    
+    bool isGenDilepton(false),isLeptonFiducial(false),is1bFiducial(false),is2bFiducial(false);    
     if(isMC) {
      
       //gen level selection      
@@ -441,37 +449,50 @@ int main(int argc, char* argv[])
         int pid=fForestGen.mcPID->at(i);
         //int sta=fForestGen.mcStatus->at(i);
         int mom_pid=fForestGen.mcMomPID->at(i);
+        int gmom_pid=fForestGen.mcGMomPID->at(i);
         
         if( abs(pid)<6  && abs(mom_pid)==6 ) {
           TLorentzVector p4(0,0,0,0);
           p4.SetPtEtaPhiM( fForestGen.mcPt->at(i), fForestGen.mcEta->at(i), fForestGen.mcPhi->at(i), fForestGen.mcMass->at(i) );
           if(p4.Pt()>30 && fabs(p4.Eta())<2.5) genBjets.push_back(p4);          
         }
-        
-        if( (abs(pid)==11 || abs(pid)==13)  && abs(mom_pid)==24 ) {
-          TLorentzVector p4(0,0,0,0);
-          p4.SetPtEtaPhiM( fForestGen.mcPt->at(i), fForestGen.mcEta->at(i), fForestGen.mcPhi->at(i), fForestGen.mcMass->at(i) );
-          if(p4.Pt()>20 && fabs(p4.Eta())<2.5) genLeptons.push_back(p4);
-          genDileptonCat *= abs(pid);
+
+        //leptons from t->W->l or W->tau->l
+        if( abs(pid)==11 || abs(pid)==13 ) {
+          
+          bool isFromW( abs(mom_pid)==24 && abs(gmom_pid)==6 );
+          bool isTauFeedDown( abs(mom_pid)==15 && abs(gmom_pid)==24 );
+          if(isFromW || isTauFeedDown) {
+            TLorentzVector p4(0,0,0,0);
+            p4.SetPtEtaPhiM( fForestGen.mcPt->at(i), fForestGen.mcEta->at(i), fForestGen.mcPhi->at(i), fForestGen.mcMass->at(i) );
+            //if(p4.Pt()>20 && fabs(p4.Eta())<2.5) 
+            genLeptons.push_back(p4);
+            genDileptonCat *= abs(pid);
+          }
         }
       }
       
-      isLeptonFiducial=(genLeptons.size()==2);
+      isGenDilepton=(genLeptons.size()==2);      
+      isLeptonFiducial=(isGenDilepton && 
+                        genLeptons[0].Pt()>20 && fabs(genLeptons[0].Eta())<2.5 && 
+                        genLeptons[1].Pt()>20 && fabs(genLeptons[1].Eta())<2.5);
       is1bFiducial=(isLeptonFiducial && genBjets.size()>0);
       is2bFiducial=(isLeptonFiducial && genBjets.size()>1);
       
       //event weights and fiducial counters   
-      if(fForestTree.ttbar_w->size()) {
-        evWgt=fForestTree.ttbar_w->at(0);
-        if(allWgtSum.size()==0) 
-          allWgtSum.resize(fForestTree.ttbar_w->size(),0.);
-        for(size_t i=0; i<fForestTree.ttbar_w->size(); i++){
-          Double_t iwgt(fForestTree.ttbar_w->at(i));
+      if(isMC) {
+        evWgt=fForestTree.ttbar_w->size()==0 ? 1. : fForestTree.ttbar_w->at(0);
+        size_t nWgts(fForestTree.ttbar_w->size());
+        if(nWgts==0) nWgts=1;
+        if(allWgtSum.size()==0) allWgtSum.resize(nWgts,0.);
+        for(size_t i=0; i<nWgts; i++) {
+          Double_t iwgt(fForestTree.ttbar_w->size()==0 ? 1. : fForestTree.ttbar_w->at(i));
           allWgtSum[i]+=iwgt;
           ht.fill2D("fidcounter",0,i,iwgt,"gen");
-          if(isLeptonFiducial) ht.fill2D("fidcounter",1,i,iwgt,"gen");
-          if(is1bFiducial)     ht.fill2D("fidcounter",2,i,iwgt,"gen");
-          if(is2bFiducial)     ht.fill2D("fidcounter",3,i,iwgt,"gen");
+          if(isGenDilepton)    ht.fill2D("fidcounter",1,i,iwgt,"gen");
+          if(isLeptonFiducial) ht.fill2D("fidcounter",2,i,iwgt,"gen");
+          if(is1bFiducial)     ht.fill2D("fidcounter",3,i,iwgt,"gen");
+          if(is2bFiducial)     ht.fill2D("fidcounter",4,i,iwgt,"gen");
         }
       }
     }
@@ -582,6 +603,8 @@ int main(int argc, char* argv[])
       if(TMath::Abs(fForestLep.muInnerD0->at(muIter)) >=0.2 ) continue;
       if(TMath::Abs(fForestLep.muInnerDz->at(muIter)) >=0.5) continue;
 
+      l.idFlags=1;
+
       //selected a good muon
       selLeptons.push_back(l);
     }
@@ -659,29 +682,19 @@ int main(int argc, char* argv[])
 
       noIdEle.push_back(l);
       
-      //electron id (separate for EB and EE, depending on centrality)
-      //see https://indico.cern.ch/event/811374/contributions/3382348/attachments/1823016/2983559/HIN_electrons2018_centrDep.pdf
-      bool isEB(TMath::Abs(p4.Eta()) <= barrelEndcapEta[0]);      
-      if(isCentralEvent){
-        if(fForestLep.eleSigmaIEtaIEta->at(eleIter)        >=(isEB ? 0.012 : 0.048)) continue;
-        if(TMath::Abs(fForestLep.eledEtaAtVtx->at(eleIter))>=(isEB ? 0.006 : 0.008)) continue;
-        if(TMath::Abs(fForestLep.eledPhiAtVtx->at(eleIter))>=(isEB ? 0.027 : 0.067)) continue;
-        if(fForestLep.eleHoverE->at(eleIter)               >=(isEB ? 0.150 : 0.150)) continue;
-        if(fForestLep.eleEoverPInv->at(eleIter)            >=(isEB ? 0.040 : 0.250)) continue;
-        if(TMath::Abs(fForestLep.eleD0->at(eleIter))       >=(isEB ? 0.011 : 0.083)) continue;
-        if(TMath::Abs(fForestLep.eleDz->at(eleIter))       >=(isEB ? 0.037 : 0.028)) continue;
-      }
-      else {
-        if(fForestLep.eleSigmaIEtaIEta->at(eleIter)        >=(isEB ? 0.010 : 0.041)) continue;
-        if(TMath::Abs(fForestLep.eledEtaAtVtx->at(eleIter))>=(isEB ? 0.007 : 0.011)) continue;
-        if(TMath::Abs(fForestLep.eledPhiAtVtx->at(eleIter))>=(isEB ? 0.021 : 0.026)) continue;
-        if(fForestLep.eleHoverE->at(eleIter)               >=(isEB ? 0.130 : 0.150)) continue;
-        if(fForestLep.eleEoverPInv->at(eleIter)            >=(isEB ? 0.020 : 0.330)) continue;
-        if(TMath::Abs(fForestLep.eleD0->at(eleIter))       >=(isEB ? 0.008 : 0.015)) continue;
-        if(TMath::Abs(fForestLep.eleDz->at(eleIter))       >=(isEB ? 0.020 : 0.045)) continue;
-      }
-
+      l.idFlags=getElectronId(TMath::Abs(fForestLep.eleSCEta->at(eleIter))< barrelEndcapEta[0],
+                                 fForestLep.eleSigmaIEtaIEta->at(eleIter),
+                                 fForestLep.eledEtaAtVtx->at(eleIter),
+                                 fForestLep.eledPhiAtVtx->at(eleIter),
+                                 fForestLep.eleHoverE->at(eleIter),
+                                 fForestLep.eleEoverPInv->at(eleIter),
+                                 fForestLep.eleD0->at(eleIter),
+                                 fForestLep.eleDz->at(eleIter),
+                                 fForestLep.eleMissHits->at(eleIter),
+                                 isCentralEvent);
+      
       //id'ed electron
+      if(!isLooseElectron(l.idFlags)) continue;
       selLeptons.push_back(l);
     }
     std::sort(noIdEle.begin(),noIdEle.end(),orderByPt);       
@@ -728,7 +741,7 @@ int main(int argc, char* argv[])
     if(dilCode==11*11) dilCat="ee";
 
     if(blind) {
-      bool isZ( fabs(t_llm-91)<15);
+      bool isZ( dilCode!=11*13 && fabs(t_llm-91)<15);
       int charge(selLeptons[0].charge*selLeptons[1].charge);
       if(!isMC && !isZ && charge<0 && fForestTree.run>=326887) continue;
     }      
@@ -788,7 +801,7 @@ int main(int argc, char* argv[])
 
 
     //for gen fill again fiducial counters
-    if(isMC && fForestTree.ttbar_w->size()) {      
+    if(isMC) {      
       
       bool isMatchedDilepton(abs(genDileptonCat)==abs(dilCode));
       if( (genDileptonCat==11*11 && etrig==0) || (genDileptonCat==13*13 && mtrig==0)) 
@@ -813,12 +826,15 @@ int main(int argc, char* argv[])
         }
       }
       
-      for(size_t i=0; i<fForestTree.ttbar_w->size(); i++) {
-        Double_t iwgt(fForestTree.ttbar_w->at(i));
+      size_t nWgts(fForestTree.ttbar_w->size());
+      if(nWgts==0) nWgts=1;
+      for(size_t i=0; i<nWgts; i++){
+        Double_t iwgt(fForestTree.ttbar_w->size()==0 ? 1. : fForestTree.ttbar_w->at(i));
         ht.fill2D("fidcounter",0,i,iwgt,fidCats);
-        if(isLeptonFiducial) ht.fill2D("fidcounter",1,i,iwgt,fidCats);
-        if(is1bFiducial)     ht.fill2D("fidcounter",2,i,iwgt,fidCats);
-        if(is2bFiducial)     ht.fill2D("fidcounter",3,i,iwgt,fidCats);
+        if(isGenDilepton)    ht.fill2D("fidcounter",1,i,iwgt,fidCats);
+        if(isLeptonFiducial) ht.fill2D("fidcounter",2,i,iwgt,fidCats);
+        if(is1bFiducial)     ht.fill2D("fidcounter",3,i,iwgt,fidCats);
+        if(is2bFiducial)     ht.fill2D("fidcounter",4,i,iwgt,fidCats);
       }
     }
 
@@ -926,6 +942,7 @@ int main(int argc, char* argv[])
     t_lep_eta   .clear();
     t_lep_phi   .clear();
     t_lep_pdgId .clear();
+    t_lep_idflags.clear();
     t_lep_d0 .clear();
     t_lep_d0err .clear();
     t_lep_dz  .clear();
@@ -944,6 +961,7 @@ int main(int argc, char* argv[])
       t_lep_pt    .push_back( selLeptons[ilep].p4.Pt()  );
       t_lep_eta   .push_back( selLeptons[ilep].p4.Eta() );
       t_lep_phi   .push_back( selLeptons[ilep].p4.Phi() );
+      t_lep_idflags.push_back(selLeptons[ilep].idFlags);
       t_lep_d0    .push_back( selLeptons[ilep].d0 );
       t_lep_d0err .push_back( selLeptons[ilep].d0err);
       t_lep_dz    .push_back( selLeptons[ilep].dz  );

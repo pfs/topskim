@@ -27,13 +27,20 @@ class Lepton:
 
     def getIsolation(self):
         if not 'rho' in self.rho : return -1
-        avgRho=142.6
+
         rhoVal=self.rho['rho']
-        ue=0.0011*((rhoVal-avgRho)**2)-0.14*(rhoVal-avgRho)
+        if abs(self.pdgId)==11:
+            ue=0.0011*((rhoVal+142.4)**2)-0.14*(rhoVal+142.4)
+        else:
+            ue=0.0013*((rhoVal+15.8)**2)+0.29*(rhoVal+15.8)
+
         return (self.chiso+self.nhiso+self.phiso-ue)/self.p4.Pt()
 
     def isIsolated(self):
-        return abs(self.pdgId)==13 or (self.getIsolation()<0.16)
+        if abs(self.pdgId)==11:
+            return self.getIsolation()<0.16
+        else:
+            return self.getIsolation()<0.26
 
 class Dilepton:
 
@@ -60,7 +67,7 @@ def dileptonBuilder(lepColl):
     isSS = True if lepColl[0].charge*lepColl[1].charge>0                                   else False
     isZ  = True if abs((lepColl[0].p4+lepColl[1].p4).M()-91.)<15 and not isSS and not isOF else False
     isIso= True if lepColl[0].isIsolated() and lepColl[1].isIsolated()                     else False
-    
+
     return Dilepton(lepColl[0],lepColl[1],isOF,isSS,isZ,isIso)
 
 
@@ -88,14 +95,17 @@ def getLeptons(t,pdgIdColl=[13,11]):
         if eta>-1.3 and eta<=1.3  : eta_idx=3
         if eta>1.3  and eta<=2.1  : eta_idx=4
         if eta>2.1  and eta<=3.0  : eta_idx=5
-  
-        for key in ['lep_rho','lep_chrho','lep_nhrho','lep_phrho']:
-            lepColl[-1].addRho(key,getattr(t,key)[il])
-        for key in ['chrho','nhrho','phorho']:
-            lepColl[-1].addRho(key,getattr(t,key)[0])
-            lepColl[-1].addRho(key+'_restr',getattr(t,key)[2 if abs(eta)<1.4442 else 1])
-        lepColl[-1].addRho('rho',t.rho[eta_idx] if eta_idx else 0)
-            
+        
+        try:
+            for key in ['lep_rho']:
+                lepColl[-1].addRho(key,getattr(t,key)[il])
+            for key in ['chrho','nhrho','phorho']:
+                lepColl[-1].addRho(key,getattr(t,key)[0])
+                lepColl[-1].addRho(key+'_restr',getattr(t,key)[2 if abs(eta)<1.4442 else 1])
+            lepColl[-1].addRho('rho',t.rho[eta_idx] if eta_idx else 0)
+        except:
+            pass
+
     return lepColl
 
 
