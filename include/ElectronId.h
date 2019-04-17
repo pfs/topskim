@@ -17,8 +17,8 @@ unsigned int getElectronId(bool isEB,float sihih, float detaVtx, float dphiVtx, 
       max_hoe      = {0.3470, 0.1984, 0.1735, 0.1569};
       max_eop      = {0.1157, 0.1129, 0.0098, 0.0047};
       max_misshits = {3,      1,      1,      1};
-      max_d0       = {999.,   999.,   999.,   999. };
-      max_dz       = {999.,   999.,   999.,   999. };
+      max_d0       = {0.01,   0.01,   0.01,   0.01};
+      max_dz       = {0.04,   0.04,   0.04,   0.04};
     }
     else{
       max_sihih    = {0.0140, 0.0117, 0.0111, 0.0110};
@@ -27,8 +27,8 @@ unsigned int getElectronId(bool isEB,float sihih, float detaVtx, float dphiVtx, 
       max_hoe      = {0.1993, 0.1892, 0.1428, 0.1367};
       max_eop      = {0.0589, 0.0405, 0.0064, 0.0063};
       max_misshits = {3,      1,      1,      1};
-      max_d0       = {999.,   999.,   999.,   999. };
-      max_dz       = {999.,   999.,   999.,   999. };
+      max_d0       = {0.01,   0.01,   0.01,   0.01};
+      max_dz       = {0.04,   0.04,   0.04,   0.04};
     }
   }
   else{

@@ -474,12 +474,13 @@ int main(int argc, char* argv[])
       is2bFiducial=(isLeptonFiducial && genBjets.size()>1);
       
       //event weights and fiducial counters   
-      if(fForestTree.ttbar_w->size()) {
-        evWgt=fForestTree.ttbar_w->at(0);
-        if(allWgtSum.size()==0) 
-          allWgtSum.resize(fForestTree.ttbar_w->size(),0.);
-        for(size_t i=0; i<fForestTree.ttbar_w->size(); i++){
-          Double_t iwgt(fForestTree.ttbar_w->at(i));
+      if(isMC) {
+        evWgt=fForestTree.ttbar_w->size()==0 ? 1. : fForestTree.ttbar_w->at(0);
+        size_t nWgts(fForestTree.ttbar_w->size());
+        if(nWgts==0) nWgts=1;
+        if(allWgtSum.size()==0) allWgtSum.resize(nWgts,0.);
+        for(size_t i=0; i<nWgts; i++) {
+          Double_t iwgt(fForestTree.ttbar_w->size()==0 ? 1. : fForestTree.ttbar_w->at(i));
           allWgtSum[i]+=iwgt;
           ht.fill2D("fidcounter",0,i,iwgt,"gen");
           if(isGenDilepton)    ht.fill2D("fidcounter",1,i,iwgt,"gen");
@@ -794,7 +795,7 @@ int main(int argc, char* argv[])
 
 
     //for gen fill again fiducial counters
-    if(isMC && fForestTree.ttbar_w->size()) {      
+    if(isMC) {      
       
       bool isMatchedDilepton(abs(genDileptonCat)==abs(dilCode));
       if( (genDileptonCat==11*11 && etrig==0) || (genDileptonCat==13*13 && mtrig==0)) 
@@ -819,8 +820,10 @@ int main(int argc, char* argv[])
         }
       }
       
-      for(size_t i=0; i<fForestTree.ttbar_w->size(); i++) {
-        Double_t iwgt(fForestTree.ttbar_w->at(i));
+      size_t nWgts(fForestTree.ttbar_w->size());
+      if(nWgts==0) nWgts=1;
+      for(size_t i=0; i<nWgts; i++){
+        Double_t iwgt(fForestTree.ttbar_w->size()==0 ? 1. : fForestTree.ttbar_w->at(i));
         ht.fill2D("fidcounter",0,i,iwgt,fidCats);
         if(isGenDilepton)    ht.fill2D("fidcounter",1,i,iwgt,fidCats);
         if(isLeptonFiducial) ht.fill2D("fidcounter",2,i,iwgt,fidCats);
