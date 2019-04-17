@@ -8,11 +8,13 @@ class LeptonSummary {
  public:
  LeptonSummary(int _id,TLorentzVector &_p4) : 
   id(_id), charge(0), p4(_p4),
+    idFlags(0),
     chiso(0.), nhiso(0.), phoiso(0.), rho(0.),isofull(0.), miniiso(0.), d0(0.), d0err(0.), dz(0.), origIdx(-1), isMatched(false) { }
   LeptonSummary(const LeptonSummary &l) {
     id=l.id;
     p4=l.p4;
     charge=l.charge;
+    idFlags=l.idFlags;
     chiso=l.chiso;
     nhiso=l.nhiso;
     phoiso=l.phoiso;
@@ -29,6 +31,7 @@ class LeptonSummary {
   int id;
   int charge;
   TLorentzVector p4;
+  unsigned int idFlags;
   float chiso, nhiso, phoiso;
   float rho;
   float isofull, miniiso;

@@ -19,6 +19,7 @@
 #include "HeavyIonsAnalysis/topskim/include/PFAnalysis.h"
 #include "HeavyIonsAnalysis/topskim/include/LeptonSummary.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestGen.h"
+#include "HeavyIonsAnalysis/topskim/include/ElectronId.h"
 
 #include "fastjet/ClusterSequence.hh"
 #include "fastjet/tools/JetMedianBackgroundEstimator.hh"
@@ -299,13 +300,14 @@ int main(int argc, char* argv[])
   Int_t t_nlep, t_lep_ind1, t_lep_ind2;
   std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_d0, t_lep_dz, t_lep_d0err, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_isofull, t_lep_miniiso;
   std::vector<Bool_t> t_lep_matched;
-  std::vector<Int_t  > t_lep_pdgId, t_lep_charge;
+  std::vector<Int_t  > t_lep_pdgId, t_lep_charge,t_lep_idflags;
   outTree->Branch("nlep"       , &t_nlep      , "nlep/I"            );
   outTree->Branch("lep_ind1"   , &t_lep_ind1  , "lep_ind1/I");
   outTree->Branch("lep_ind2"   , &t_lep_ind2  , "lep_ind2/I");
   outTree->Branch("lep_pt"     , &t_lep_pt);
   outTree->Branch("lep_eta"    , &t_lep_eta);
   outTree->Branch("lep_phi"    , &t_lep_phi);
+  outTree->Branch("lep_idflags", &t_lep_idflags);
   outTree->Branch("lep_d0"    , &t_lep_d0);
   outTree->Branch("lep_d0err"  , &t_lep_d0err);
   outTree->Branch("lep_dz"     , &t_lep_dz);
@@ -593,6 +595,8 @@ int main(int argc, char* argv[])
       if(TMath::Abs(fForestLep.muInnerD0->at(muIter)) >=0.2 ) continue;
       if(TMath::Abs(fForestLep.muInnerDz->at(muIter)) >=0.5) continue;
 
+      l.idFlags=1;
+
       //selected a good muon
       selLeptons.push_back(l);
     }
@@ -670,29 +674,19 @@ int main(int argc, char* argv[])
 
       noIdEle.push_back(l);
       
-      //electron id (separate for EB and EE, depending on centrality)
-      //see https://indico.cern.ch/event/811374/contributions/3382348/attachments/1823016/2983559/HIN_electrons2018_centrDep.pdf
-      bool isEB(TMath::Abs(p4.Eta()) <= barrelEndcapEta[0]);      
-      if(isCentralEvent){
-        if(fForestLep.eleSigmaIEtaIEta->at(eleIter)        >=(isEB ? 0.012 : 0.048)) continue;
-        if(TMath::Abs(fForestLep.eledEtaAtVtx->at(eleIter))>=(isEB ? 0.006 : 0.008)) continue;
-        if(TMath::Abs(fForestLep.eledPhiAtVtx->at(eleIter))>=(isEB ? 0.027 : 0.067)) continue;
-        if(fForestLep.eleHoverE->at(eleIter)               >=(isEB ? 0.150 : 0.150)) continue;
-        if(fForestLep.eleEoverPInv->at(eleIter)            >=(isEB ? 0.040 : 0.250)) continue;
-        if(TMath::Abs(fForestLep.eleD0->at(eleIter))       >=(isEB ? 0.011 : 0.083)) continue;
-        if(TMath::Abs(fForestLep.eleDz->at(eleIter))       >=(isEB ? 0.037 : 0.028)) continue;
-      }
-      else {
-        if(fForestLep.eleSigmaIEtaIEta->at(eleIter)        >=(isEB ? 0.010 : 0.041)) continue;
-        if(TMath::Abs(fForestLep.eledEtaAtVtx->at(eleIter))>=(isEB ? 0.007 : 0.011)) continue;
-        if(TMath::Abs(fForestLep.eledPhiAtVtx->at(eleIter))>=(isEB ? 0.021 : 0.026)) continue;
-        if(fForestLep.eleHoverE->at(eleIter)               >=(isEB ? 0.130 : 0.150)) continue;
-        if(fForestLep.eleEoverPInv->at(eleIter)            >=(isEB ? 0.020 : 0.330)) continue;
-        if(TMath::Abs(fForestLep.eleD0->at(eleIter))       >=(isEB ? 0.008 : 0.015)) continue;
-        if(TMath::Abs(fForestLep.eleDz->at(eleIter))       >=(isEB ? 0.020 : 0.045)) continue;
-      }
-
+      l.idFlags=getElectronId(TMath::Abs(fForestLep.eleSCEta->at(eleIter))< barrelEndcapEta[0],
+                                 fForestLep.eleSigmaIEtaIEta->at(eleIter),
+                                 fForestLep.eledEtaAtVtx->at(eleIter),
+                                 fForestLep.eledPhiAtVtx->at(eleIter),
+                                 fForestLep.eleHoverE->at(eleIter),
+                                 fForestLep.eleEoverPInv->at(eleIter),
+                                 fForestLep.eleD0->at(eleIter),
+                                 fForestLep.eleDz->at(eleIter),
+                                 fForestLep.eleMissHits->at(eleIter),
+                                 isCentralEvent);
+      
       //id'ed electron
+      if(!isLooseElectron(l.idFlags)) continue;
       selLeptons.push_back(l);
     }
     std::sort(noIdEle.begin(),noIdEle.end(),orderByPt);       
@@ -739,7 +733,7 @@ int main(int argc, char* argv[])
     if(dilCode==11*11) dilCat="ee";
 
     if(blind) {
-      bool isZ( fabs(t_llm-91)<15);
+      bool isZ( dilCode!=11*13 && fabs(t_llm-91)<15);
       int charge(selLeptons[0].charge*selLeptons[1].charge);
       if(!isMC && !isZ && charge<0 && fForestTree.run>=326887) continue;
     }      
@@ -938,6 +932,7 @@ int main(int argc, char* argv[])
     t_lep_eta   .clear();
     t_lep_phi   .clear();
     t_lep_pdgId .clear();
+    t_lep_idflags.clear();
     t_lep_d0 .clear();
     t_lep_d0err .clear();
     t_lep_dz  .clear();
@@ -956,6 +951,7 @@ int main(int argc, char* argv[])
       t_lep_pt    .push_back( selLeptons[ilep].p4.Pt()  );
       t_lep_eta   .push_back( selLeptons[ilep].p4.Eta() );
       t_lep_phi   .push_back( selLeptons[ilep].p4.Phi() );
+      t_lep_idflags.push_back(selLeptons[ilep].idFlags);
       t_lep_d0    .push_back( selLeptons[ilep].d0 );
       t_lep_d0err .push_back( selLeptons[ilep].d0err);
       t_lep_dz    .push_back( selLeptons[ilep].dz  );
