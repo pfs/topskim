@@ -12,6 +12,8 @@ public :
     mcPID(0),
     mcStatus(0),
     mcMomPID(0),
+    mcGMomPID(0),
+    mcParentage(0),
     mcPt(0),
     mcEta(0),
     mcPhi(0),
@@ -24,6 +26,8 @@ public :
        t->SetBranchAddress("mcPID", &mcPID);
        t->SetBranchAddress("mcStatus", &mcStatus);
        t->SetBranchAddress("mcMomPID", &mcMomPID);
+       t->SetBranchAddress("mcGMomPID", &mcGMomPID);
+       t->SetBranchAddress("mcParentage", &mcParentage);
        t->SetBranchAddress("mcPt", &mcPt);
        t->SetBranchAddress("mcEta", &mcEta);       
        t->SetBranchAddress("mcPhi", &mcPhi);
@@ -33,7 +37,7 @@ public :
 
    //gen info
    Int_t           nMC;
-   std::vector<Int_t>     *mcPID,*mcStatus,*mcMomPID;
+   std::vector<Int_t>     *mcPID,*mcStatus,*mcMomPID,*mcGMomPID,*mcParentage;
    std::vector<Float_t>   *mcPt,*mcEta,*mcPhi,*mcMass;
 };
 #endif
