@@ -21,6 +21,8 @@ training_string = 'dy' if trainDY else 'wjets'
 if doFisher2:
     training_string+='_fisher2'
 
+training_string += '_withSphericity'
+
 output_fn  = 'training_{t}.root'.format(t=training_string)
 output_f   = r.TFile(output_fn,'RECREATE')
  
@@ -40,6 +42,7 @@ if trainDY:
         dataloader.AddVariable('abs(lleta)' , '|#eta^{ll}|'      , ''    , 'F')
         dataloader.AddVariable('abs(dphi)'  , '|#Delta #phi|'    , 'rad' , 'F')
         dataloader.AddVariable('abs(lep_eta[0])+abs(lep_eta[1])' , '#sum |#eta_{i}|', ''    , 'F')
+        dataloader.AddVariable('llpt/(lep_pt[0]+lep_pt[1])' , 'sphericity', ''    , 'F')
         ## don't use flavor anymore dataloader.AddVariable('abs(lep_pdgId[0]*lep_pdgId[1])'  , 'flavor', ''    , 'I')
 else:
     dataloader.AddVariable('lep_pt[0]'                                                                      , 'p_{T}^{lep1}'          , 'GeV' , 'F')
