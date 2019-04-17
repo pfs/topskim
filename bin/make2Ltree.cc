@@ -120,7 +120,13 @@ int main(int argc, char* argv[])
 
   //book some histograms
   HistTool ht;
-  ht.addHist("fidcounter",  new TH2F("fidcounter", ";Fiducial counter;Events",4,0,4,1080,0,1080));
+  ht.addHist("fidcounter",  new TH2F("fidcounter", ";Fiducial counter;Events",5,0,5,1080,0,1080));
+  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(1,"all");
+  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(2,"=2l");
+  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(3,"=2l fid");
+  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(4,"=2l,#geq1b fid");
+  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(5,"=2l,#geq2b fid");
+
 
   if(!isMC) ht.addHist("ratevsrun",lumiTool.getLumiMonitor());
 
@@ -433,7 +439,7 @@ int main(int argc, char* argv[])
     float evWgt(1.0);
     int genDileptonCat(1.);
     std::vector<TLorentzVector> genLeptons, genBjets;
-    bool isLeptonFiducial(false),is1bFiducial(false),is2bFiducial(false);    
+    bool isGenDilepton(false),isLeptonFiducial(false),is1bFiducial(false),is2bFiducial(false);    
     if(isMC) {
      
       //gen level selection      
@@ -451,12 +457,16 @@ int main(int argc, char* argv[])
         if( (abs(pid)==11 || abs(pid)==13)  && abs(mom_pid)==24 ) {
           TLorentzVector p4(0,0,0,0);
           p4.SetPtEtaPhiM( fForestGen.mcPt->at(i), fForestGen.mcEta->at(i), fForestGen.mcPhi->at(i), fForestGen.mcMass->at(i) );
-          if(p4.Pt()>20 && fabs(p4.Eta())<2.5) genLeptons.push_back(p4);
+          //if(p4.Pt()>20 && fabs(p4.Eta())<2.5) 
+          genLeptons.push_back(p4);
           genDileptonCat *= abs(pid);
         }
       }
       
-      isLeptonFiducial=(genLeptons.size()==2);
+      isGenDilepton=(genLeptons.size()==2);      
+      isLeptonFiducial=(isGenDilepton && 
+                        genLeptons[0].Pt()>20 && fabs(genLeptons[0].Eta())<2.5 && 
+                        genLeptons[1].Pt()>20 && fabs(genLeptons[1].Eta())<2.5);
       is1bFiducial=(isLeptonFiducial && genBjets.size()>0);
       is2bFiducial=(isLeptonFiducial && genBjets.size()>1);
       
@@ -469,9 +479,10 @@ int main(int argc, char* argv[])
           Double_t iwgt(fForestTree.ttbar_w->at(i));
           allWgtSum[i]+=iwgt;
           ht.fill2D("fidcounter",0,i,iwgt,"gen");
-          if(isLeptonFiducial) ht.fill2D("fidcounter",1,i,iwgt,"gen");
-          if(is1bFiducial)     ht.fill2D("fidcounter",2,i,iwgt,"gen");
-          if(is2bFiducial)     ht.fill2D("fidcounter",3,i,iwgt,"gen");
+          if(isGenDilepton)    ht.fill2D("fidcounter",1,i,iwgt,"gen");
+          if(isLeptonFiducial) ht.fill2D("fidcounter",2,i,iwgt,"gen");
+          if(is1bFiducial)     ht.fill2D("fidcounter",3,i,iwgt,"gen");
+          if(is2bFiducial)     ht.fill2D("fidcounter",4,i,iwgt,"gen");
         }
       }
     }
@@ -816,9 +827,10 @@ int main(int argc, char* argv[])
       for(size_t i=0; i<fForestTree.ttbar_w->size(); i++) {
         Double_t iwgt(fForestTree.ttbar_w->at(i));
         ht.fill2D("fidcounter",0,i,iwgt,fidCats);
-        if(isLeptonFiducial) ht.fill2D("fidcounter",1,i,iwgt,fidCats);
-        if(is1bFiducial)     ht.fill2D("fidcounter",2,i,iwgt,fidCats);
-        if(is2bFiducial)     ht.fill2D("fidcounter",3,i,iwgt,fidCats);
+        if(isGenDilepton)    ht.fill2D("fidcounter",1,i,iwgt,fidCats);
+        if(isLeptonFiducial) ht.fill2D("fidcounter",2,i,iwgt,fidCats);
+        if(is1bFiducial)     ht.fill2D("fidcounter",3,i,iwgt,fidCats);
+        if(is2bFiducial)     ht.fill2D("fidcounter",4,i,iwgt,fidCats);
       }
     }
 
