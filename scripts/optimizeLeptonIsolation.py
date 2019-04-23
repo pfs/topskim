@@ -14,12 +14,14 @@ RHOTITLE={
     }
     
 ISOTITLE={'iso'               : 'Total isolation',
+          'miniiso'           : 'Mini isolation',
           'chiso'             : 'Charged isolation',
           'nhiso'             : 'Neutral hadron isolation',
           'phiso'             : 'Photon isolation',
           'iso_nosub'         : "I",
           'chiso_nosub'       : "I_{ch}",
           'iso_rhosub'        : "[I-UE(#rho)]", 
+          'miniiso_rhosub'    : "[I_{mini}-UE(#rho)]", 
           'iso_leprhosub'     : "[I-UE(#rho(l))]", 
           'chiso_chrhosub'    : "[I_{ch}-UE(#rho_{ch})]", 
           'iso_partrhosub'    : "#Sigma_{k}[I_{k}-UE(#rho_{k})]"
@@ -27,7 +29,9 @@ ISOTITLE={'iso'               : 'Total isolation',
 
 ISOCOLLECTION={
     'iso_nosub'      :[('iso',None)],
-    'iso_rhosub'     :[('iso','rho')],    
+    'iso_rhosub'      :[('iso','rho')],    
+    'miniiso_nosub'  :[('miniiso',None)],    
+    'miniiso_rhosub'  :[('miniiso','rho')],    
     'iso_leprhosub'  :[('iso','lep_rho')],        
     'iso_partrhosub' :[('chiso','chrho'),('nhiso','nhrho'),('phiso','phorho')],
     'chiso_nosub'    :[('chiso',None)],
@@ -36,10 +40,11 @@ ISOCOLLECTION={
 
 ISOCOLOR={  'iso_nosub'      : 1,
             'iso_rhosub'     : 2,
+            'miniiso_rhosub' : 29,
             'iso_partrhosub' : 8,
             'iso_leprhosub'  : 9,
             'chiso_nosub'    : 6,
-            'chiso_chrhosub' : 29
+            'chiso_chrhosub' : ROOT.kGray
             }
 
 ROOT.gROOT.SetBatch(True)
@@ -66,7 +71,7 @@ def canvasHeader(extraTxt=[]):
     for i in range(len(extraTxt)):
         txt.DrawLatex(0.15,0.9-i*0.04,extraTxt[i])
 
-def getROC(sig, bkg, name, title, ci, ls,cutAtEffS=0.95):
+def getROC(sig, bkg, name, title, ci, ls,cutAtEffB=0.4):
 
     """build the efficiency and ROC curves"""
 
@@ -92,8 +97,12 @@ def getROC(sig, bkg, name, title, ci, ls,cutAtEffS=0.95):
         effsig=sig.Integral(0,xbin+1)/tot_sig if tot_sig>0 else 0
         effbkg=bkg.Integral(0,xbin+1)/tot_bkg if tot_bkg>0 else 0
 
-        if not bestEff or abs(effsig-cutAtEffS)<abs(bestEff-cutAtEffS):
-            bestEff=effsig
+        #if not bestEff or abs(effsig-cutAtEffS)<abs(bestEff-cutAtEffS):
+        #    bestEff=effsig
+        #    bestCut=cut
+
+        if not bestEff or abs(effbkg-cutAtEffB)<abs(bestEff-cutAtEffB):
+            bestEff=effbkg
             bestCut=cut
 
         roc_gr.SetPoint(xbin-1,effsig,effbkg)
@@ -115,6 +124,8 @@ def tuneIsolation(isoKey,isoComponents,leptons,channel) :
 
     #parametrizes isolation versus centrality
     cenProf=ROOT.TF1('cenprof','exp([0]*x)*([1]*x*x+[2]*x+[3])',0,100)
+    cenProf.SetParLimits(1,0,10)
+    cenProf.SetParLimits(3,-100,100)
 
     #start the total isolation estimator per lepton
     isoVals=[0]*len(leptons)
@@ -148,7 +159,7 @@ def tuneIsolation(isoKey,isoComponents,leptons,channel) :
 
             histos[iso]['isovsrho_prof']=histos[iso]['isovsrho'].ProfileX()
             histos[iso]['isovsrho_prof'].Fit(isoProf,'MRQ+')
-            histos[iso]['isovsrho_prof_form']='UE=%.g(#rho+%.g)^{2}+%.g(#rho+%.g)'%(isoProf.GetParameter(0),isoProf.GetParameter(1),isoProf.GetParameter(2),isoProf.GetParameter(1))
+            histos[iso]['isovsrho_prof_form']='UE=%f(#rho+%f)^{2}+%f(#rho+%f)'%(isoProf.GetParameter(0),isoProf.GetParameter(1),isoProf.GetParameter(2),isoProf.GetParameter(1))
             
         #compute isolation component
         for i in range(len(leptons)):
@@ -171,11 +182,13 @@ def tuneIsolation(isoKey,isoComponents,leptons,channel) :
     histos[isoKey]['isovscen_prof_form']='I=exp^{%.gc}[%.gc^{2}+%.gc+%.g]'%(cenProf.GetParameter(0),cenProf.GetParameter(1),cenProf.GetParameter(2),cenProf.GetParameter(3))
 
     #final plots for relative isolation with and without centrality correction
+    riRan=(-5,5)
+    #if 'miniiso' in isoKey : riRan=(-1,5)
     histos['rel'+isoKey]={
-        'isovscen_rel'       : ROOT.TH2F('%svscen_rel'%isoKey,        'Z#rightarrowll;Centrality;%s/p_{T}'%ISOTITLE[isoKey], 5,array('d',zcenq), 40,-5,5),
-        'bkgisovscen_rel'    : ROOT.TH2F('bkg%svscen_rel'%isoKey,     'same-sign ll;Centrality;%s/p_{T}'%ISOTITLE[isoKey],   5,array('d',zcenq), 40,-5,5),
-        'isovscen_relccor'   : ROOT.TH2F('%svscen_relccor'%isoKey,    'Z#rightarrowll;Centrality;%s/p_{T}'%ISOTITLE[isoKey], 5,array('d',zcenq), 40,-5,5),
-        'bkgisovscen_relccor': ROOT.TH2F('bkg%svscen_relccor'%isoKey, 'same-sign ll;Centrality;%s/p_{T}'%ISOTITLE[isoKey],   5,array('d',zcenq), 40,-5,5)
+        'isovscen_rel'       : ROOT.TH2F('%svscen_rel'%isoKey,        'Z#rightarrowll;Centrality;%s/p_{T}'%ISOTITLE[isoKey], 5,array('d',zcenq), 200,riRan[0],riRan[1]),
+        'bkgisovscen_rel'    : ROOT.TH2F('bkg%svscen_rel'%isoKey,     'same-sign ll;Centrality;%s/p_{T}'%ISOTITLE[isoKey],   5,array('d',zcenq), 200,riRan[0],riRan[1]),
+        'isovscen_relccor'   : ROOT.TH2F('%svscen_relccor'%isoKey,    'Z#rightarrowll;Centrality;%s/p_{T}'%ISOTITLE[isoKey], 5,array('d',zcenq), 200,riRan[0],riRan[1]),
+        'bkgisovscen_relccor': ROOT.TH2F('bkg%svscen_relccor'%isoKey, 'same-sign ll;Centrality;%s/p_{T}'%ISOTITLE[isoKey],   5,array('d',zcenq), 200,riRan[0],riRan[1])
         }
     for i in range(len(leptons)):
         l,isZ,isSS,cenbin=leptons[i]
@@ -197,6 +210,7 @@ def tuneIsolation(isoKey,isoComponents,leptons,channel) :
     effCenCurves={}
     for tag in ['','ccor']:
 
+        cut=effCurves[tag][-1]
         effCenCurves[tag]=(effCurves[tag][1].Clone('sigvscenprof'+isoKey),
                            effCurves[tag][2].Clone('bkgvscenprof'+isoKey))
         effCenCurves[tag][0].Set(0)
@@ -207,7 +221,6 @@ def tuneIsolation(isoKey,isoComponents,leptons,channel) :
         for xbin in range(nbinsx):
             cen=histos['rel'+isoKey]['isovscen_rel'+tag].GetXaxis().GetBinCenter(xbin+1)
 
-            cut=effCurves[tag][-1]
             ybin=histos['rel'+isoKey]['isovscen_rel'+tag].GetYaxis().FindBin(cut)
             eff_sig = histos['rel'+isoKey]['isovscen_rel'+tag].Integral(xbin+1,xbin+1,0,ybin)
             eff_sig /= histos['rel'+isoKey]['isovscen_rel'+tag].Integral(xbin+1,xbin+1,0,nbinsy+1)
@@ -370,7 +383,7 @@ zcenq=np.percentile(zCentralities,[0,20,40,60,80,100],axis=0)
 
 rocCurves=[]
 effVsCen=[]
-for isoKey in ['iso_nosub','iso_rhosub','iso_partrhosub','iso_leprhosub','chiso_nosub','chiso_chrhosub']:
+for isoKey in ['iso_rhosub','miniiso_rhosub']: #['iso_nosub','iso_rhosub','iso_partrhosub','iso_leprhosub','chiso_nosub','chiso_chrhosub']:
     irocs,ieffvscen=tuneIsolation(isoKey=isoKey,isoComponents=ISOCOLLECTION[isoKey],leptons=leptons,channel=channel)
     rocCurves.append( (isoKey,        irocs['']) )
     rocCurves.append( (isoKey+'ccor', irocs['ccor']) )
@@ -387,3 +400,7 @@ plotIsoSummary( grColl=[x[2] for _,x in rocCurves], name='bkgeff', channel=chann
 plotIsoSummary( grColl=[x[0] for _,x in effVsCen], name='sigeffvscen', channel=channel )
 plotIsoSummary( grColl=[x[1] for _,x in effVsCen], name='bkgeffvscen', channel=channel )
 
+print 'Working points'
+print 'Isolation\t Efficiency\t Cut'
+for i in range(len(rocCurves)):
+    print '%s\t%3.3f\t%3.3f'%(rocCurves[i][0],rocCurves[i][1][3],rocCurves[i][1][4])

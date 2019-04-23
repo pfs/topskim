@@ -11,10 +11,10 @@ def getDistribution(pname='mll',flav='ee',pfix='',url='combbackground_plots_data
     """
     compares the distributions in a given flavour
     """
-    cats=[ #(flav              , 'SS',                 ROOT.kBlack),            
-           (flav+'iso'        , 'iso SS',             ROOT.kRed),
-           #(flav+'mix'        , 'mix',                ROOT.kMagenta),
-           (flav+'mixiso'     , 'iso mix',            ROOT.kYellow-3),
+    cats=[ (flav              , 'SS',                 ROOT.kBlack),            
+           #(flav+'iso'        , 'iso SS',             ROOT.kRed),
+           (flav+'mix'        , 'mix',                ROOT.kMagenta),
+           #(flav+'mixiso'     , 'iso mix',            ROOT.kYellow-3),
            ]
     if isMC:
         cats=[
@@ -39,14 +39,15 @@ def getDistribution(pname='mll',flav='ee',pfix='',url='combbackground_plots_data
             sf = histosNorm[normCat]/histosNorm[cat]
             histos[-1].Scale(sf)
         except Exception as e:
-            histos.pop(1)
+            if len(histos):
+                histos.pop(len(histos)-1)
     return histos
 
 url='comb_shapes_plotter.root'
 fIn=ROOT.TFile.Open(url,'RECREATE')
 fIn.Close()
 for flav in ['ee','em','mm'] :
-    for pname in ['mll','ptll','acopl','lpt','leta','liso'] :
+    for pname in ['mll','ptll','acopl','sphericity','lpt','leta','liso'] :
         pfixes=['']
         if pname[0]=='l' : pfixes=['lead','sublead']
         for pfix in pfixes:

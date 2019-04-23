@@ -97,4 +97,33 @@ float getMiniIsolation(SlimmedPFCollection_t &pfCands,
   return iso/p4.Pt();
 }
 
+
+//
+std::vector<float> getIsolationFull(SlimmedPFCollection_t &pfCands,
+                                    TLorentzVector p4, 
+                                    std::vector<float> rMax={0.2,0.25,0.3},
+                                    float deadCone=0.015,
+                                    float ptThresh=0.5)
+{
+
+  std::vector<float> iso(rMax.size(),0.);
+  
+  if (p4.Pt()<5.) return iso;
+  for(auto pfc : pfCands) {           
+
+    float pfpt(pfc.second.Pt());
+    if(pfpt<ptThresh) continue;
+    
+    for(size_t i=0; i<rMax.size(); i++) {
+      float dr = p4.DeltaR(pfc.second);
+      if (dr > rMax[i]) continue;
+      if (dr< deadCone) continue;
+      iso[i] += pfpt;
+    }
+  } 
+  
+  return iso;
+}
+
+
 #endif
