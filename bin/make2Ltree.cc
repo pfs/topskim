@@ -33,7 +33,7 @@
 
 const bool isDebug = true;
 const float lepPtCut  = 20.;
-const float lepEtaCut = 2.1;
+const float lepEtaCut = 2.4;
 //see https://indico.cern.ch/event/803679/contributions/3342407/attachments/1808912/2953435/egm-minipog-190308.pdf
 const float eeScaleShift = 6.8182E-2/5.9097E-2;
 const int firstEEScaleShiftRun = 327402; 
