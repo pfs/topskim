@@ -250,8 +250,10 @@ int main(int argc, char* argv[])
     hltTree_p->SetBranchAddress(eTrig,&etrig);
     cout << "Using " << muTrig << " " << eTrig << " as MC triggers" << endl;
   }else{
-    hltTree_p->SetBranchStatus("HLT_HIL3Mu15_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIL3Mu15_v1",&mtrig);
+    //hltTree_p->SetBranchStatus("HLT_HIL3Mu15_v1",1);
+    //hltTree_p->SetBranchAddress("HLT_HIL3Mu15_v1",&mtrig);
+    hltTree_p->SetBranchStatus("HLT_HIL3Mu12_v1",1);
+    hltTree_p->SetBranchAddress("HLT_HIL3Mu12_v1",&mtrig);
     hltTree_p->SetBranchStatus("HLT_HIEle20Gsf_v1",1);
     hltTree_p->SetBranchAddress("HLT_HIEle20Gsf_v1",&etrig);    
   }
