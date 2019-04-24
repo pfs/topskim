@@ -31,4 +31,4 @@ with open('condor_%s.sub'%tag,'w') as c:
         c.write('queue 1\n')
 
 #submit to condor
-#os.system('condor_submit condor_%s.sub'%tag)
+os.system('condor_submit condor_%s.sub'%tag)

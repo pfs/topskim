@@ -31,12 +31,11 @@ def checkPacked(args):
     for x in toRun:
         os.system('sh scripts/wrapAnalysis.sh %s'%(' '.join(x[0])))
 
+
 task_list=[]
 condor_dir=sys.argv[1]
 for f in os.listdir(condor_dir):
     if not '.sub' in f : continue
-    task_list.append( ( os.path.join(condor_dir,f) ) )
 
-import multiprocessing as MP
-pool = MP.Pool(8)
-pool.map( checkPacked, task_list)
+    #in practice can't run in parallel because the local outputs are always named tt2l.root...
+    checkPacked(os.path.join(condor_dir,f))
