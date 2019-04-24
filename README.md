@@ -23,7 +23,7 @@ Jobs finalize in approximately 30min if queues are empty.
 ```
 dir=/eos/cms/store/cmst3/group/hintt/PbPb2018/
 a=(`ls ${dir}`)
-out=/eos/cms/store/cmst3/group/hintt/PbPb2018_skim23Apr
+out=/eos/cms/store/cmst3/group/hintt/PbPb2018_skim24Apr
 for tag in ${a[@]}; do    
     extraOpts="true true"
     if [[ $tag == *"Skim"* ]]; then
