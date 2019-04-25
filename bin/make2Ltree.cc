@@ -33,7 +33,7 @@
 
 const bool isDebug = true;
 const float lepPtCut  = 20.;
-const float lepEtaCut = 2.1;
+const float lepEtaCut = 2.4;
 //see https://indico.cern.ch/event/803679/contributions/3342407/attachments/1808912/2953435/egm-minipog-190308.pdf
 const float eeScaleShift = 6.8182E-2/5.9097E-2;
 const int firstEEScaleShiftRun = 327402; 
@@ -250,8 +250,10 @@ int main(int argc, char* argv[])
     hltTree_p->SetBranchAddress(eTrig,&etrig);
     cout << "Using " << muTrig << " " << eTrig << " as MC triggers" << endl;
   }else{
-    hltTree_p->SetBranchStatus("HLT_HIL3Mu15_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIL3Mu15_v1",&mtrig);
+    //hltTree_p->SetBranchStatus("HLT_HIL3Mu15_v1",1);
+    //hltTree_p->SetBranchAddress("HLT_HIL3Mu15_v1",&mtrig);
+    hltTree_p->SetBranchStatus("HLT_HIL3Mu12_v1",1);
+    hltTree_p->SetBranchAddress("HLT_HIL3Mu12_v1",&mtrig);
     hltTree_p->SetBranchStatus("HLT_HIEle20Gsf_v1",1);
     hltTree_p->SetBranchAddress("HLT_HIEle20Gsf_v1",&etrig);    
   }
@@ -298,7 +300,7 @@ int main(int argc, char* argv[])
 
   // variables per lepton, including iso
   Int_t t_nlep, t_lep_ind1, t_lep_ind2;
-  std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_d0, t_lep_dz, t_lep_d0err, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_isofull, t_lep_miniiso;
+  std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_d0, t_lep_dz, t_lep_d0err, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_isofull, t_lep_miniiso,t_lep_isofull20,t_lep_isofull25,t_lep_isofull30;
   std::vector<Bool_t> t_lep_matched;
   std::vector<Int_t  > t_lep_pdgId, t_lep_charge,t_lep_idflags;
   outTree->Branch("nlep"       , &t_nlep      , "nlep/I"            );
@@ -318,6 +320,9 @@ int main(int argc, char* argv[])
   outTree->Branch("lep_pdgId"  , &t_lep_pdgId);
   outTree->Branch("lep_charge" , &t_lep_charge);
   outTree->Branch("lep_isofull", &t_lep_isofull);
+  outTree->Branch("lep_isofull20", &t_lep_isofull20);
+  outTree->Branch("lep_isofull25", &t_lep_isofull25);
+  outTree->Branch("lep_isofull30", &t_lep_isofull30);
   outTree->Branch("lep_miniiso", &t_lep_miniiso);
   outTree->Branch("lep_matched", &t_lep_matched);
 
@@ -576,6 +581,8 @@ int main(int argc, char* argv[])
       else {
         l.isofull = -1.;
 	}
+
+      l.isofullR=getIsolationFull( pfColl, l.p4);
       l.miniiso = getMiniIsolation( pfColl ,l.p4, l.id);
       l.d0      = fForestLep.muD0   ->at(muIter);
       l.d0err   = 0.; //fForestLep.muD0Err->at(muIter); // no d0err for muons!!!
@@ -669,6 +676,7 @@ int main(int argc, char* argv[])
       else {
         l.isofull = -1.;
 	}
+      l.isofullR= getIsolationFull( pfColl, l.p4);
       l.miniiso = getMiniIsolation( pfColl ,l.p4, l.id);
       l.d0      = fForestLep.eleD0   ->at(eleIter);
       l.d0err   = fForestLep.eleD0Err->at(eleIter);
@@ -952,6 +960,9 @@ int main(int argc, char* argv[])
     t_lep_nhiso.clear();
     t_lep_rho.clear();    
     t_lep_isofull.clear();
+    t_lep_isofull20.clear();
+    t_lep_isofull25.clear();
+    t_lep_isofull30.clear();
     t_lep_miniiso.clear();
     t_lep_matched.clear();
     t_nlep = selLeptons.size();
@@ -972,6 +983,9 @@ int main(int argc, char* argv[])
       t_lep_pdgId .push_back( selLeptons[ilep].id );
       t_lep_charge.push_back( selLeptons[ilep].charge );
       t_lep_isofull.push_back( selLeptons[ilep].isofull );
+      t_lep_isofull20.push_back( selLeptons[ilep].isofullR[0] );
+      t_lep_isofull25.push_back( selLeptons[ilep].isofullR[1] );
+      t_lep_isofull30.push_back( selLeptons[ilep].isofullR[2] );
       t_lep_miniiso.push_back( selLeptons[ilep].miniiso );
       t_lep_matched.push_back( selLeptons[ilep].isMatched );
       if(selLeptons[ilep].isofull < 0.16 && t_lep_ind1 < 0) t_lep_ind1 = ilep;

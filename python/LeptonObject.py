@@ -14,33 +14,50 @@ class Lepton:
         self.nhiso=0
         self.phiso=0
         self.iso=0
+        self.miniiso=0
         self.rho={}
 
-    def addIsoComponents(self,chiso,nhiso,phiso):
+    def addIsoComponents(self,chiso,nhiso,phiso,miniiso=0):
         self.chiso=chiso
         self.nhiso=nhiso
         self.phiso=phiso
         self.iso=chiso+nhiso+phiso
+        self.miniiso=miniiso
 
     def addRho(self,key,val):
         self.rho[key]=val
 
-    def getIsolation(self):
+    def getIsolation(self, doMiniIso=False):
         if not 'rho' in self.rho : return -1
 
         rhoVal=self.rho['rho']
-        if abs(self.pdgId)==11:
-            ue=0.0011*((rhoVal+142.4)**2)-0.14*(rhoVal+142.4)
-        else:
-            ue=0.0013*((rhoVal+15.8)**2)+0.29*(rhoVal+15.8)
+        isoVal=0
 
-        return (self.chiso+self.nhiso+self.phiso-ue)/self.p4.Pt()
+        if doMiniIso:
+            if abs(self.pdgId)==11:
+                ue=-0.000097*((rhoVal+12.3874)**2)+0.10686*(rhoVal+12.3874)
+            else:
+                ue=0.000165*((rhoVal-5.0441)**2)+0.211759*(rhoVal-5.0441)
+            isoVal=(self.miniiso*self.p4.Pt()-ue)/self.p4.Pt()
 
-    def isIsolated(self):
-        if abs(self.pdgId)==11:
-            return self.getIsolation()<0.16
         else:
-            return self.getIsolation()<0.26
+            if abs(self.pdgId)==11:
+                ue=0.001020*((rhoVal+23.421)**2)-0.1482*(rhoVal+23.421)            
+            else:
+                ue=0.001285*((rhoVal+15.829)**2)+0.294*(rhoVal+15.829)
+                
+            isoVal=(self.chiso+self.nhiso+self.phiso-ue)/self.p4.Pt()
+
+        return isoVal
+
+    def isIsolated(self,doMiniIso=False):
+
+        isoThr=999.
+        if abs(self.pdgId)==11:
+            isoThr=0.3 if doMiniIso else 0.3
+        else:
+            isoThr=0.0 if doMiniIso else 0.4
+        return self.getIsolation(doMiniIso)<isoThr
 
 class Dilepton:
 
@@ -57,7 +74,7 @@ class Dilepton:
         self.isIso=isIso
         self.isMixed=isMixed
 
-def dileptonBuilder(lepColl):
+def dileptonBuilder(lepColl,doMiniIsolation=False):
 
     """takes the leading lepton pair and sets some quality flags"""
 
@@ -66,7 +83,7 @@ def dileptonBuilder(lepColl):
     isOF = True if abs(lepColl[0].pdgId*lepColl[1].pdgId)==143                             else False
     isSS = True if lepColl[0].charge*lepColl[1].charge>0                                   else False
     isZ  = True if abs((lepColl[0].p4+lepColl[1].p4).M()-91.)<15 and not isSS and not isOF else False
-    isIso= True if lepColl[0].isIsolated() and lepColl[1].isIsolated()                     else False
+    isIso= True if lepColl[0].isIsolated(doMiniIsolation) and lepColl[1].isIsolated(doMiniIsolation) else False
 
     return Dilepton(lepColl[0],lepColl[1],isOF,isSS,isZ,isIso)
 
@@ -85,7 +102,7 @@ def getLeptons(t,pdgIdColl=[13,11]):
                                t.lep_phi[il],
                                mass,
                                t.lep_charge[il]) )
-        lepColl[-1].addIsoComponents(t.lep_chiso[il],t.lep_nhiso[il],t.lep_phiso[il])
+        lepColl[-1].addIsoComponents(t.lep_chiso[il],t.lep_nhiso[il],t.lep_phiso[il],t.lep_miniiso[il]*t.lep_pt[il])
 
         #this is hardcoded, as in the rho tree producer...
         eta=t.lep_eta[il]
@@ -109,8 +126,8 @@ def getLeptons(t,pdgIdColl=[13,11]):
     return lepColl
 
 
-def getDilepton(t,pdgIdColl=[13,11]):
+def getDilepton(t,pdgIdColl=[13,11],doMiniIsolation=False):
 
     """get the dilepton in the event"""
     
-    return dileptonBuilder( getLeptons(t,pdgIdColl) )
+    return dileptonBuilder( getLeptons(t,pdgIdColl),doMiniIsolation )

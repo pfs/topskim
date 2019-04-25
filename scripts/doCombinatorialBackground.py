@@ -26,7 +26,7 @@ if not '.pck' in url:
     for iev in range(t.GetEntries()):
         t.GetEntry(iev)
         try:
-            dil=getDilepton(t,[13,11])
+            dil=getDilepton(t,[13,11],doMiniIsolation=True)
             dilCollection[dil.flavour].append(dil)
         except Exception as e:
             print e
@@ -50,6 +50,7 @@ ht.add( ROOT.TH1F('liso',  ";Relative isolation;Leptons",10,-1,4) )
 ht.add( ROOT.TH1F('acopl', ";1-#Delta#phi(l,l')/#pi;Events",10,0,1.0) )
 ht.add( ROOT.TH1F('ptll',  ";Dilepton transverse momentum [GeV];Events",10,0,200) )
 ht.add( ROOT.TH1F('mll',   ";Dilepton invariant mass [GeV];Events",20,0,200) )
+ht.add( ROOT.TH1F('sphericity',   ";Sphericity;Events",20,0,1) )
 
 for key in dilCollection:
     print 'processing',flavCats[key]
@@ -89,6 +90,7 @@ for key in dilCollection:
             ht.fill( (acopl,wgt),       'acopl', cats)
             ht.fill( (obj.p4.M(),wgt),  'mll',   cats)
             ht.fill( (obj.p4.Pt(),wgt), 'ptll' , cats)
+            ht.fill( (obj.p4.Pt()/(obj.l1.p4.Pt()+obj.l2.p4.Pt()),wgt), 'sphericity' , cats)
 
 
 url='combbackground_plots_%s.root'%dataType
