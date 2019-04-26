@@ -3,7 +3,7 @@ from ROOT import TLorentzVector
 
 LEPTONBRANCHES=['pt','eta','phi',
                 'idflags','d0','d0err','dz',
-                'phiso','chiso','nhiso','rho',
+                'phiso','chiso','nhiso',
                 'pdgId','charge',
                 'isofull','isofull20','isofull25','isofull30','miniiso'] 
 

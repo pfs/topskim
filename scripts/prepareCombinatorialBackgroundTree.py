@@ -97,9 +97,10 @@ def createMixedFriendTrees(url,mixFile,outURL):
             #mix one lepton at each time
             for i in range(2):
                 leptons=[getattr(orig_dil,'l%d'%(i+1))]
+                lidToGet=orig_dil.l2.pdgId if i==0 else orig_dil.l1.pdgId
                 while True:
                     mix_dil=random.choice(mixDileptons[orig_flav,orig_isZ])
-                    leptons.append( mix_dil.l1 if mix_dil.l1.pdgId==leptons[0].pdgId else mix_dil.l2 )
+                    leptons.append( mix_dil.l1 if mix_dil.l1.pdgId==lidToGet else mix_dil.l2 )
                     break
 
                 #sort by pT
@@ -148,7 +149,8 @@ def main():
         return
 
     url     = sys.argv[1]
-    mixFile = prepareDileptonCollection(url)    
+    #mixFile = prepareDileptonCollection(url)    
+    mixFile='dilepton_summary.pck'
     outURL  = sys.argv[2]
     createMixedFriendTrees(url,mixFile,outURL)
 

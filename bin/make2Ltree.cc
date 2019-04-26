@@ -748,6 +748,12 @@ int main(int argc, char* argv[])
     if(dilCode==11*13) dilCat="em";
     if(dilCode==11*11) dilCat="ee";
 
+    //ee and mm events should come from the appropriate primary dataset
+    if(!isMC) {
+      if(dilCode==11*11 && !isSingleElePD) continue;
+      if(dilCode==13*13 && !isSingleMuPD) continue;
+    }
+
     if(blind) {
       bool isZ( dilCode!=11*13 && fabs(t_llm-91)<15);
       int charge(selLeptons[0].charge*selLeptons[1].charge);
