@@ -64,11 +64,13 @@ std::vector<float> getRapidityMoments(std::vector<TLorentzVector> & coll){
 }
 
 int getRhoIndex(float eta){
-    if      (eta < -2.1 ) return 1;
-    else if (eta < -1.3 ) return 2;
-    else if (eta <  1.3 ) return 3;
-    else if (eta <  2.1 ) return 4;
-    else return 5;
+        if      (eta < -3.0) return 1;
+        else if (eta < -2.1) return 2;
+        else if (eta < -1.3) return 2;
+        else if (eta <  1.3) return 3;
+        else if (eta <  2.1) return 4;
+        else if (eta <  3.0) return 5;
+        else return 6;
 }
 
 
@@ -512,9 +514,14 @@ int main(int argc, char* argv[])
       if(etrig==0) continue;
     }
 
-    //FIXME FOR 2018: WHAT SHOULD WE DO HERE ?
     //apply global filters
-    if(!isMC && GT.find("75X")!=string::npos){
+    if(!isMC && GT.find("103X")!=string::npos){
+      if(TMath::Abs(fForestTree.vz) > 20) continue;
+      if(!fForestSkim.phfCoincFilter2Th4) continue;
+      if(!fForestSkim.pclusterCompatibilityFilter) continue;
+      if(!fForestSkim.pprimaryVertexFilter) continue;
+    }
+    else if(!isMC && GT.find("75X")!=string::npos){
       if(TMath::Abs(fForestTree.vz) > 15) continue;
       if(!fForestSkim.phfCoincFilter) continue;
       if(!fForestSkim.HBHENoiseFilterResult) continue;
