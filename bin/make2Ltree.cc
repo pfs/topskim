@@ -172,9 +172,6 @@ int main(int argc, char* argv[])
   ht.addHist("acopl",    new TH1F("acopl" ,   ";1-#Delta#phi(l,l')/#pi;Events",20,0,1.0));
   ht.addHist("detall",   new TH1F("detall",   ";#Delta#eta(l,l');Events",20,0,4));
   ht.addHist("drll",     new TH1F("drll"  ,   ";#DeltaR(l,l');Events",20,0,2*TMath::Pi()));
-  ht.addHist("chrho",    new TH1F("chrho",    ";#rho_{ch};Events",25,0,50));
-  ht.addHist("phorho",   new TH1F("phorho",   ";#rho_{#gama};Events",25,0,50));
-  ht.addHist("nhrho",    new TH1F("nhrho",    ";#rho_{nh};Events",25,0,50));
 
   ht.addHist("pfrapavg",      new TH1F("pfrapavg",     ";Average rapidity;Events",25,0,2.5));
   ht.addHist("pfraprms",      new TH1F("pfraprms",     ";#sigma(rapidity);Events",50,0,2.5));
@@ -278,7 +275,6 @@ int main(int argc, char* argv[])
   Int_t  t_run, t_lumi, t_etrig, t_mtrig, t_isData;
   Long_t t_event;
   Float_t t_weight, t_cenbin;
-  Float_t t_chrho[3], t_phorho[3], t_nhrho[3];
   outTree->Branch("run"   , &t_run  , "run/I");
   outTree->Branch("lumi"  , &t_lumi , "lumi/I");
   outTree->Branch("event" , &t_event, "event/L");
@@ -291,9 +287,9 @@ int main(int argc, char* argv[])
   
   outTree->Branch("rho",    &t_rho);
   outTree->Branch("rhom",   &t_rhom);
-  outTree->Branch("chrho" , t_chrho , "chrho[3]/F");
-  outTree->Branch("nhrho" , t_nhrho , "nhrho[3]/F");
-  outTree->Branch("phorho", t_phorho, "phorho[3]/F");
+
+  Float_t t_globalrho;
+  outTree->Branch("globalrho", &t_globalrho, "globalrho/F");
 
   outTree->Branch("etrig" , &t_etrig , "etrig/I");
   outTree->Branch("mtrig" , &t_mtrig , "mtrig/I");
@@ -536,9 +532,7 @@ int main(int argc, char* argv[])
       pfColl.push_back( getSlimmedPF( id, fForestPF.pfPt->at(ipf),fForestPF.pfEta->at(ipf),fForestPF.pfPhi->at(ipf),mass) );
     }
 
-    Float_t chrho[3]  = { getRho(pfColl,{1,2,3}),  getRho(pfColl,{1,2,3},-1,1.4442), getRho(pfColl,{1,2,3},1.4442,2.4) };
-    Float_t phorho[3] = { getRho(pfColl,{4}),      getRho(pfColl,{4},-1,1.4442),     getRho(pfColl,{4},1.4442,2.4) };
-    Float_t nhrho[3]  = { getRho(pfColl,{5,6}),    getRho(pfColl,{5,6},-1,1.4442),   getRho(pfColl,{5,6},1.4442,2.4) };
+    Float_t globalrho = getRho(pfColl,{1,2,3,4,5,6},-1.,5.);
 
     //monitor trigger and centrality
     float cenBin=0;
@@ -572,15 +566,15 @@ int main(int argc, char* argv[])
       l.chiso   = fForestLep.muPFChIso->at(muIter);
       l.nhiso   = fForestLep.muPFNeuIso->at(muIter);
       l.phoiso  = fForestLep.muPFPhoIso->at(muIter);
-      l.rho     = getRho(pfColl,{1,2,3,4,5,6},p4.Eta()-0.5,p4.Eta()+0.5);      
+      int   tmp_rhoind  = getRhoIndex(p4.Eta());
       if (!isMC && GT.find("75X")==string::npos){
-        int   tmp_rhoind  = getRhoIndex(p4.Eta());
         float tmp_rho_par = 0.0013 * TMath::Power(t_rho->at(tmp_rhoind)+15.83,2) + 0.29 * (t_rho->at(tmp_rhoind)+15.83); 
         l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
       }
       else {
         l.isofull = -1.;
-	}
+	  }
+      l.rho = isPP ? globalrho : t_rho->at(tmp_rhoind);
 
       l.isofullR=getIsolationFull( pfColl, l.p4);
       l.miniiso = getMiniIsolation( pfColl ,l.p4, l.id);
@@ -667,15 +661,17 @@ int main(int argc, char* argv[])
         l.nhiso   = fForestLep.elePFNeuIso->at(eleIter);
         l.phoiso  = fForestLep.elePFPhoIso->at(eleIter);
       }
-      l.rho     = getRho(pfColl,{1,2,3,4,5,6},p4.Eta()-0.5,p4.Eta()+0.5);
+      int   tmp_rhoind  = getRhoIndex(p4.Eta());
       if (!isMC && GT.find("75X")==string::npos){
-        int   tmp_rhoind  = getRhoIndex(p4.Eta());
         float tmp_rho_par = 0.0011 * TMath::Power(t_rho->at(tmp_rhoind)+142.4,2) - 0.14 * (t_rho->at(tmp_rhoind)+142.4); 
         l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
       }
       else {
         l.isofull = -1.;
-	}
+	  }
+
+      l.rho = isPP ? globalrho : t_rho->at(tmp_rhoind);
+
       l.isofullR= getIsolationFull( pfColl, l.p4);
       l.miniiso = getMiniIsolation( pfColl ,l.p4, l.id);
       l.d0      = fForestLep.eleD0   ->at(eleIter);
@@ -899,10 +895,6 @@ int main(int argc, char* argv[])
     ht.fill( "ptll",      t_llpt,                                       plotWgt, categs);
     ht.fill( "ptsum",     selLeptons[0].p4.Pt()+selLeptons[1].p4.Pt(),  plotWgt, categs);
 
-    ht.fill( "chrho",  chrho[0],   plotWgt, categs);
-    ht.fill( "phorho", phorho[0],  plotWgt, categs);
-    ht.fill( "nhrho",  nhrho[0],   plotWgt, categs);
-
     //PF jets
     ht.fill( "npfjets",   npfjets,   plotWgt, categs);
     ht.fill( "npfbjets",  npfbjets,  plotWgt, categs);
@@ -942,15 +934,10 @@ int main(int argc, char* argv[])
     t_event  = fForestTree.evt;
     t_weight = plotWgt;
     t_cenbin = cenBin;
+    t_globalrho = globalrho;
     t_etrig  = etrig;
     t_mtrig  = mtrig;
 
-    for(size_t i=0; i<3; i++) {
-      t_chrho[i]  = chrho[i];
-      t_phorho[i] = phorho[i];
-      t_nhrho[i]  = nhrho[i];
-    }
- 
     // fill the leptons ordered by pt
     t_lep_pt    .clear();
     t_lep_eta   .clear();
