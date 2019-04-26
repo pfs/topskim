@@ -152,8 +152,7 @@ def main():
         return
 
     url     = sys.argv[1]
-    #mixFile = prepareDileptonCollection(url)    
-    mixFile='dilepton_summary.pck'
+    mixFile = prepareDileptonCollection(url)        
     outURL  = sys.argv[2]
     createMixedFriendTrees(url,mixFile,outURL)
 
