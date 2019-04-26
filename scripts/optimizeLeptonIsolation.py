@@ -14,6 +14,9 @@ RHOTITLE={
     }
     
 ISOTITLE={'iso'               : 'Total isolation',
+          'iso20'             : 'Total isolation (R=0.20)',
+          'iso25'             : 'Total isolation (R=0.25)',
+          'iso30'             : 'Total isolation (R=0.30)',
           'miniiso'           : 'Mini isolation',
           'chiso'             : 'Charged isolation',
           'nhiso'             : 'Neutral hadron isolation',
@@ -21,6 +24,9 @@ ISOTITLE={'iso'               : 'Total isolation',
           'iso_nosub'         : "I",
           'chiso_nosub'       : "I_{ch}",
           'iso_rhosub'        : "[I-UE(#rho)]", 
+          'iso20_rhosub'      : "[I(R=0.20)-UE(#rho)]", 
+          'iso25_rhosub'      : "[I(R=0.25)-UE(#rho)]", 
+          'iso30_rhosub'      : "[I(R=0.30)-UE(#rho)]", 
           'miniiso_rhosub'    : "[I_{mini}-UE(#rho)]", 
           'iso_leprhosub'     : "[I-UE(#rho(l))]", 
           'chiso_chrhosub'    : "[I_{ch}-UE(#rho_{ch})]", 
@@ -29,7 +35,10 @@ ISOTITLE={'iso'               : 'Total isolation',
 
 ISOCOLLECTION={
     'iso_nosub'      :[('iso',None)],
-    'iso_rhosub'      :[('iso','rho')],    
+    'iso_rhosub'     :[('iso','rho')],    
+    'iso20_rhosub'   :[('iso20','rho')],    
+    'iso25_rhosub'   :[('iso25','rho')],    
+    'iso30_rhosub'   :[('iso30','rho')],    
     'miniiso_nosub'  :[('miniiso',None)],    
     'miniiso_rhosub'  :[('miniiso','rho')],    
     'iso_leprhosub'  :[('iso','lep_rho')],        
@@ -44,7 +53,10 @@ ISOCOLOR={  'iso_nosub'      : 1,
             'iso_partrhosub' : 8,
             'iso_leprhosub'  : 9,
             'chiso_nosub'    : 6,
-            'chiso_chrhosub' : ROOT.kGray
+            'chiso_chrhosub' : ROOT.kGray,
+            'iso20_rhosub'   : ROOT.kGray+1,
+            'iso25_rhosub'   : ROOT.kAzure+1,
+            'iso30_rhosub'   : ROOT.kMagenta+2,            
             }
 
 ROOT.gROOT.SetBatch(True)
@@ -383,13 +395,13 @@ zcenq=np.percentile(zCentralities,[0,20,40,60,80,100],axis=0)
 
 rocCurves=[]
 effVsCen=[]
-for isoKey in ['iso_rhosub','miniiso_rhosub']: #['iso_nosub','iso_rhosub','iso_partrhosub','iso_leprhosub','chiso_nosub','chiso_chrhosub']:
+for isoKey in ['iso_rhosub','iso20_rhosub','iso25_rhosub','iso30_rhosub','miniiso_rhosub']: #,'iso_nosub','iso_rhosub','iso_partrhosub','iso_leprhosub','chiso_nosub','chiso_chrhosub']:
     irocs,ieffvscen=tuneIsolation(isoKey=isoKey,isoComponents=ISOCOLLECTION[isoKey],leptons=leptons,channel=channel)
     rocCurves.append( (isoKey,        irocs['']) )
-    rocCurves.append( (isoKey+'ccor', irocs['ccor']) )
+    #rocCurves.append( (isoKey+'ccor', irocs['ccor']) )
 
     effVsCen.append( (isoKey,         ieffvscen['']) )
-    effVsCen.append( (isoKey+'ccor',  ieffvscen['ccor']) )
+    #effVsCen.append( (isoKey+'ccor',  ieffvscen['ccor']) )
 
 
 

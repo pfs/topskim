@@ -48,7 +48,12 @@ python scripts/resubmitMissing.py ./
 
 Merge the outputs (hadds all the chunks according to the tag defined)
 ```
-python scripts/mergeOutputs.py plots
+python scripts/mergeOutputs.py ${out}
+```
+
+Prepare data-trees for the combinatorial background from event mixing
+```
+python scripts/prepareCombinatorialBackgroundTree.py ${out} ${out}/Combinatorial
 ```
 
 Plot the results
