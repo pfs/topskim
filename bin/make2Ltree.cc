@@ -63,14 +63,22 @@ std::vector<float> getRapidityMoments(std::vector<TLorentzVector> & coll){
   return mom;
 }
 
-int getRhoIndex(float eta){
-    if      (-5.0 <= eta && eta < 3.0) return 1;
-    else if (-3.0 <= eta && eta < -2.1) return 2;
-    else if (-2.1 <= eta && eta < -1.3) return 2;
-    else if (-1.3 <= eta && eta < 1.3 ) return 3;
-    else if (1.3 <= eta && eta < 2.1 ) return 4;
-    else if (2.1 <= eta && eta < 3.0 ) return 5;
-    else if (3.0 <= eta && eta < 5.0 ) return 6;
+int getRhoIndex(float eta,size_t rhoSize=6){
+	if(rhoSize==7){	
+    		if      (-5.0 <= eta && eta < 3.0) return 1;
+    		else if (-3.0 <= eta && eta < -2.1) return 2;
+    		else if (-2.1 <= eta && eta < -1.3) return 2;
+    		else if (-1.3 <= eta && eta < 1.3 ) return 3;
+    		else if (1.3 <= eta && eta < 2.1 ) return 4;
+    		else if (2.1 <= eta && eta < 3.0 ) return 5;
+    		else if (3.0 <= eta && eta < 5.0 ) return 6;
+	} else{
+		if      (eta < -2.1 ) return 1;
+    		else if (eta < -1.3 ) return 2;
+    		else if (eta <  1.3 ) return 3;
+    		else if (eta <  2.1 ) return 4;
+    		else return 5;
+	}
 }
 
 
@@ -581,7 +589,7 @@ int main(int argc, char* argv[])
       l.phoiso  = fForestLep.muPFPhoIso->at(muIter);
       l.rho     = getRho(pfColl,{1,2,3,4,5,6},p4.Eta()-0.5,p4.Eta()+0.5);      
       if (!isMC && GT.find("75X")==string::npos){
-        int   tmp_rhoind  = getRhoIndex(p4.Eta());
+        int   tmp_rhoind  = getRhoIndex(p4.Eta(),t_rho.size());
         float tmp_rho_par = 0.0013 * TMath::Power(t_rho->at(tmp_rhoind)+15.83,2) + 0.29 * (t_rho->at(tmp_rhoind)+15.83); 
         l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
       }
@@ -676,7 +684,7 @@ int main(int argc, char* argv[])
       }
       l.rho     = getRho(pfColl,{1,2,3,4,5,6},p4.Eta()-0.5,p4.Eta()+0.5);
       if (!isMC && GT.find("75X")==string::npos){
-        int   tmp_rhoind  = getRhoIndex(p4.Eta());
+        int   tmp_rhoind  = getRhoIndex(p4.Eta(),t_rho.size());
         float tmp_rho_par = 0.0011 * TMath::Power(t_rho->at(tmp_rhoind)+142.4,2) - 0.14 * (t_rho->at(tmp_rhoind)+142.4); 
         l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
       }
