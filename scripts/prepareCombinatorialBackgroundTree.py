@@ -41,7 +41,7 @@ def prepareDileptonCollection(url):
         pickle.dump( dilCollection,cache,pickle.HIGHEST_PROTOCOL)
     return pckURL
 
-def createMixedFriendTrees(url,mixFile,outURL):
+def createMixedFriendTrees(url,mixFile,outURL,nMix=10):
     
     """for each file it mixes one lepton at each time and dumps a friend tree with mix_lep_* branches"""
 
@@ -94,45 +94,48 @@ def createMixedFriendTrees(url,mixFile,outURL):
             orig_flav = orig_dil.flavour
             orig_isZ  = orig_dil.isZ
 
-            #mix one lepton at each time
-            for i in range(2):
-                leptons=[getattr(orig_dil,'l%d'%(i+1))]
-                lidToGet=orig_dil.l2.pdgId if i==0 else orig_dil.l1.pdgId
-                while True:
-                    mix_dil=random.choice(mixDileptons[orig_flav,orig_isZ])
-                    leptons.append( mix_dil.l1 if mix_dil.l1.pdgId==lidToGet else mix_dil.l2 )
-                    break
+            #repeat the mixing as many times as desired
+            for imix in range(nMix):
 
-                #sort by pT
-                leptons.sort(key=lambda x: x.pt, reverse=True)
+                #mix one lepton at each time
+                for i in range(2):
+                    leptons=[getattr(orig_dil,'l%d'%(i+1))]
+                    lidToGet=orig_dil.l2.pdgId if i==0 else orig_dil.l1.pdgId
+                    while True:
+                        mix_dil=random.choice(mixDileptons[orig_flav,orig_isZ])
+                        leptons.append( mix_dil.l1 if mix_dil.l1.pdgId==lidToGet else mix_dil.l2 )
+                        break
 
-                #fill the out tree
-                for name in LEPTONBRANCHES:
-                    for il in range(2):                        
-                        out_t_branches[name][il]=getattr(leptons[il],name)
+                    #sort by pT
+                    leptons.sort(key=lambda x: x.pt, reverse=True)
+
+                    #fill the out tree
+                    for name in LEPTONBRANCHES:
+                        for il in range(2):                        
+                            out_t_branches[name][il]=getattr(leptons[il],name)
                 
-                llp4             = leptons[0].p4+leptons[1].p4
-                dphill           = abs(leptons[0].p4.DeltaPhi(leptons[1].p4))
-                detall           = abs(leptons[0].eta-leptons[1].eta)
-                sumeta           = leptons[0].eta+leptons[1].eta
-                bdt_l1pt[0]      = max(leptons[0].pt,leptons[1].pt)
-                bdt_llpt[0]      = llp4.Pt()
-                bdt_apt[0]       = abs(leptons[0].pt-leptons[1].pt)/(leptons[0].pt+leptons[1].pt)
-                bdt_abslleta[0]  = abs(llp4.Eta())
-                bdt_dphill[0]    = dphill
-                bdt_sumabseta[0] = abs(leptons[0].eta)+abs(leptons[1].eta)                
-                out_t_branches['llpt'][0]       = llp4.Pt()
-                out_t_branches['lleta'][0]      = llp4.Eta()
-                out_t_branches['llphi'][0]      = llp4.Phi()
-                out_t_branches['llm'][0]        = llp4.M()
-                out_t_branches['dphi'][0]       = dphill
-                out_t_branches['deta'][0]       = detall
-                out_t_branches['sumeta'][0]     = sumeta
-                out_t_branches['apt'][0]        = bdt_apt[0]
-                out_t_branches['bdt'][0]        = tmva_reader.EvaluateMVA(BDTMETHOD)
-                out_t_branches['bdtrarity'][0]  = tmva_reader.GetRarity(BDTMETHOD)
-
-                out_t.Fill()
+                    llp4             = leptons[0].p4+leptons[1].p4
+                    dphill           = abs(leptons[0].p4.DeltaPhi(leptons[1].p4))
+                    detall           = abs(leptons[0].eta-leptons[1].eta)
+                    sumeta           = leptons[0].eta+leptons[1].eta
+                    bdt_l1pt[0]      = max(leptons[0].pt,leptons[1].pt)
+                    bdt_llpt[0]      = llp4.Pt()
+                    bdt_apt[0]       = abs(leptons[0].pt-leptons[1].pt)/(leptons[0].pt+leptons[1].pt)
+                    bdt_abslleta[0]  = abs(llp4.Eta())
+                    bdt_dphill[0]    = dphill
+                    bdt_sumabseta[0] = abs(leptons[0].eta)+abs(leptons[1].eta)                
+                    out_t_branches['llpt'][0]       = llp4.Pt()
+                    out_t_branches['lleta'][0]      = llp4.Eta()
+                    out_t_branches['llphi'][0]      = llp4.Phi()
+                    out_t_branches['llm'][0]        = llp4.M()
+                    out_t_branches['dphi'][0]       = dphill
+                    out_t_branches['deta'][0]       = detall
+                    out_t_branches['sumeta'][0]     = sumeta
+                    out_t_branches['apt'][0]        = bdt_apt[0]
+                    out_t_branches['bdt'][0]        = tmva_reader.EvaluateMVA(BDTMETHOD)
+                    out_t_branches['bdtrarity'][0]  = tmva_reader.GetRarity(BDTMETHOD)
+                    
+                    out_t.Fill()
                     
             
         #write tree
