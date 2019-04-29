@@ -58,12 +58,17 @@ python scripts/prepareCombinatorialBackgroundTree.py ${out} ${out}/Combinatorial
 
 Optimize isolation cuts (it will use the summary pck file produced by the prepareCombinatorialBackgroundTree.py script).
 ```
-python scripts/optimizeLeptonIsolation.py ${out}
+python scripts/optimizeLeptonIsolation.py
+```
+
+Optimize b-tagging (ttbar dilepton based)
+```
+python scripts/optimizeBtagEff.py ${out}
 ```
 
 Plot the baseline preselection plots
 ```
-python scripts/makeAnalysisPlots.py plots/
+python scripts/makeAnalysisPlots.py ${out}
 ```
 
 ## Luminosity

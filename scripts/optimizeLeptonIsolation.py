@@ -250,10 +250,13 @@ def tuneIsolation(mixFile,ch=11*11):
     #overall performance summary
     drawROCSummary(rocCurves,'rocsummary_%d'%ch)
 
+def main():
+    ROOT.gROOT.SetBatch(True)
+    ROOT.gStyle.SetOptTitle(0)
+    ROOT.gStyle.SetOptStat(0)
+    ROOT.gStyle.SetPalette(ROOT.kLightTemperature)        
+    tuneIsolation('dilepton_summary.pck',11*11)
+    tuneIsolation('dilepton_summary.pck',13*13)
 
-ROOT.gROOT.SetBatch(True)
-ROOT.gStyle.SetOptTitle(0)
-ROOT.gStyle.SetOptStat(0)
-ROOT.gStyle.SetPalette(ROOT.kLightTemperature)        
-tuneIsolation('dilepton_summary.pck',11*11)
-tuneIsolation('dilepton_summary.pck',13*13)
+if __name__ == "__main__":
+    main()
