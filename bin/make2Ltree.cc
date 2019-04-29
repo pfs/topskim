@@ -544,9 +544,11 @@ int main(int argc, char* argv[])
     //monitor trigger and centrality
     float cenBin=0;
     bool isCentralEvent(false);
-    if(!isMC){
+    if(!isPP){
       cenBin=0.5*fForestTree.hiBin;
-      isCentralEvent=(!isPP && cenBin<30);
+      isCentralEvent=(cenBin<30);
+    }
+    if(!isMC){
       Int_t runBin=lumiTool.getRunBin(fForestTree.run);
       Float_t lumi=lumiTool.getLumi(fForestTree.run);
       if(lumi>0.){
