@@ -573,14 +573,8 @@ int main(int argc, char* argv[])
       l.chiso   = fForestLep.muPFChIso->at(muIter);
       l.nhiso   = fForestLep.muPFNeuIso->at(muIter);
       l.phoiso  = fForestLep.muPFPhoIso->at(muIter);
+      l.isofull = l.chiso+l.nhiso+l.phoiso;
       int   tmp_rhoind  = getRhoIndex(p4.Eta(),t_etaMin,t_etaMax);
-      if (!isMC && GT.find("75X")==string::npos && tmp_rhoind>=0){
-        float tmp_rho_par = 0.0013 * TMath::Power(t_rho->at(tmp_rhoind)+15.83,2) + 0.29 * (t_rho->at(tmp_rhoind)+15.83); 
-        l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
-      }
-      else {
-        l.isofull = -1.;
-      }
       l.rho = isPP ? globalrho : t_rho->at(tmp_rhoind);
 
       l.isofullR=getIsolationFull( pfColl, l.p4);
@@ -668,15 +662,8 @@ int main(int argc, char* argv[])
         l.nhiso   = fForestLep.elePFNeuIso->at(eleIter);
         l.phoiso  = fForestLep.elePFPhoIso->at(eleIter);
       }
+      l.isofull = l.chiso+l.nhiso+l.phoiso;
       int   tmp_rhoind  = getRhoIndex(p4.Eta(),t_etaMin,t_etaMax);
-      if (!isMC && GT.find("75X")==string::npos && tmp_rhoind>=0){
-        float tmp_rho_par = 0.0011 * TMath::Power(t_rho->at(tmp_rhoind)+142.4,2) - 0.14 * (t_rho->at(tmp_rhoind)+142.4); 
-        l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
-      }
-      else {
-        l.isofull = -1.;
-      }
-
       l.rho = isPP ? globalrho : t_rho->at(tmp_rhoind);
 
       l.isofullR= getIsolationFull( pfColl, l.p4);
@@ -824,24 +811,14 @@ int main(int argc, char* argv[])
       if( (genDileptonCat==11*11 && etrig==0) || (genDileptonCat==13*13 && mtrig==0)) 
         isMatchedDilepton=false;
 
-      bool isIsoDilepton(true);
-      for(size_t i=0; i<2; i++) {
-        if( (abs(selLeptons[i].id)==13 && selLeptons[i].isofull<0.26) ||
-            (abs(selLeptons[i].id)==11 && selLeptons[i].isofull<0.16) ) continue;
-        isIsoDilepton=false;
-      }
-
       std::vector<TString> fidCats;
       fidCats.push_back( isMatchedDilepton   ? "lep"    : "fakelep" );
-      if(isIsoDilepton) {
-        fidCats.push_back( isMatchedDilepton ? "isolep" : "fakeisolep" );
-        if(npfbjets>0) {
-          fidCats.push_back( isMatchedDilepton && is1bFiducial ? "isolep1b" : "fakeisolep1b" );
-          if(npfbjets>1) {
-            fidCats.push_back( isMatchedDilepton && is2bFiducial ? "isolep2b" : "fakeisolep2b" );
-          }
+      if(npfbjets>0) {
+        fidCats.push_back( isMatchedDilepton && is1bFiducial ? "lep1b" : "fakelep1b" );
+        if(npfbjets>1) {
+          fidCats.push_back( isMatchedDilepton && is2bFiducial ? "lep2b" : "fakelep2b" );
         }
-      }
+      }    
       
       size_t nWgts(fForestTree.ttbar_w->size());
       if(nWgts==0) nWgts=1;
@@ -988,8 +965,22 @@ int main(int argc, char* argv[])
       t_lep_isofull30.push_back( selLeptons[ilep].isofullR[2] );
       t_lep_miniiso.push_back( selLeptons[ilep].miniiso );
       t_lep_matched.push_back( selLeptons[ilep].isMatched );
-      if(selLeptons[ilep].isofull < 0.16 && t_lep_ind1 < 0) t_lep_ind1 = ilep;
-      if(selLeptons[ilep].isofull < 0.16 && t_lep_ind1 > -0.5 && t_lep_ind2 < 0) t_lep_ind2 = ilep;
+
+      //isolation-based indices
+      bool isIso(true);
+      if(abs(selLeptons[ilep].id)==13) {
+        float rho=selLeptons[ilep].rho;
+        float ue=0.00102*pow(rho+12.6255,2)+0.18535*(rho+12.6255);
+        float iso=(selLeptons[ilep].isofull-ue)/selLeptons[ilep].p4.Pt();
+        if(iso>0.12) isIso=false;
+      }else {
+        float rho=selLeptons[ilep].rho;
+        float ue=0.000817*pow(rho+14.696,2)+0.201661*(rho+14.696);
+        float iso=(selLeptons[ilep].isofull-ue)/selLeptons[ilep].p4.Pt();
+        if(iso>0.) isIso=false;
+      }
+      if(isIso && t_lep_ind1 < 0)                    t_lep_ind1 = ilep;
+      if(isIso && t_lep_ind1 > -1 && t_lep_ind2 < 0) t_lep_ind2 = ilep;
     }
 
     // fill the jets ordered by b-tag
