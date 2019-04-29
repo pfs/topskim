@@ -101,13 +101,14 @@ def main():
         csv[tag].SetTitle(tag)
         csv[tag].SetMarkerStyle(ms)
         csv[tag].SetLineColor(ci)
+        csv[tag].SetMarkerColor(ci)
 
     #tune the working point
     wpEff=0.01
     bestCut=0.8
-    bestEff=csv['usdg'].Eval(bestCut)
+    bestEff=csv['udsg'].Eval(bestCut)
     for x in np.arange(bestCut,1,0.01):
-        eff=max(csv['usdg'].Eval(x),csv['unmatched'].Eval(x))
+        eff=max(csv['udsg'].Eval(x),csv['unmatched'].Eval(x))
         if abs(eff-wpEff)>abs(bestEff-wpEff): continue
         bestCut=x
         bestEff=eff
