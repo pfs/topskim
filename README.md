@@ -56,7 +56,12 @@ Prepare data-trees for the combinatorial background from event mixing
 python scripts/prepareCombinatorialBackgroundTree.py ${out} ${out}/Combinatorial
 ```
 
-Plot the results
+Optimize isolation cuts (it will use the summary pck file produced by the prepareCombinatorialBackgroundTree.py script).
+```
+python scripts/optimizeLeptonIsolation.py ${out}
+```
+
+Plot the baseline preselection plots
 ```
 python scripts/makeAnalysisPlots.py plots/
 ```
