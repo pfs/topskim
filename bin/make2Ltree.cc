@@ -5,6 +5,7 @@
 #include "TLorentzVector.h"
 #include "TChain.h"
 #include "TSystem.h"
+#include "TF1.h"
 
 #include <string>
 #include <vector>
@@ -92,6 +93,59 @@ static bool orderByPt(const LeptonSummary &a, const LeptonSummary &b)
   return false;
 }
 
+//parameterizations from Glauber MC
+Double_t findNcoll(int hiBin) {
+  const int nbins = 200;
+  const Double_t Ncoll[nbins] = {1976.95, 1944.02, 1927.29, 1891.9, 1845.3, 1807.2, 1760.45, 1729.18, 1674.8, 1630.3, 1590.52, 1561.72, 1516.1, 1486.5, 1444.68, 1410.88, 1376.4, 1347.32, 1309.71, 1279.98, 1255.31, 1219.89, 1195.13, 1165.96, 1138.92, 1113.37, 1082.26, 1062.42, 1030.6, 1009.96, 980.229, 955.443, 936.501, 915.97, 892.063, 871.289, 847.364, 825.127, 806.584, 789.163, 765.42, 751.187, 733.001, 708.31, 690.972, 677.711, 660.682, 640.431, 623.839, 607.456, 593.307, 576.364, 560.967, 548.909, 530.475, 519.575, 505.105, 490.027, 478.133, 462.372, 451.115, 442.642, 425.76, 416.364, 405.154, 392.688, 380.565, 371.167, 360.28, 348.239, 340.587, 328.746, 320.268, 311.752, 300.742, 292.172, 281.361, 274.249, 267.025, 258.625, 249.931, 240.497, 235.423, 228.63, 219.854, 214.004, 205.425, 199.114, 193.618, 185.644, 180.923, 174.289, 169.641, 161.016, 157.398, 152.151, 147.425, 140.933, 135.924, 132.365, 127.017, 122.127, 117.817, 113.076, 109.055, 105.16, 101.323, 98.098, 95.0548, 90.729, 87.6495, 84.0899, 80.2237, 77.2201, 74.8848, 71.3554, 68.7745, 65.9911, 63.4136, 61.3859, 58.1903, 56.4155, 53.8486, 52.0196, 49.2921, 47.0735, 45.4345, 43.8434, 41.7181, 39.8988, 38.2262, 36.4435, 34.8984, 33.4664, 31.8056, 30.351, 29.2074, 27.6924, 26.7754, 25.4965, 24.2802, 22.9651, 22.0059, 21.0915, 19.9129, 19.1041, 18.1487, 17.3218, 16.5957, 15.5323, 14.8035, 14.2514, 13.3782, 12.8667, 12.2891, 11.61, 11.0026, 10.3747, 9.90294, 9.42648, 8.85324, 8.50121, 7.89834, 7.65197, 7.22768, 6.7755, 6.34855, 5.98336, 5.76555, 5.38056, 5.11024, 4.7748, 4.59117, 4.23247, 4.00814, 3.79607, 3.68702, 3.3767, 3.16309, 2.98282, 2.8095, 2.65875, 2.50561, 2.32516, 2.16357, 2.03235, 1.84061, 1.72628, 1.62305, 1.48916, 1.38784, 1.28366, 1.24693, 1.18552, 1.16085, 1.12596, 1.09298, 1.07402, 1.06105, 1.02954};
+  return Ncoll[hiBin];
+};
+
+//
+TF1 *getRBW(float m,float g) {
+  //define the relativistic Breit-Wigner function
+  TF1 *bwigner=new TF1("bwigner",
+                       "[0]*([1]*[2]*sqrt([1]*[1]*([1]*[1]+[2]*[2]))/sqrt([1]*[1]+sqrt([1]*[1]*([1]*[1]+[2]*[2]))))/(TMath::Power(x*x-[1]*[1],2)+TMath::Power([1]*[2],2))",
+                       max(float(0.),m-50*g),m+50*g);
+
+  bwigner->SetParName(0,"N");
+  bwigner->SetParameter(0,1.0);
+  bwigner->SetParName(1,"m_{0}");
+  bwigner->FixParameter(1,m);
+  bwigner->SetParName(2,"#Gamma_{t}");
+  bwigner->FixParameter(2,g);
+
+  return bwigner;
+}
+
+//
+float weightBW(TF1 *bwigner,std::vector<float> obsm,float g,float m,float gini,float mini) {
+
+  //
+  if(bwigner==NULL || obsm.size()!=2 || obsm[0]<150 || obsm[1]<150) return 1.;
+
+  bwigner->FixParameter(1,mini);
+  bwigner->FixParameter(2,gini);
+  float nini=bwigner->Integral(max(m-50*g,float(0.)),m+50*g);
+      
+  bwigner->FixParameter(1,m);
+  bwigner->FixParameter(2,g);
+  float n=bwigner->Integral(max(m-50*g,float(0.)),m+50*g);
+
+  float wgt(1.0);
+  for(auto obsm_i : obsm){
+    bwigner->FixParameter(1,mini);
+    bwigner->FixParameter(2,gini);
+    float vini=bwigner->Eval(obsm_i);
+
+    bwigner->FixParameter(1,m);
+    bwigner->FixParameter(2,g);
+    float v=bwigner->Eval(obsm_i);
+
+    wgt *= (v/n) / (vini/nini);
+  }
+
+  return wgt;
+}
 
 
 //
@@ -267,6 +321,16 @@ int main(int argc, char* argv[])
     std::cout << "[WARN] Can't find rho tree hiFJRhoAnalyzer/t" << std::endl;
   }
 
+  std::vector<size_t> meIdxList={1,2,3,4,6,8}; //qcd weights
+  if(isPP){
+    for(size_t i=10; i<=111; i++) meIdxList.push_back(i); //hessian NNPDF3.1
+    meIdxList.push_back(116); meIdxList.push_back(117);   //alphaS variation +/-0.001
+  }else{
+    //FIXME once official TT samples are done run scripts/ttSystWeights.py
+  }
+  if(!isMC) meIdxList.clear();
+  TF1 *rbwigner=NULL;
+  if(isMC) rbwigner=getRBW(172.5,1.31);
   
   // =============================================================
   // marc here make the output tree
@@ -276,16 +340,19 @@ int main(int argc, char* argv[])
   // event and trigger variables
   Int_t  t_run, t_lumi, t_etrig, t_mtrig, t_isData;
   Long_t t_event;
-  Float_t t_weight, t_cenbin;
+  Float_t t_weight, t_cenbin, t_ncoll;
+  std::vector<Float_t> t_meWeights;
   outTree->Branch("run"   , &t_run  , "run/I");
   outTree->Branch("lumi"  , &t_lumi , "lumi/I");
   outTree->Branch("event" , &t_event, "event/L");
   outTree->Branch("isData", &t_isData, "isData/I");
 
   outTree->Branch("weight", &t_weight, "weight/F");
+  outTree->Branch("meWeights", &t_meWeights);
 
   // centrality and different flavors of rho
   outTree->Branch("cenbin", &t_cenbin, "cenbin/F");
+  outTree->Branch("ncoll", &t_ncoll, "ncoll/F");
   
   outTree->Branch("rho",    &t_rho);
   outTree->Branch("rhom",   &t_rhom);
@@ -441,25 +508,29 @@ int main(int argc, char* argv[])
     if(rhoTree_p) rhoTree_p->GetEntry(entry);
 
     //gen level analysis
-    float evWgt(1.0);
+    float evWgt(1.0),topPtWgt(1.0),topMassUpWgt(1.0),topMassDnWgt(1.0);
     int genDileptonCat(1.);
     std::vector<TLorentzVector> genLeptons, genBjets;
     bool isGenDilepton(false),isLeptonFiducial(false),is1bFiducial(false),is2bFiducial(false);    
     if(isMC) {
      
-      //gen level selection      
+      //gen level selection
+      TLorentzVector topP4(0,0,0,0),antitopP4(0,0,0,0);
       for(size_t i=0; i<fForestGen.mcPID->size(); i++) {
         int pid=fForestGen.mcPID->at(i);
         //int sta=fForestGen.mcStatus->at(i);
         int mom_pid=fForestGen.mcMomPID->at(i);
         int gmom_pid=fForestGen.mcGMomPID->at(i);
         
-        if( abs(pid)<6  && abs(mom_pid)==6 ) {
-          TLorentzVector p4(0,0,0,0);
-          p4.SetPtEtaPhiM( fForestGen.mcPt->at(i), fForestGen.mcEta->at(i), fForestGen.mcPhi->at(i), fForestGen.mcMass->at(i) );
+        TLorentzVector p4(0,0,0,0);
+        p4.SetPtEtaPhiM( fForestGen.mcPt->at(i), fForestGen.mcEta->at(i), fForestGen.mcPhi->at(i), fForestGen.mcMass->at(i) );
+
+        if(pid==6)  topP4=p4;
+        if(pid==-6) antitopP4=p4;
+        if( abs(pid)<6  && abs(mom_pid)==6 ) {          
           if(p4.Pt()>30 && fabs(p4.Eta())<2.5) genBjets.push_back(p4);          
         }
-
+        
         //leptons from t->W->l or W->tau->l
         if( abs(pid)==11 || abs(pid)==13 ) {
           
@@ -474,6 +545,13 @@ int main(int argc, char* argv[])
           }
         }
       }
+
+      topPtWgt = TMath::Exp(0.199-0.00166*topP4.Pt());
+      topPtWgt *= TMath::Exp(0.199-0.00166*antitopP4.Pt());
+      topPtWgt = TMath::Sqrt(topPtWgt);
+      std::vector<float> obsm={float(topP4.M()),float(antitopP4.M())};
+      topMassDnWgt = weightBW(rbwigner,obsm,171.5,1.28,172.5,1.31);
+      topMassUpWgt = weightBW(rbwigner,obsm,173.5,1.34,172.5,1.31);
       
       isGenDilepton=(genLeptons.size()==2);      
       isLeptonFiducial=(isGenDilepton && 
@@ -919,7 +997,26 @@ int main(int argc, char* argv[])
     t_lumi   = fForestTree.lumi;
     t_event  = fForestTree.evt;
     t_weight = plotWgt;
+    t_meWeights.clear();
+    if(isMC){
+      t_meWeights.push_back(topPtWgt);
+      t_meWeights.push_back(1./topPtWgt);
+      t_meWeights.push_back(topMassUpWgt);
+      t_meWeights.push_back(topMassDnWgt);
+      if(fForestTree.ttbar_w->size()>0) {
+        float nomWgt=fForestTree.ttbar_w->at(0);
+        for(auto meIdx : meIdxList){
+          if(meIdx< fForestTree.ttbar_w->size()){
+            t_meWeights.push_back( fForestTree.ttbar_w->at(meIdx)/nomWgt );
+          }
+        }
+      }
+    }
+    
+    //centrality
     t_cenbin = cenBin;
+    t_ncoll  = findNcoll(fForestTree.hiBin);
+
     t_globalrho = globalrho;
     t_etrig  = etrig;
     t_mtrig  = mtrig;

@@ -16,7 +16,8 @@ class PhysicsObject:
     def __init__(self,tag='lepton'):
         self.tag=tag
         self.p4=TLorentzVector(0,0,0,0)
-        
+        self.matched=False
+
     def addProperty(self,name,val):
         setattr(self,name,val)
 
@@ -63,6 +64,7 @@ def getLeptons(t,pdgIdColl=[13,11]):
         for name in LEPTONBRANCHES:
             lepColl[-1].addProperty(name,getattr(t,'lep_'+name)[il])
         lepColl[-1].addProperty('m',mass)            
+        lepColl[-1].matched=bool(t.lep_matched[il])
         lepColl[-1].buildP4()
 
     return lepColl

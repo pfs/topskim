@@ -5,9 +5,11 @@ import numpy as np
 import pickle
 from array import array
 from HeavyIonsAnalysis.topskim.EventReader import *
+from prepareCombinatorialBackgroundTree import prepareDileptonCollection
 
-ISOTITLES=['I','I(R=0.2)','I(R=0.25)','I(R=0.3)','Mini isolation','Charged isolation']
+ISOTITLES=['I_{raw}','I','I(R=0.2)','I(R=0.25)','I(R=0.3)','Mini isolation','Charged isolation']
 REQ_EFFB=0.4
+MCTAG='TTDilepton_TuneZ2_HydjetDrumMB'
 
 def canvasHeader(extraTxt=[]):
     txt=ROOT.TLatex()
@@ -138,7 +140,7 @@ def getROC(sig, bkg, cutAtEffB):
 
     return roc_gr,effs_gr,effb_gr, bestEff, bestCut
 
-def tuneIsolation(mixFile,ch=11*11):
+def tuneIsolation(mixFile,ch,matchedll=None):
     
     #readout Z and same-sign candidate events
     with open(mixFile,'r') as cache:
@@ -148,6 +150,9 @@ def tuneIsolation(mixFile,ch=11*11):
 
     kin,isoEstimators,rho=getVariables(zll)
     ss_kin,ss_isoEstimators,ss_rho=getVariables(ssll)
+    mc_kin,mc_isoEstimators,mc_rho=None,None,None
+    if matchedll:
+        mc_kin,mc_isoEstimators,mc_rho=getVariables(matchedll)
 
     qkin=np.percentile(kin,range(0,120,20),axis=0)
     qiso=np.percentile(isoEstimators,range(0,110,10),axis=0)
@@ -178,8 +183,11 @@ def tuneIsolation(mixFile,ch=11*11):
         corisovsrho=ROOT.TH2F('coriso%dvsrho'%i, ';#rho;[%s-UE(#rho)]/p_{T}'%ISOTITLES[i], 10,array('d',qrho),50,-3,3)
         coriso=ROOT.TH1F('coriso%d'%i, ';[%s-UE(#rho)]/p_{T};'%ISOTITLES[i],50,-3,3)
         corIsoEstimators=[]
-        for k in range(len(isoEstimators)):
-            corIso=(isoEstimators[k][i]-isoProf.Eval(rho[k]))/kin[k][0]
+        for k in range(len(isoEstimators)):            
+            if i>0:
+                corIso=(isoEstimators[k][i]-isoProf.Eval(rho[k]))/kin[k][0]
+            else:
+                corIso=(isoEstimators[k][i])/kin[k][0]
             corIsoEstimators.append(corIso)
             corisovsrho.Fill(rho[k],corIso)
             coriso.Fill(corIso)
@@ -195,10 +203,32 @@ def tuneIsolation(mixFile,ch=11*11):
         ss_coriso.Reset('ICE')
         ss_corIsoEstimators=[]
         for k in range(len(ss_isoEstimators)):
-            corIso=(ss_isoEstimators[k][i]-isoProf.Eval(ss_rho[k]))/ss_kin[k][0]
+            if i>0:
+                corIso=(ss_isoEstimators[k][i]-isoProf.Eval(ss_rho[k]))/ss_kin[k][0]
+            else:
+                corIso=(ss_isoEstimators[k][i])/ss_kin[k][0]
             ss_corIsoEstimators.append(corIso)
             ss_coriso.Fill(corIso)
             
+
+        #repeat the same for MC truth if available
+        mc_coriso=None
+        mc_corIsoEstimators=[]
+        if mc_isoEstimators:
+            mc_coriso=coriso.Clone('mccoriso%d'%i)
+            mc_coriso.Reset('ICE')
+            mc_coriso.SetLineWidth(2)
+            mc_coriso.SetLineColor(ROOT.kCyan+1)
+            mc_coriso.SetLineStyle(9)
+            for k in range(len(mc_isoEstimators)):
+                if i>0:
+                    corIso=(mc_isoEstimators[k][i]-isoProf.Eval(mc_rho[k]))/mc_kin[k][0]
+                else:
+                    corIso=(mc_isoEstimators[k][i])/mc_kin[k][0]
+                mc_corIsoEstimators.append(corIso)
+                mc_coriso.Fill(corIso)
+            mc_coriso.Scale(1./mc_coriso.Integral())
+
         #compare both
         coriso.Scale(1./coriso.Integral())
         coriso.SetLineWidth(2)
@@ -214,19 +244,22 @@ def tuneIsolation(mixFile,ch=11*11):
         result[1].SetLineColor(1)
         result[2].SetLineColor(ROOT.kRed)
         cut=result[-1]
+        hextra=[(ss_coriso,'histsame')]
+        if mc_coriso: hextra.append( (mc_coriso,'histsame') )
         drawIsolationProfile(hmain=coriso,
-                             hextra=[(ss_coriso,'histsame')],
+                             hextra=hextra,
                              extraTxt=[isoTitle,'I_{rel}<%f'%cut],
                              name='coriso%d_%d'%(i,ch))
 
         #efficiency versus lepton kinematics
         isoeff=ROOT.TH2F('effvsptvseta_iso%d'%i, ';Transverse momentum [GeV];Pseudo-rapidity;Efficiency', 5,array('d',qkin[:,0]),5,array('d',qkin[:,1]) )
         isoeff.Sumw2()
-        isoeff_den=isoeff.Clone('isoeffden')
-        for k in range(len(kin)):
-            isoeff_den.Fill(kin[k][0],kin[k][1])
+        isoeff_den=isoeff.Clone('isoeffden')    
+        for k in range(len(mc_kin)):
+            pt,eta,_=mc_kin[k]
+            isoeff_den.Fill(pt,eta)
             if corIsoEstimators[k]>cut : continue
-            isoeff.Fill(kin[k][0],kin[k][1])
+            isoeff.Fill(pt,eta)
         isoeff.Divide(isoeff_den)
         isoeff_den.Delete()
         drawIsolationProfile(hmain=isoeff,
@@ -234,18 +267,80 @@ def tuneIsolation(mixFile,ch=11*11):
                              extraTxt=[isoTitle,'I_{rel}<%f'%cut],                                       
                              name='iso%deff_%d'%(i,ch))
 
+        #scale factor
+        if mc_isoEstimators:
+            mcisoeff=isoeff.Clone('isomcnum')
+            mcisoeff.Reset('ICE')
+            mcisoeff_den=mcisoeff.Clone('isomcden')
+            for k in range(len(mc_kin)):
+                pt,eta,_=mc_kin[k]
+                mcisoeff_den.Fill(pt,eta)
+                if mc_corIsoEstimators[k]>cut : continue
+                mcisoeff.Fill(pt,eta)
+            mcisoeff.Divide(mcisoeff_den)
+            mcisoeff_den.Delete()
+            sfisoeff=isoeff.Clone('sfiso')
+            sfisoeff.Divide(mcisoeff)
+            sfisoeff.GetZaxis().SetTitle('SF = #varepsilon(data)/#varepsilon(MC)')
+            sfisoeff.GetZaxis().SetRangeUser(0.8,1.2)
+            drawIsolationProfile(hmain=sfisoeff,
+                             hextra=[],
+                             extraTxt=[isoTitle,'I_{rel}<%f'%cut],                                       
+                             name='sfiso%deff_%d'%(i,ch))
 
+            
         #look for hotspots in same-sign data
         ssHotSpots=ROOT.TH2F('ssetavsphi',';Pseudo-rapidity;Azimuthal angle [rad];Candidates',25,-2.5,2.5,25,-3.15,3.15)
         isossHotSpots=ssHotSpots.Clone('isossetavsphi')
+        if i==5:
+            sshs_iso=ROOT.TH1F('sshsiso%d'%i,';%s;Leptons'%ISOTITLES[i],10,array('d',qiso[:,i]))
+        else:
+            sshs_iso=ROOT.TH1F('sshsiso%d'%i,';%s;Leptons'%ISOTITLES[i],50,-3,3)
+        ssnhs_iso=sshs_iso.Clone('ssnhsiso%d'%i)
+        ziso=sshs_iso.Clone('ziso%d'%i)
         for k in range(len(ss_kin)):
-            ssHotSpots.Fill(ss_kin[k][1],ss_kin[k][2])
+            
+            pt,eta,phi=ss_kin[k]
+            HEM1516failure=True if eta<-1.39 and -1.6<phi<-0.9 else False
+
+            isoVal=ss_isoEstimators[k][i] if i==5 else ss_corIsoEstimators[k]
+            if HEM1516failure:
+                sshs_iso.Fill(isoVal)
+            else:
+                ssnhs_iso.Fill(isoVal)
+
+            ssHotSpots.Fill(eta,phi)
             if ss_corIsoEstimators[k]>cut : continue
-            isossHotSpots.Fill(ss_kin[k][1],ss_kin[k][2])
+            isossHotSpots.Fill(eta,phi)
+
+        for k in range(len(kin)):
+            isoVal=isoEstimators[k][i] if i==5 else corIsoEstimators[k]
+            ziso.Fill(isoVal)
+
+
         if i==0: drawIsolationProfile(hmain=ssHotSpots,hextra=[],extraTxt=[],name='sshotspots_%d'%ch)
         drawIsolationProfile(hmain=isossHotSpots,hextra=[],extraTxt=[isoTitle,'I_{rel}<%f'%cut],name='iso%dsshotspots_%d'%(i,ch))
         ssHotSpots.Delete()
         isossHotSpots.Delete()
+
+        if ch==121:
+            for h in [ssnhs_iso,sshs_iso,ziso]:
+                h.Scale(1./h.Integral())
+                h.SetLineWidth(2)
+                h.GetYaxis().SetTitle('PDF')
+                if i!=5: continue
+                for xbin in range(ssnhs_iso.GetNbinsX()):
+                    wid=ssnhs_iso.GetXaxis().GetBinWidth(xbin+1)                
+                    h.SetBinContent(xbin+1,h.GetBinContent(xbin+1)/wid)
+                    h.SetBinError(xbin+1,h.GetBinError(xbin+1)/wid)
+            ziso.SetLineColor(ROOT.kRed)
+            sshs_iso.SetLineColor(ROOT.kGray+2)
+            sshs_iso.SetFillStyle(3001)
+            sshs_iso.SetFillColor(ROOT.kGray)
+            drawIsolationProfile(hmain=ziso,
+                                 hextra=[(sshs_iso,'histsame'),(ssnhs_iso,'histsame')],
+                                 extraTxt=[ISOTITLES[i] if i==5 else isoTitle],
+                                 name='iso%d_hotspotcomp_%d'%(i,ch))
 
     #overall performance summary
     drawROCSummary(rocCurves,'rocsummary_%d'%ch)
@@ -255,8 +350,21 @@ def main():
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetPalette(ROOT.kLightTemperature)        
-    tuneIsolation('dilepton_summary.pck',11*11)
-    tuneIsolation('dilepton_summary.pck',13*13)
+
+    matchedll={11*11:None,13*13:None}
+    if len(sys.argv)>1:
+       
+        print 'Processing MC truth from',MCTAG
+        #prepareDileptonCollection(sys.argv[1],MCTAG)
+
+        #readout matched leptons
+        with open('dilepton_summary_%s.pck'%MCTAG,'r') as cache:
+            allDileptons=pickle.load(cache)
+            for ch in matchedll:
+                matchedll[ch]=[ll for ll in allDileptons[(ch,False)] if ll.l1.matched and ll.l2.matched]
+
+    for ch in matchedll:
+        tuneIsolation('dilepton_summary.pck',ch,matchedll[ch])
 
 if __name__ == "__main__":
     main()

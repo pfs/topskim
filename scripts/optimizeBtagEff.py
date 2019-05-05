@@ -84,16 +84,16 @@ def main():
     #get the efficiency curves
     csv={}
     for tag,sample,flav,cenRange,ms,ci in [ ('b',                  baseDir+mixSig, [5],        None,     20, 1),
-                                            #('b (0-30)',           baseDir+mixSig, [5],        [0,30],   20, ROOT.kRed ),
-                                            #('b (30-100)',         baseDir+mixSig, [5],        [30,100], 20, ROOT.kGray ),
+                                            ('b (0-30)',           baseDir+mixSig, [5],        [0,30],   20, ROOT.kRed ),
+                                            ('b (30-100)',         baseDir+mixSig, [5],        [30,100], 20, ROOT.kGray ),
                                             ('b (pp)',             baseDir+ppSig,  [5],        None,     20, ROOT.kGreen),
                                             ('udsg',               baseDir+mixSig, [1,2,3,21], None,     24, 1),
-                                            #('udsg (0-30)',        baseDir+mixSig, [1,2,3,21], [0,30],   24, ROOT.kRed),
-                                            #('udsg (30-100)',      baseDir+mixSig, [1,2,3,21], [30,100], 24, ROOT.kGray),
+                                            ('udsg (0-30)',        baseDir+mixSig, [1,2,3,21], [0,30],   24, ROOT.kRed),
+                                            ('udsg (30-100)',      baseDir+mixSig, [1,2,3,21], [30,100], 24, ROOT.kGray),
                                             ('udsg (pp)',          baseDir+ppSig,  [1,2,3,21], None,     24, ROOT.kGreen),
                                             ('unmatched',          baseDir+mixSig, [0],        None,     21, 1),
-                                            #('unmatched (0-30)',   baseDir+mixSig, [0],        [0,30],   21, ROOT.kRed),
-                                            #('unmatched (30-100)', baseDir+mixSig, [0],        [30,100], 21, ROOT.kGray),
+                                            ('unmatched (0-30)',   baseDir+mixSig, [0],        [0,30],   21, ROOT.kRed),
+                                            ('unmatched (30-100)', baseDir+mixSig, [0],        [30,100], 21, ROOT.kGray),
                                             ('unmatched (pp)',     baseDir+ppSig,  [0],        None,     21, ROOT.kGreen),
                                             ]:
         print tag
@@ -120,11 +120,11 @@ def main():
 
     #compare the curves
     for name,grNames in [ ('csveff',       ['b',    'b (pp)',      'udsg', 'udsg (pp)', 'unmatched', 'unmatched (pp)']),
-                          #('beff',         ['b',    'b (0-30)',    'b (30-100)']),
-                          #('udsgeff',      ['udsg', 'udsg (0-30)', 'udsg (30-100)']),
-                          #('unmatchedeff', ['unmatched', 'unmatched (0-30)', 'unmatched (30-100)']),
+                          ('beff',         ['b',    'b (0-30)',    'b (30-100)']),
+                          ('udsgeff',      ['udsg', 'udsg (0-30)', 'udsg (30-100)']),
+                          ('unmatchedeff', ['unmatched', 'unmatched (0-30)', 'unmatched (30-100)']),
                           ]:
-        showEfficiencyCurves(grColl=[csv[x] for x in grNames],name=name)
+        showEfficiencyCurves(grColl=[csv[x].Clone() for x in grNames],name=name)
 
 if __name__ == "__main__":
     main()

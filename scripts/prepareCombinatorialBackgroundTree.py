@@ -12,7 +12,7 @@ from HeavyIonsAnalysis.topskim.EventReader import *
 BDTMETHOD=ROOT.TString('BDTG')
 BDTWGTS="/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_9_4_6_patch1/src/HeavyIonsAnalysis/topskim/scripts/training_dy/weights/TMVAClassification_BDTG.weights.xml"
 
-def prepareDileptonCollection(url):
+def prepareDileptonCollection(url,tag='Skim'):
 
     """loops over all the available events and stores the information on the dileptons in each event"""
 
@@ -20,7 +20,7 @@ def prepareDileptonCollection(url):
     t=ROOT.TChain('tree')
     for f in os.listdir(url):
         if not '.root' in f: continue
-        if not 'Skim' in f : continue
+        if not tag in f : continue
         t.Add(os.path.join(url,f))
 
     #loop over events
@@ -36,7 +36,7 @@ def prepareDileptonCollection(url):
             pass
 
     #save dict in a cache
-    pckURL='dilepton_summary.pck'
+    pckURL='dilepton_summary.pck' if tag=='Skim' else 'dilepton_summary_%s.pck'%tag
     with open(pckURL,'w') as cache:
         pickle.dump( dilCollection,cache,pickle.HIGHEST_PROTOCOL)
     return pckURL
