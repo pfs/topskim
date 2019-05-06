@@ -282,7 +282,7 @@ def tuneIsolation(mixFile,ch,matchedll=None):
             sfisoeff=isoeff.Clone('sfiso')
             sfisoeff.Divide(mcisoeff)
             sfisoeff.GetZaxis().SetTitle('SF = #varepsilon(data)/#varepsilon(MC)')
-            sfisoeff.GetZaxis().SetRangeUser(0.8,1.2)
+            #sfisoeff.GetZaxis().SetRangeUser(0.8,1.2)
             drawIsolationProfile(hmain=sfisoeff,
                              hextra=[],
                              extraTxt=[isoTitle,'I_{rel}<%f'%cut],                                       

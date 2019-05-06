@@ -75,6 +75,13 @@ def createMixedFriendTrees(url,mixFile,outURL,nMix=10):
         out_f=ROOT.TFile.Open(os.path.join(outURL,f),'RECREATE')
         out_t=ROOT.TTree('tree','tree')
         out_t_branches={}
+        out_t_branches['isData']=array('B',[True])
+        out_t.Branch('isData',out_t_branches['isData'],'isData/O')
+        out_t_branches['weight']=array('f',[1./float(nMix)])
+        out_t.Branch('weight',out_t_branches['weight'],'weight/F')
+        out_t_branches['cenbin']=array('f',[0.])
+        out_t.Branch('cenbin',out_t_branches['cenbin'],'cenbin/F')
+
         for name in LEPTONBRANCHES:
             out_t_branches[name]=array('f',[0.,0.])
             out_t.Branch('lep_'+name,out_t_branches[name],'lep_%s[2]/F'%name)
@@ -93,6 +100,7 @@ def createMixedFriendTrees(url,mixFile,outURL,nMix=10):
             orig_dil  = getDilepton(orig_t,[13,11])
             orig_flav = orig_dil.flavour
             orig_isZ  = orig_dil.isZ
+            cenbin    = orig_t.cenbin
 
             #repeat the mixing as many times as desired
             for imix in range(nMix):
@@ -135,6 +143,7 @@ def createMixedFriendTrees(url,mixFile,outURL,nMix=10):
                     out_t_branches['bdt'][0]        = tmva_reader.EvaluateMVA(BDTMETHOD)
                     out_t_branches['bdtrarity'][0]  = tmva_reader.GetRarity(BDTMETHOD)
                     
+                    out_t_branches['cenbin'][0]=cenbin
                     out_t.Fill()
                     
             
