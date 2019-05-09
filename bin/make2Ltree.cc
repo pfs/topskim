@@ -257,14 +257,14 @@ int main(int argc, char* argv[])
     hltTree_p->SetBranchAddress("HLT_HIEle20Gsf_v1",&etrig);    
   }
 
-  TChain *rhoTree_p = new TChain("hiFJRhoAnalyzer/t");
+  TChain *rhoTree_p = new TChain("hiFJRhoAnalyzerFinerBins/t");
   rhoTree_p->Add(inURL);
   std::vector<Double_t> *t_rho=0,*t_rhom=0;
   if(rhoTree_p){
     rhoTree_p->SetBranchAddress("rho", &t_rho);
     rhoTree_p->SetBranchAddress("rhom", &t_rhom);
   }else{
-    std::cout << "[WARN] Can't find rho tree hiFJRhoAnalyzer/t" << std::endl;
+    std::cout << "[WARN] Can't find rho tree hiFJRhoAnalyzerFinerBins/t" << std::endl;
   }
 
   
