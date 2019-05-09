@@ -63,14 +63,12 @@ std::vector<float> getRapidityMoments(std::vector<TLorentzVector> & coll){
   return mom;
 }
 
-int getRhoIndex(float eta){
-        if      (eta < -3.0) return 1;
-        else if (eta < -2.1) return 2;
-        else if (eta < -1.3) return 2;
-        else if (eta <  1.3) return 3;
-        else if (eta <  2.1) return 4;
-        else if (eta <  3.0) return 5;
-        else return 6;
+int getRhoIndex(float eta,std::vector<Double_t> *etaMin=NULL, std::vector<Double_t> *etaMax=NULL){
+  if(etaMin==NULL || etaMax==NULL) return -1;
+  for(size_t i=0; i<etaMin->size(); i++) {
+    if(eta>=etaMin->at(i) && eta<etaMax->at(i)) return i;
+  }
+  return -1;
 }
 
 
@@ -259,9 +257,11 @@ int main(int argc, char* argv[])
 
   TChain *rhoTree_p = new TChain("hiFJRhoAnalyzerFinerBins/t");
   rhoTree_p->Add(inURL);
-  std::vector<Double_t> *t_rho=0,*t_rhom=0;
+  std::vector<Double_t> *t_rho=0,*t_rhom=0,*t_etaMin=0,*t_etaMax=0;
   if(rhoTree_p){
     rhoTree_p->SetBranchAddress("rho", &t_rho);
+    rhoTree_p->SetBranchAddress("etaMin", &t_etaMin);
+    rhoTree_p->SetBranchAddress("etaMax", &t_etaMax);
     rhoTree_p->SetBranchAddress("rhom", &t_rhom);
   }else{
     std::cout << "[WARN] Can't find rho tree hiFJRhoAnalyzerFinerBins/t" << std::endl;
@@ -573,14 +573,14 @@ int main(int argc, char* argv[])
       l.chiso   = fForestLep.muPFChIso->at(muIter);
       l.nhiso   = fForestLep.muPFNeuIso->at(muIter);
       l.phoiso  = fForestLep.muPFPhoIso->at(muIter);
-      int   tmp_rhoind  = getRhoIndex(p4.Eta());
-      if (!isMC && GT.find("75X")==string::npos){
+      int   tmp_rhoind  = getRhoIndex(p4.Eta(),t_etaMin,t_etaMax);
+      if (!isMC && GT.find("75X")==string::npos && tmp_rhoind>=0){
         float tmp_rho_par = 0.0013 * TMath::Power(t_rho->at(tmp_rhoind)+15.83,2) + 0.29 * (t_rho->at(tmp_rhoind)+15.83); 
         l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
       }
       else {
         l.isofull = -1.;
-	  }
+      }
       l.rho = isPP ? globalrho : t_rho->at(tmp_rhoind);
 
       l.isofullR=getIsolationFull( pfColl, l.p4);
@@ -668,14 +668,14 @@ int main(int argc, char* argv[])
         l.nhiso   = fForestLep.elePFNeuIso->at(eleIter);
         l.phoiso  = fForestLep.elePFPhoIso->at(eleIter);
       }
-      int   tmp_rhoind  = getRhoIndex(p4.Eta());
-      if (!isMC && GT.find("75X")==string::npos){
+      int   tmp_rhoind  = getRhoIndex(p4.Eta(),t_etaMin,t_etaMax);
+      if (!isMC && GT.find("75X")==string::npos && tmp_rhoind>=0){
         float tmp_rho_par = 0.0011 * TMath::Power(t_rho->at(tmp_rhoind)+142.4,2) - 0.14 * (t_rho->at(tmp_rhoind)+142.4); 
         l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
       }
       else {
         l.isofull = -1.;
-	  }
+      }
 
       l.rho = isPP ? globalrho : t_rho->at(tmp_rhoind);
 
