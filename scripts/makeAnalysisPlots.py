@@ -460,9 +460,9 @@ doEleIDPlots(url)
 doMuIDPlots(url)
 #doIsolationROCs(url,'mm')
 
-#showRateVsRun(url)
+showRateVsRun(url)
 
-dySF=computeDYScaleFactors(url)
+#dySF=computeDYScaleFactors(url)
 
 #compareElectrons(url,'mll')
 #compareElectrons(url,'ptll')
@@ -481,6 +481,7 @@ cats+=['mm0pfb','mmgeq1pfb','em0pfb','emgeq1pfb','ee0pfb','eegeq1pfb',]
 cats+=['mmhpur0pfb','mmhpurgeq1pfb','emhpur0pfb','emhpurgeq1pfb','eehpur0pfb','eehpurgeq1pfb',]
 for cat in cats:
     for d in ['mll','ptll','l1pt','l1eta','l2pt','l2eta']:                        
+        continue
         makeControlPlot(url,cat,d,1,True,dySF)
 
 fIn=ROOT.TFile.Open('plotter.root','RECREATE')
@@ -497,6 +498,7 @@ for cat in cats:
 
 for cat in cats:
     for d in ['pfht','pfmht']:        
+        continue
         makeControlPlot(url,cat,d,2,True,dySF,rebin=2)
               
 
