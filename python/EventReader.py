@@ -3,7 +3,7 @@ from ROOT import TLorentzVector
 
 LEPTONBRANCHES=['pt','eta','phi',
                 'idflags','d0','d0err','dz',
-                'phiso','chiso','nhiso',
+                'phiso','chiso','nhiso','rho',
                 'pdgId','charge',
                 'isofull','isofull20','isofull25','isofull30','miniiso'] 
 
@@ -16,7 +16,8 @@ class PhysicsObject:
     def __init__(self,tag='lepton'):
         self.tag=tag
         self.p4=TLorentzVector(0,0,0,0)
-        
+        self.matched=False
+
     def addProperty(self,name,val):
         setattr(self,name,val)
 
@@ -63,20 +64,8 @@ def getLeptons(t,pdgIdColl=[13,11]):
         for name in LEPTONBRANCHES:
             lepColl[-1].addProperty(name,getattr(t,'lep_'+name)[il])
         lepColl[-1].addProperty('m',mass)            
+        lepColl[-1].matched=bool(t.lep_matched[il])
         lepColl[-1].buildP4()
-
-        #this is hardcoded, as in the rho tree producer used to create the HiForest...
-        eta=t.lep_eta[il]
-        eta_idx=None
-        if eta>-3.0 and eta<=-2.1 : eta_idx=1
-        if eta>-2.1 and eta<=-1.3 : eta_idx=2
-        if eta>-1.3 and eta<=1.3  : eta_idx=3
-        if eta>1.3  and eta<=2.1  : eta_idx=4
-        if eta>2.1  and eta<=3.0  : eta_idx=5
-        lepColl[-1].addProperty('rho',t.rho[eta_idx] if eta_idx else 0)
-        lepColl[-1].addProperty('chrho',t.chrho[0])
-        lepColl[-1].addProperty('nhrho',t.nhrho[0])
-        lepColl[-1].addProperty('phrho',t.phorho[0])
 
     return lepColl
 
