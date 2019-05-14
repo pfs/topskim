@@ -312,7 +312,7 @@ int main(int argc, char* argv[])
     hltTree_p->SetBranchAddress("HLT_HIEle20Gsf_v1",&etrig);    
   }
 
-  TChain *rhoTree_p = new TChain("hiFJRhoAnalyzer/t");
+  TChain *rhoTree_p = new TChain("hiFJRhoAnalyzerFinerBins/t");
   rhoTree_p->Add(inURL);
   std::vector<Double_t> *t_rho=0,*t_rhom=0,*t_etaMin=0,*t_etaMax=0;
   if(rhoTree_p){
