@@ -1,8 +1,8 @@
 import os
 
-indir='/eos/cms/store/cmst3/group/hintt/PbPb2018/'
+indir='/eos/cms/store/cmst3/group/hintt/PbPb2018_rereco/'
 a= os.listdir(indir)
-out='/eos/cms/store/cmst3/group/hintt/PbPb2018_skim16Apr/'
+out='/eos/cms/store/cmst3/group/hintt/PbPb2018_skim14May/'
 for itag,tag in enumerate(a):
     extraOpts="true true"
     if "Skim" in tag:
