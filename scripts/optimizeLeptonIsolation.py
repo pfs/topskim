@@ -9,7 +9,7 @@ from prepareCombinatorialBackgroundTree import prepareDileptonCollection
 
 ISOTITLES=['I_{raw}','I','I(R=0.2)','I(R=0.25)','I(R=0.3)','Mini isolation','Charged isolation']
 REQ_EFFB=0.4
-MCTAG='TTDilepton_TuneZ2_HydjetDrumMB'
+MCTAG='TTJets_TuneCP5_HydjetDrumMB-amcatnloFXFX'
 
 def canvasHeader(extraTxt=[]):
     txt=ROOT.TLatex()
