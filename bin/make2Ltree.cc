@@ -328,8 +328,9 @@ int main(int argc, char* argv[])
   if(isPP){
     for(size_t i=10; i<=111; i++) meIdxList.push_back(i); //hessian NNPDF3.1
     meIdxList.push_back(116); meIdxList.push_back(117);   //alphaS variation +/-0.001
-  }else{
-    //FIXME once official TT samples are done run scripts/ttSystWeights.py
+  }else{    
+    for(size_t i=1081; i<1177; i++) meIdxList.push_back(i); //EPPS16nlo_CT14nlo_Pb208
+    for(size_t i=1178; i<1210; i++) meIdxList.push_back(i); //nCTEQ15FullNuc_208_82
   }
   if(!isMC) meIdxList.clear();
   TF1 *rbwigner=NULL;
