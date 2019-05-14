@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "HeavyIonsAnalysis/topskim/include/tnp_weight.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestHiTree.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestLeptons.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestSkim.h"
@@ -85,7 +86,7 @@ static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
   return false;
 }
 
-
+//
 static bool orderByPt(const LeptonSummary &a, const LeptonSummary &b)
 {
   float pt_a(a.p4.Pt()), pt_b(b.p4.Pt());
@@ -210,6 +211,7 @@ int main(int argc, char* argv[])
   ht.addHist("eempinv",     new TH1F("eempinv",     ";|1/E-1/p| [1/GeV];Electrons",        50,0,0.05));
   ht.addHist("ed0",         new TH1F("ed0",         ";d_{0} [cm];Electrons",               50,0,0.05));
   ht.addHist("edz",         new TH1F("edz",         ";d_{z} [cm];Electrons",               50,0,0.05));
+  ht.addHist("emll",        new TH1F("emll",        ";Di-electron invariant mass [GeV];Events",  40,20,200));
 
   //muon specific
   ht.addHist("mmusta",     new TH1F("mmusta",      ";Muon stations;Muons",            15,0,15));   
@@ -219,6 +221,7 @@ int main(int argc, char* argv[])
   ht.addHist("mpxhits",    new TH1F("mpxhits",     ";Pixel hits;Muons",               15,0,15));
   ht.addHist("md0",        new TH1F("md0",         ";d_{0} [cm];Muons",               50,0,0.5));
   ht.addHist("mdz",        new TH1F("mdz",         ";d_{z} [cm];Muons",               50,0,1.0));
+  ht.addHist("mmll",       new TH1F("mmll",        ";Di-muon invariant mass [GeV];Events",  40,20,200));
  
   ht.addHist("mll",      new TH1F("mll",      ";Dilepton invariant mass [GeV];Events",40,0,200));
   ht.addHist("ptll",     new TH1F("ptll",     ";Dilepton transverse momentum [GeV];Events",25,0,200));
@@ -340,7 +343,7 @@ int main(int argc, char* argv[])
   // event and trigger variables
   Int_t  t_run, t_lumi, t_etrig, t_mtrig, t_isData;
   Long_t t_event;
-  Float_t t_weight, t_cenbin, t_ncoll;
+  Float_t t_weight, t_cenbin, t_ncoll, t_trigSF, t_trigSFUnc;
   std::vector<Float_t> t_meWeights;
   outTree->Branch("run"   , &t_run  , "run/I");
   outTree->Branch("lumi"  , &t_lumi , "lumi/I");
@@ -363,11 +366,15 @@ int main(int argc, char* argv[])
   outTree->Branch("etrig" , &t_etrig , "etrig/I");
   outTree->Branch("mtrig" , &t_mtrig , "mtrig/I");
 
+  outTree->Branch("trigSF" ,   &t_trigSF ,     "trigSF/F");
+  outTree->Branch("trigSFUnc" , &t_trigSFUnc , "trigSFUnc/F");
+
   // variables per lepton, including iso
   Int_t t_nlep, t_lep_ind1, t_lep_ind2;
   std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_d0, t_lep_dz, t_lep_d0err, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_isofull, t_lep_miniiso,t_lep_isofull20,t_lep_isofull25,t_lep_isofull30;
   std::vector<Bool_t> t_lep_matched;
   std::vector<Int_t  > t_lep_pdgId, t_lep_charge,t_lep_idflags;
+  std::vector<Float_t> t_lepSF,t_lepSFUnc;
   outTree->Branch("nlep"       , &t_nlep      , "nlep/I"            );
   outTree->Branch("lep_ind1"   , &t_lep_ind1  , "lep_ind1/I");
   outTree->Branch("lep_ind2"   , &t_lep_ind2  , "lep_ind2/I");
@@ -390,6 +397,8 @@ int main(int argc, char* argv[])
   outTree->Branch("lep_isofull30", &t_lep_isofull30);
   outTree->Branch("lep_miniiso", &t_lep_miniiso);
   outTree->Branch("lep_matched", &t_lep_matched);
+  outTree->Branch("lepSF",      &t_lepSF);
+  outTree->Branch("lepSFUnc",      &t_lepSFUnc);
 
   // variables from dilepton system
   Float_t t_llpt, t_lleta, t_llphi, t_llm, t_dphi, t_deta, t_sumeta;
@@ -691,16 +700,20 @@ int main(int argc, char* argv[])
       selLeptons.push_back(l);
     }
     std::sort(noIdMu.begin(),noIdMu.end(),orderByPt);
-
-
+    
     //monitor muon id variables
     if(noIdMu.size()>1) {
       TLorentzVector p4[2] = {noIdMu[0].p4,      noIdMu[1].p4};
       int midx[2]          = {noIdMu[0].origIdx, noIdMu[1].origIdx};
       int charge(noIdMu[0].charge*noIdMu[1].charge);
-      if( fabs((p4[0]+p4[1]).M()-91)<15 ) {
-        TString cat("zmmctrl");
-        if(charge>0) cat="ss"+cat;
+ 
+      TString cat("zmmctrl");
+      if(charge>0) cat="ss"+cat;
+      float mmm((p4[0]+p4[1]).M());
+      if(mmm<20) continue;
+
+      ht.fill("mmll",  mmm,         plotWgt,cat);
+      if( fabs(mmm-91)<15 ) {
         for(size_t i=0; i<2; i++) {
           ht.fill("mmusta",    fForestLep.muStations->at(midx[i]),            plotWgt,cat);
           ht.fill("mtrklay",   fForestLep.muTrkLayers->at(midx[i]),           plotWgt,cat);
@@ -782,11 +795,23 @@ int main(int argc, char* argv[])
       TLorentzVector p4[2] = {noIdEle[0].p4,noIdEle[1].p4};
       int eidx[2]          = {noIdEle[0].origIdx,noIdEle[1].origIdx};
       int charge(noIdEle[0].charge*noIdEle[1].charge);
-      if( fabs((p4[0]+p4[1]).M()-91)<15 ) {
-        TString basecat("zeectrl");
-        if(charge>0) basecat="ss"+basecat;
+      float mee((p4[0]+p4[1]).M());
+      if(mee<20) continue;
+      
+      TString basecat("zeectrl");
+      if(charge>0) basecat="ss"+basecat;      
+      TString cat(basecat);
+      if(fabs(noIdEle[0].p4.Eta())>=barrelEndcapEta[1] && fabs(noIdEle[1].p4.Eta())>=barrelEndcapEta[1])
+        cat +="EE";
+      else if(fabs(noIdEle[0].p4.Eta())>=barrelEndcapEta[1] || fabs(noIdEle[1].p4.Eta())>=barrelEndcapEta[1])
+        cat+="EB";
+      else
+        cat+="BB";
+      ht.fill("emll",  mee,         plotWgt,cat);
+
+      if( fabs(mee-91)<15 ) {
         for(size_t i=0; i<2; i++) {
-          TString cat(basecat);
+          cat=basecat;
           cat += (fabs(p4[i].Eta())>=barrelEndcapEta[1] ? "EE" : "EB");
           ht.fill("esihih",  fForestLep.eleSigmaIEtaIEta->at(eidx[i]),         plotWgt,cat);
           ht.fill("edetavtx", TMath::Abs(fForestLep.eledEtaAtVtx->at(eidx[i])), plotWgt,cat);
@@ -1021,6 +1046,10 @@ int main(int argc, char* argv[])
     t_etrig  = etrig;
     t_mtrig  = mtrig;
 
+    //trigger scale factor
+    t_trigSF    = 1.0;
+    t_trigSFUnc = 0.;
+
     // fill the leptons ordered by pt
     t_lep_pt    .clear();
     t_lep_eta   .clear();
@@ -1041,6 +1070,8 @@ int main(int argc, char* argv[])
     t_lep_isofull30.clear();
     t_lep_miniiso.clear();
     t_lep_matched.clear();
+    t_lepSF.clear();
+    t_lepSFUnc.clear();
     t_nlep = selLeptons.size();
     t_lep_ind1 = -1;
     t_lep_ind2 = -1;
@@ -1064,6 +1095,22 @@ int main(int argc, char* argv[])
       t_lep_isofull30.push_back( selLeptons[ilep].isofullR[2] );
       t_lep_miniiso.push_back( selLeptons[ilep].miniiso );
       t_lep_matched.push_back( selLeptons[ilep].isMatched );
+
+      //reco/tracking+id scale factors
+      float sfVal(1.0),sfValUnc(0.0);
+      if(abs(selLeptons[ilep].id)==13) {
+        sfVal=tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(), 0 );
+        for(size_t iunc=1; iunc<=2; iunc++){
+          sfValUnc += pow(
+                          max(fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(), iunc )-sfVal),
+                              fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(), -iunc )-sfVal)),
+                          2);
+        }
+        sfValUnc += pow(0.0032,2);
+        sfValUnc = sqrt(sfValUnc);
+      }      
+      t_lepSF.push_back(sfVal);
+      t_lepSFUnc.push_back(sfValUnc);
 
       //isolation-based indices
       bool isIso(true);

@@ -77,8 +77,9 @@ def showEfficiencyCurves(grColl,name):
 def main():
     ROOT.gROOT.SetBatch(True)
     baseDir=sys.argv[1]
-    mixSig='TTDilepton_TuneZ2_HydjetDrumMB.root'
-    ppSig='TT_TuneCP5_5p02TeV-powheg-pythia8.root'
+    mixSig='TTJets_TuneCP5_HydjetDrumMB-amcatnloFXFX.root'
+    privMixSample='/eos/cms/store/cmst3/group/hintt/PbPb2018_skim27Apr/TTDilepton_TuneZ2_HydjetDrumMB.root'
+    ppSample='/eos/cms/store/cmst3/group/hintt/PbPb2018_skim27Apr/TT_TuneCP5_5p02TeV-powheg-pythia8.root'
     ptRange=[30,120]
 
     #get the efficiency curves
@@ -86,15 +87,18 @@ def main():
     for tag,sample,flav,cenRange,ms,ci in [ ('b',                  baseDir+mixSig, [5],        None,     20, 1),
                                             ('b (0-30)',           baseDir+mixSig, [5],        [0,30],   20, ROOT.kRed ),
                                             ('b (30-100)',         baseDir+mixSig, [5],        [30,100], 20, ROOT.kGray ),
-                                            ('b (pp)',             baseDir+ppSig,  [5],        None,     20, ROOT.kGreen),
+                                            ('b (pp)',             ppSample,       [5],        None,     20, ROOT.kGreen),
+                                            ('b (priv)',           privMixSample,  [5],        None,     20, ROOT.kAzure),
                                             ('udsg',               baseDir+mixSig, [1,2,3,21], None,     24, 1),
                                             ('udsg (0-30)',        baseDir+mixSig, [1,2,3,21], [0,30],   24, ROOT.kRed),
                                             ('udsg (30-100)',      baseDir+mixSig, [1,2,3,21], [30,100], 24, ROOT.kGray),
-                                            ('udsg (pp)',          baseDir+ppSig,  [1,2,3,21], None,     24, ROOT.kGreen),
+                                            ('udsg (pp)',          ppSample,       [1,2,3,21], None,     24, ROOT.kGreen),
+                                            ('udsg (priv)',        privMixSample,  [1,2,3,21], None,     24, ROOT.kAzure),
                                             ('unmatched',          baseDir+mixSig, [0],        None,     21, 1),
                                             ('unmatched (0-30)',   baseDir+mixSig, [0],        [0,30],   21, ROOT.kRed),
                                             ('unmatched (30-100)', baseDir+mixSig, [0],        [30,100], 21, ROOT.kGray),
-                                            ('unmatched (pp)',     baseDir+ppSig,  [0],        None,     21, ROOT.kGreen),
+                                            ('unmatched (pp)',     ppSample,  [0],             None,     21, ROOT.kGreen),
+                                            ('unmatched (priv)',   privMixSample,  [0],        None,     21, ROOT.kAzure),
                                             ]:
         print tag
         csv[tag]=getEfficiency([sample],flav,ptRange,cenRange)
@@ -119,12 +123,13 @@ def main():
     print '<'*50
 
     #compare the curves
-    for name,grNames in [ ('csveff',       ['b',    'b (pp)',      'udsg', 'udsg (pp)', 'unmatched', 'unmatched (pp)']),
+    for name,grNames in [ ('csveff',       ['b',    'b (priv)',  'b (pp)',      'udsg', 'udsg (priv)', 'udsg (pp)', 'unmatched', 'unmatched (priv)', 'unmatched (pp)']),
                           ('beff',         ['b',    'b (0-30)',    'b (30-100)']),
                           ('udsgeff',      ['udsg', 'udsg (0-30)', 'udsg (30-100)']),
                           ('unmatchedeff', ['unmatched', 'unmatched (0-30)', 'unmatched (30-100)']),
                           ]:
         showEfficiencyCurves(grColl=[csv[x].Clone() for x in grNames],name=name)
+
 
 if __name__ == "__main__":
     main()

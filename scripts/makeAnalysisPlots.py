@@ -253,7 +253,7 @@ def doEleIDPlots(url):
 
     for reg in ['EB','EE']:
         cats=['zeectrl'+reg,'sszeectrl'+reg]
-        for dist in ['esihih','edetavtx','edphivtx','ehoe','eempinv','ed0', 'edz']:
+        for dist in ['esihih','edetavtx','edphivtx','ehoe','eempinv','ed0', 'edz','emll']:
             plots=getDataSummedUp(url,cats,dist,'Skim',False)
             
             #show the plots for simple variables
@@ -266,7 +266,7 @@ def doEleIDPlots(url):
 def doMuIDPlots(url):
 
     cats=['zmmctrl','sszmmctrl']
-    for dist in ['mmusta', 'mtrklay', 'mchi2ndf', 'mmuhits', 'mpxhits', 'md0','mdz']:
+    for dist in ['mmusta', 'mtrklay', 'mchi2ndf', 'mmuhits', 'mpxhits', 'md0','mdz','mmll']:
         plots=getDataSummedUp(url,cats,dist,'Skim',False)
             
         #show the plots for simple variables
@@ -432,74 +432,9 @@ def doJetHotSpots(url,cats):
         c.SaveAs('jetetavsphi.%s'%ext)
 
 
-def checkAcceptance(url):
-
-    cats=['zee','zeehpur','zeehpurBB']
-    zee=getDataSummedUp(url,cats,'mll','Skim',False)
-    sszee=getDataSummedUp(url,['ss'+x for x in cats],'mll','Skim',False)
-    ttcats=[x[1:] for x in cats]
-    ttbar=getDataSummedUp(url,ttcats,'mll','TT_TuneCP5_5p02TeV-powheg-pythia8',True)
-    nzee_ini=0
-    nsszee_ini=0
-    ntt_ini=0
-    for i in range(len(cats)):
-        nzee=zee[cats[i]].Integral()
-        nsszee=sszee['ss'+cats[i]].Integral()
-        nzee-=nsszee
-        ntt=ttbar[ttcats[i]].Integral()
-        if i==0: 
-            nzee_ini=nzee
-            nsszee_ini=nsszee
-            ntt_ini=ntt
-        print cats[i],nzee/nzee_ini,nsszee/nsszee_ini,ntt/ntt_ini
-
-
 url=sys.argv[1]
 doEleIDPlots(url)
-#doIsolationROCs(url,'ee')
 doMuIDPlots(url)
-#doIsolationROCs(url,'mm')
-
 showRateVsRun(url)
-
-#dySF=computeDYScaleFactors(url)
-
-#compareElectrons(url,'mll')
-#compareElectrons(url,'ptll')
-#compareElectrons(url,'detall')
-
-
-
 #doJetHotSpots(url,['zmm','zee','em'])
 
-cats=[]
-#cats+=['zee','zmm','mm','em','ee']
-#cats+=['zeehpur','zmmhpur']
-cats+=['mm','em','ee']
-cats+=['mmhpur','emhpur','eehpur']
-cats+=['mm0pfb','mmgeq1pfb','em0pfb','emgeq1pfb','ee0pfb','eegeq1pfb',]
-cats+=['mmhpur0pfb','mmhpurgeq1pfb','emhpur0pfb','emhpurgeq1pfb','eehpur0pfb','eehpurgeq1pfb',]
-for cat in cats:
-    for d in ['mll','ptll','l1pt','l1eta','l2pt','l2eta']:                        
-        continue
-        makeControlPlot(url,cat,d,1,True,dySF)
-
-fIn=ROOT.TFile.Open('plotter.root','RECREATE')
-fIn.Close()
-for cat in cats:
-    for d in ['acopl', 'detall','drll']:
-        continue
-        makeControlPlot(url,cat,d,1,True,dySF,'plotter.root',rebin=2) #,saveTeX=True)
-
-
-for cat in cats:
-    for d in ['npfjets','npfbjets','pf1jpt','pf1jeta','pf1jcsv','pf2jpt','pf2jeta','pf2jcsv','pfrapavg','pfraprms','pfrapmaxspan']:
-        makeControlPlot(url,cat,d,2,True,dySF)
-
-for cat in cats:
-    for d in ['pfht','pfmht']:        
-        continue
-        makeControlPlot(url,cat,d,2,True,dySF,rebin=2)
-              
-
-#checkAcceptance(url)

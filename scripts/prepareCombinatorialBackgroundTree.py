@@ -41,7 +41,7 @@ def prepareDileptonCollection(url,tag='Skim'):
         pickle.dump( dilCollection,cache,pickle.HIGHEST_PROTOCOL)
     return pckURL
 
-def createMixedFriendTrees(url,mixFile,outURL,nMix=10):
+def createMixedFriendTrees(url,mixFile,outURL,nMix=3):
     
     """for each file it mixes one lepton at each time and dumps a friend tree with mix_lep_* branches"""
 
@@ -94,7 +94,7 @@ def createMixedFriendTrees(url,mixFile,outURL,nMix=10):
 
         print 'Mixing',orig_t.GetEntries(),'events from',f,'output @',out_f.GetName()
         for iev in range(orig_t.GetEntries()):
-
+            print iev
             #original event
             orig_t.GetEntry(iev)
             orig_dil  = getDilepton(orig_t,[13,11])
@@ -106,16 +106,20 @@ def createMixedFriendTrees(url,mixFile,outURL,nMix=10):
             for imix in range(nMix):
 
                 #mix one lepton at each time
-                for i in range(2):
+                for i,j in [(1,0)]: #(0,1),(1,0)]:
                     leptons=[getattr(orig_dil,'l%d'%(i+1))]
-                    lidToGet=orig_dil.l2.pdgId if i==0 else orig_dil.l1.pdgId
+                    pdgId2Match=getattr(orig_dil,'l%d'%(j+1)).pdgId
                     while True:
-                        mix_dil=random.choice(mixDileptons[orig_flav,orig_isZ])
-                        leptons.append( mix_dil.l1 if mix_dil.l1.pdgId==lidToGet else mix_dil.l2 )
+                        mix_dil=random.choice(mixDileptons[orig_flav,orig_isZ])                        
+                        mix_lep=getattr(mix_dil,'l%d'%(j+1))
+                        if mix_lep.pdgId!=pdgId2Match : continue
+                        if mix_lep.p4.Pt()>leptons[0].p4.Pt() : continue
+                        if mix_lep.p4.DeltaR(leptons[0].p4)<0.4 : continue
+                        leptons.append( mix_lep )
                         break
 
                     #sort by pT
-                    leptons.sort(key=lambda x: x.pt, reverse=True)
+                    #leptons.sort(key=lambda x: x.pt, reverse=True)
 
                     #fill the out tree
                     for name in LEPTONBRANCHES:
