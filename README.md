@@ -20,20 +20,9 @@ make2Ltree --in /eos/cms/store/cmst3/group/hintt/PbPb2018/SkimMuons_PromptRecov1
 
 To loop over all the available forest trees better to use condor and then merge the outputs.
 Jobs finalize in approximately 30min if queues are empty.
+If needed, edit the script below for the input and output directories before running.
 ```
-dir=/eos/cms/store/cmst3/group/hintt/PbPb2018_rereco/
-a=(`ls ${dir}`)
-out=/eos/cms/store/cmst3/group/hintt/PbPb2018_skim14May
-for tag in ${a[@]}; do    
-    extraOpts="true true"
-    if [[ $tag == *"Skim"* ]]; then
-       extraOpts=""
-    fi
-    if [[ $tag == *"Drum"* ]]; then
-       extraOpts="true"
-    fi
-    python scripts/launchAnalysis.py ${dir}/${tag} $out $tag $extraOpts;
-done   
+python scripts/runanalysis.py
 ```
 
 Check that all the jobs ran fine and re-run locally if needed
