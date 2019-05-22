@@ -30,8 +30,13 @@ class PhysicsObject:
             print e
             print '<'*50
 
+    def setGlobalEventProperties(self,propDict):
+        for key in propDict:
+            setattr(self,key,propDict[key])
+
     def getIsolation(self, isoType):
         return 0
+
     def isIsolated(self,isoType):
         return True
 
@@ -47,7 +52,6 @@ class DileptonObject:
         self.isOF=isOF
         self.isSS=isSS
         self.isZ=isZ
-
 
 def getLeptons(t,pdgIdColl=[13,11]):
 
@@ -66,6 +70,9 @@ def getLeptons(t,pdgIdColl=[13,11]):
         lepColl[-1].addProperty('m',mass)            
         lepColl[-1].matched=bool(t.lep_matched[il])
         lepColl[-1].buildP4()
+        lepColl[-1].setGlobalEventProperties({'cenbin':t.cenbin,
+                                              'ncoll':t.ncoll})
+        
 
     return lepColl
 

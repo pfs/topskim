@@ -251,11 +251,14 @@ def compareElectrons(url,dist):
 
 def doEleIDPlots(url):
 
-    for reg in ['EB','EE']:
+    for reg in ['EB','EE','BB']:
         cats=['zeectrl'+reg,'sszeectrl'+reg]
         for dist in ['esihih','edetavtx','edphivtx','ehoe','eempinv','ed0', 'edz','emll']:
-            plots=getDataSummedUp(url,cats,dist,'Skim',False)
             
+            if dist!='emll' and reg=='BB': continue
+
+            plots=getDataSummedUp(url,cats,dist,'Skim',False)
+
             #show the plots for simple variables
             p=Plot('%s%s'%(dist,reg),com='5.02 TeV')
             p.add(plots[cats[0]],title='Z#rightarrowee (data)',color=1,isData=True,spImpose=False,isSyst=False)
@@ -267,7 +270,7 @@ def doMuIDPlots(url):
 
     cats=['zmmctrl','sszmmctrl']
     for dist in ['mmusta', 'mtrklay', 'mchi2ndf', 'mmuhits', 'mpxhits', 'md0','mdz','mmll']:
-        plots=getDataSummedUp(url,cats,dist,'Skim',False)
+        plots=getDataSummedUp(url,cats,dist,'SkimMuons',False)
             
         #show the plots for simple variables
         p=Plot('%s'%dist,com='5.02 TeV')
@@ -434,7 +437,7 @@ def doJetHotSpots(url,cats):
 
 url=sys.argv[1]
 doEleIDPlots(url)
-doMuIDPlots(url)
+#doMuIDPlots(url)
 showRateVsRun(url)
 #doJetHotSpots(url,['zmm','zee','em'])
 
