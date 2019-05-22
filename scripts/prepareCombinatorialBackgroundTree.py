@@ -33,6 +33,7 @@ def prepareDileptonCollection(url,tag='Skim'):
         try:
             dil=getDilepton(t,[13,11])
             dilCollection[(dil.flavour,dil.isZ)].append(dil)
+            #dilCollection[dil.flavour].append(dil)
         except Exception as e:
             print e
             pass
@@ -58,7 +59,7 @@ def getBestMatch(orig_dil,mix_candidates,n_neighbors=5,algorithm='ball_tree'):
               leptons[1].isofull20,
               leptons[1].rho,
               leptons[1].cenbin,
-              abs(leptons[0].p4.DeltaPhi(leptons[1].p4))
+              (leptons[0].p4+leptons[1].p4).Pt()
               ]
             for leptons in mix_candidates ]
 
@@ -72,7 +73,7 @@ def getBestMatch(orig_dil,mix_candidates,n_neighbors=5,algorithm='ball_tree'):
                 orig_dil.l2.isofull20,
                 orig_dil.l2.rho,
                 orig_dil.l2.cenbin,
-                abs(orig_dil.l1.p4.DeltaPhi(orig_dil.l2.p4))
+                orig_dil.p4.Pt()
                 ]
               ]
               
@@ -80,7 +81,7 @@ def getBestMatch(orig_dil,mix_candidates,n_neighbors=5,algorithm='ball_tree'):
     return clf.kneighbors(orig_X, n_neighbors, return_distance=False)[0]
 
 
-def createMixedFriendTrees(url,mixFile,outURL,nMix=100):
+def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
     
     """for each file it mixes one lepton at each time and dumps a friend tree with mix_lep_* branches"""
 
@@ -116,7 +117,7 @@ def createMixedFriendTrees(url,mixFile,outURL,nMix=100):
         out_t_branches={}
         out_t_branches['isData']=array('B',[True])
         out_t.Branch('isData',out_t_branches['isData'],'isData/O')
-        out_t_branches['weight']=array('f',[1./float(nMix)])
+        out_t_branches['weight']=array('f',[1.])
         out_t.Branch('weight',out_t_branches['weight'],'weight/F')
         out_t_branches['cenbin']=array('f',[0.])
         out_t.Branch('cenbin',out_t_branches['cenbin'],'cenbin/F')
@@ -147,49 +148,62 @@ def createMixedFriendTrees(url,mixFile,outURL,nMix=100):
             orig_flav   = orig_dil.flavour
             orig_isZ    = orig_dil.isZ             
 
-            #gather nMix possible alternatives
-            mix_candidates=[]           
-            for imix in range(nMix):
-                mixPairs=[(0,1),(1,0)]
-                i,j=mixPairs[np.random.choice(2)]
-                mix_dil=random.choice(mixDileptons[orig_flav,orig_isZ])
-                mix_candidates.append( [getattr(orig_dil,'l%d'%(i+1)),getattr(mix_dil,'l%d'%(j+1))] )
-                mix_candidates[-1].sort(key=lambda x: x.pt, reverse=True)
+            #repeat the mixing for each lepton and using different #events per chunk
+            nDilCandidates=len(mixDileptons[(orig_flav,orig_isZ)])
+            nChunks=int(nDilCandidates/nEventsPerChunk) 
+            if maxChunks>0 and maxChunks<nChunks: nChunks=maxChunks
+            for i,j in [(0,1),(1,0)]:
 
-            #fill the out tree with best matches in phase space
-            best_idx=getBestMatch(orig_dil,mix_candidates)
-            for mix_rank in range(len(best_idx)):
-                idx=best_idx[mix_rank]
-                leptons=mix_candidates[idx]
-
-                for il in range(2):                        
-                    for name in LEPTONBRANCHES:                    
-                        out_t_branches[name][il]=getattr(leptons[il],name)
+                #create a random set of event chunks
+                candDil=range(nDilCandidates)
+                random.shuffle(candDil)
+                for k in range(nChunks):
+                    dilChoices=candDil[k*nEventsPerChunk:(k+1)*nEventsPerChunk]
                 
-                llp4             = leptons[0].p4+leptons[1].p4
-                dphill           = abs(leptons[0].p4.DeltaPhi(leptons[1].p4))
-                detall           = abs(leptons[0].eta-leptons[1].eta)
-                sumeta           = leptons[0].eta+leptons[1].eta
-                bdt_l1pt[0]      = max(leptons[0].pt,leptons[1].pt)
-                bdt_llpt[0]      = llp4.Pt()
-                bdt_apt[0]       = abs(leptons[0].pt-leptons[1].pt)/(leptons[0].pt+leptons[1].pt)
-                bdt_abslleta[0]  = abs(llp4.Eta())
-                bdt_dphill[0]    = dphill
-                bdt_sumabseta[0] = abs(leptons[0].eta)+abs(leptons[1].eta)                
-                out_t_branches['llpt'][0]       = llp4.Pt()
-                out_t_branches['lleta'][0]      = llp4.Eta()
-                out_t_branches['llphi'][0]      = llp4.Phi()
-                out_t_branches['llm'][0]        = llp4.M()
-                out_t_branches['dphi'][0]       = dphill
-                out_t_branches['deta'][0]       = detall
-                out_t_branches['sumeta'][0]     = sumeta
-                out_t_branches['apt'][0]        = bdt_apt[0]
-                out_t_branches['bdt'][0]        = tmva_reader.EvaluateMVA(BDTMETHOD)
-                out_t_branches['bdtrarity'][0]  = tmva_reader.GetRarity(BDTMETHOD)
-                out_t_branches['cenbin'][0]     = orig_t.cenbin
-                out_t_branches['ncoll'][0]      = orig_t.ncoll
-                out_t_branches['mixrank'][0]    = mix_rank    
-                out_t.Fill()
+                    mix_candidates=[]           
+                    for imix in dilChoices:
+                        mix_dil=mixDileptons[(orig_flav,orig_isZ)][imix]
+                        #mix_dil=mixDileptons[orig_flav][imix]
+                    
+                        #ensure this is not the same event
+                        if orig_dil.evHeader==mix_dil.evHeader: continue
+
+                        mix_candidates.append( [getattr(orig_dil,'l%d'%(i+1)),getattr(mix_dil,'l%d'%(j+1))] )
+                        mix_candidates[-1].sort(key=lambda x: x.pt, reverse=True)
+                    
+                    #fill the tree with best matches in phase space for this chunk
+                    best_idx=getBestMatch(orig_dil,mix_candidates)
+                    for mix_rank in range(len(best_idx)):
+                        leptons=mix_candidates[ best_idx[mix_rank] ]
+
+                        for il in range(2):                        
+                            for name in LEPTONBRANCHES:                    
+                                out_t_branches[name][il]=getattr(leptons[il],name)
+                
+                        llp4             = leptons[0].p4+leptons[1].p4
+                        dphill           = abs(leptons[0].p4.DeltaPhi(leptons[1].p4))
+                        detall           = abs(leptons[0].eta-leptons[1].eta)
+                        sumeta           = leptons[0].eta+leptons[1].eta
+                        bdt_l1pt[0]      = max(leptons[0].pt,leptons[1].pt)
+                        bdt_llpt[0]      = llp4.Pt()
+                        bdt_apt[0]       = abs(leptons[0].pt-leptons[1].pt)/(leptons[0].pt+leptons[1].pt)
+                        bdt_abslleta[0]  = abs(llp4.Eta())
+                        bdt_dphill[0]    = dphill
+                        bdt_sumabseta[0] = abs(leptons[0].eta)+abs(leptons[1].eta)                
+                        out_t_branches['llpt'][0]       = llp4.Pt()
+                        out_t_branches['lleta'][0]      = llp4.Eta()
+                        out_t_branches['llphi'][0]      = llp4.Phi()
+                        out_t_branches['llm'][0]        = llp4.M()
+                        out_t_branches['dphi'][0]       = dphill
+                        out_t_branches['deta'][0]       = detall
+                        out_t_branches['sumeta'][0]     = sumeta
+                        out_t_branches['apt'][0]        = bdt_apt[0]
+                        out_t_branches['bdt'][0]        = tmva_reader.EvaluateMVA(BDTMETHOD)
+                        out_t_branches['bdtrarity'][0]  = tmva_reader.GetRarity(BDTMETHOD)
+                        out_t_branches['cenbin'][0]     = orig_t.cenbin
+                        out_t_branches['ncoll'][0]      = orig_t.ncoll
+                        out_t_branches['mixrank'][0]    = mix_rank    
+                        out_t.Fill()
             
         #write tree
         out_f.cd()
@@ -207,7 +221,7 @@ def main():
     url     = sys.argv[1]
     mixFile = prepareDileptonCollection(url)        
     outURL  = sys.argv[2]
-    createMixedFriendTrees(url,mixFile,outURL,100)
+    createMixedFriendTrees(url,mixFile,outURL,100,10)
 
 
 
