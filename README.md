@@ -11,7 +11,8 @@ It uses directly as inputs the HiForest contents.
 The executable can be compiled with `scram b`.
 To run on a single file for testing one  can give the command
 ```
-make2Ltree --in /eos/cms/store/cmst3/group/hintt/PbPb2018/TTDilepton_TuneZ2_HydjetDrumMB/Chunk_0_ext0.root --out test.root --mc --max 1000
+make2Ltree --in /eos/cms/store/cmst3/group/hintt/PbPb2018_rereco/TTJets_TuneCP5_HydjetDrumMB-amcatnloFXFX/Chunk_0_ext0.root --out test.root         --mc --max 1000
+make2Ltree --in /eos/cms/store/cmst3/group/hintt/PbPb2018/TT_TuneCP5_5p02TeV-powheg-pythia8/Chunk_0_ext0.root               --out test_pp.root --pp --mc --max 1000
 ```
 or to run on a data file:
 ```
@@ -20,20 +21,9 @@ make2Ltree --in /eos/cms/store/cmst3/group/hintt/PbPb2018/SkimMuons_PromptRecov1
 
 To loop over all the available forest trees better to use condor and then merge the outputs.
 Jobs finalize in approximately 30min if queues are empty.
+If needed, edit the script below for the input and output directories before running.
 ```
-dir=/eos/cms/store/cmst3/group/hintt/PbPb2018/
-a=(`ls ${dir}`)
-out=/eos/cms/store/cmst3/group/hintt/PbPb2018_skim27Apr
-for tag in ${a[@]}; do    
-    extraOpts="true true"
-    if [[ $tag == *"Skim"* ]]; then
-       extraOpts=""
-    fi
-    if [[ $tag == *"Drum"* ]]; then
-       extraOpts="true"
-    fi
-    python scripts/launchAnalysis.py ${dir}/${tag} $out $tag $extraOpts;
-done   
+python scripts/runanalysis.py
 ```
 
 Check that all the jobs ran fine and re-run locally if needed
@@ -54,6 +44,11 @@ python scripts/mergeOutputs.py ${out}
 Prepare data-trees for the combinatorial background from event mixing
 ```
 python scripts/prepareCombinatorialBackgroundTree.py ${out} ${out}/Combinatorial
+```
+
+Prepare CMG tools directory structure for plotting etc.
+```
+python scripts/makeStructure.py ${out}
 ```
 
 Optimize isolation cuts (it will use the summary pck file produced by the prepareCombinatorialBackgroundTree.py script).
