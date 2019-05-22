@@ -30,8 +30,13 @@ class PhysicsObject:
             print e
             print '<'*50
 
+    def setGlobalEventProperties(self,propDict):
+        for key in propDict:
+            setattr(self,key,propDict[key])
+
     def getIsolation(self, isoType):
         return 0
+
     def isIsolated(self,isoType):
         return True
 
@@ -39,7 +44,7 @@ class DileptonObject:
 
     """a wrapper for a dilepton object"""
 
-    def __init__(self,l1,l2,isOF,isSS,isZ):
+    def __init__(self,l1,l2,isOF,isSS,isZ,evHeader):
         self.l1=l1 if l1.p4.Pt()>l2.p4.Pt() else l2
         self.l2=l2 if l1.p4.Pt()>l2.p4.Pt() else l1
         self.p4=self.l1.p4+self.l2.p4
@@ -47,7 +52,7 @@ class DileptonObject:
         self.isOF=isOF
         self.isSS=isSS
         self.isZ=isZ
-
+        self.evHeader=evHeader
 
 def getLeptons(t,pdgIdColl=[13,11]):
 
@@ -66,11 +71,14 @@ def getLeptons(t,pdgIdColl=[13,11]):
         lepColl[-1].addProperty('m',mass)            
         lepColl[-1].matched=bool(t.lep_matched[il])
         lepColl[-1].buildP4()
+        lepColl[-1].setGlobalEventProperties({'cenbin':t.cenbin,
+                                              'ncoll':t.ncoll})
+        
 
     return lepColl
 
 
-def dileptonBuilder(lepColl):
+def dileptonBuilder(lepColl,evHeader):
 
     """takes the leading lepton pair and sets some quality flags"""
 
@@ -80,10 +88,10 @@ def dileptonBuilder(lepColl):
     isSS = True if lepColl[0].charge*lepColl[1].charge>0                                   else False
     isZ  = True if abs((lepColl[0].p4+lepColl[1].p4).M()-91.)<15 and not isSS and not isOF else False
 
-    return DileptonObject(lepColl[0],lepColl[1],isOF,isSS,isZ)
+    return DileptonObject(lepColl[0],lepColl[1],isOF,isSS,isZ,evHeader)
 
 def getDilepton(t,pdgIdColl=[13,11]):
 
     """get the dilepton in the event"""
-    
-    return dileptonBuilder( getLeptons(t,pdgIdColl) )
+
+    return dileptonBuilder( getLeptons(t,pdgIdColl), (t.run,t.event,t.lumi) )

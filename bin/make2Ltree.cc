@@ -40,6 +40,8 @@ const float lepEtaCut = 2.4;
 const float eeScaleShift = 6.8182E-2/5.9097E-2;
 const int firstEEScaleShiftRun = 327402; 
 const float barrelEndcapEta[2]={1.4442,1.5660};
+const float hem1516Eta[2]={-3.0,-1.9};
+const float hem1516Phi[2]={-1.6,-0.9};
 const float csvWP = 0.8838;
 
 using namespace std;
@@ -174,17 +176,37 @@ int main(int argc, char* argv[])
   if(isMC)
     cout << "Treating as a MC file" << endl;
 
+  
+  std::vector<size_t> meIdxList={0,1,2,3,4,6,8}; //qcd weights
+  if(!isMC) 
+    meIdxList.clear();
+  else {
+    if(isPP){
+      for(size_t i=10; i<=111; i++) meIdxList.push_back(i); //hessian NNPDF3.1
+      meIdxList.push_back(116); meIdxList.push_back(117);   //alphaS variation +/-0.001
+    }else{    
+      meIdxList[0]=1081;
+      for(size_t i=1081; i<1177; i++) meIdxList.push_back(i); //EPPS16nlo_CT14nlo_Pb208
+      for(size_t i=1178; i<1210; i++) meIdxList.push_back(i); //nCTEQ15FullNuc_208_82
+    }
+    cout << "Will store " <<  meIdxList.size() << " ME weights" << endl;
+  }
+
+  //for breit-wigner reweithing
+  TF1 *rbwigner( isMC ? getRBW(172.5,1.31) : NULL );
+
   //book some histograms
   HistTool ht;
-  ht.addHist("fidcounter",  new TH2F("fidcounter", ";Fiducial counter;Events",5,0,5,1080,0,1080));
-  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(1,"all");
-  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(2,"=2l");
-  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(3,"=2l fid");
-  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(4,"=2l,#geq1b fid");
-  ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(5,"=2l,#geq2b fid");
-
-
-  if(!isMC) ht.addHist("ratevsrun",lumiTool.getLumiMonitor());
+  if(isMC){
+    ht.addHist("fidcounter",  new TH2F("fidcounter", ";Fiducial counter;Events",5,0,5,meIdxList.size(),0,meIdxList.size()));
+    ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(1,"all");
+    ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(2,"=2l");
+    ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(3,"=2l fid");
+    ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(4,"=2l,#geq1b fid");
+    ht.get2dPlots()["fidcounter"]->GetXaxis()->SetBinLabel(5,"=2l,#geq2b fid");
+  }else{
+    ht.addHist("ratevsrun",lumiTool.getLumiMonitor());
+  }
 
   //generic histograms
   for(int i=0; i<2; i++) {
@@ -323,18 +345,6 @@ int main(int argc, char* argv[])
   }else{
     std::cout << "[WARN] Can't find rho tree hiFJRhoAnalyzer/t" << std::endl;
   }
-
-  std::vector<size_t> meIdxList={1,2,3,4,6,8}; //qcd weights
-  if(isPP){
-    for(size_t i=10; i<=111; i++) meIdxList.push_back(i); //hessian NNPDF3.1
-    meIdxList.push_back(116); meIdxList.push_back(117);   //alphaS variation +/-0.001
-  }else{    
-    for(size_t i=1081; i<1177; i++) meIdxList.push_back(i); //EPPS16nlo_CT14nlo_Pb208
-    for(size_t i=1178; i<1210; i++) meIdxList.push_back(i); //nCTEQ15FullNuc_208_82
-  }
-  if(!isMC) meIdxList.clear();
-  TF1 *rbwigner=NULL;
-  if(isMC) rbwigner=getRBW(172.5,1.31);
   
   // =============================================================
   // marc here make the output tree
@@ -344,7 +354,7 @@ int main(int argc, char* argv[])
   // event and trigger variables
   Int_t  t_run, t_lumi, t_etrig, t_mtrig, t_isData;
   Long_t t_event;
-  Float_t t_weight, t_cenbin, t_ncoll, t_trigSF, t_trigSFUnc;
+  Float_t t_weight, t_cenbin, t_ncollWgt, t_trigSF, t_trigSFUnc;
   std::vector<Float_t> t_meWeights;
   outTree->Branch("run"   , &t_run  , "run/I");
   outTree->Branch("lumi"  , &t_lumi , "lumi/I");
@@ -356,7 +366,7 @@ int main(int argc, char* argv[])
 
   // centrality and different flavors of rho
   outTree->Branch("cenbin", &t_cenbin, "cenbin/F");
-  outTree->Branch("ncoll", &t_ncoll, "ncoll/F");
+  outTree->Branch("ncollWgt", &t_ncollWgt, "ncollWgt/F");
   
   outTree->Branch("rho",    &t_rho);
   outTree->Branch("rhom",   &t_rhom);
@@ -505,10 +515,23 @@ int main(int argc, char* argv[])
     nEntries=TMath::Min(nEntries,maxEvents); 
     cout << "Number of events to process limited to " << nEntries << endl;
   }
+
+  //get ncoll weighting norm factor
+  double ncollWgtNorm(1.0);
+  if(isMC && !isPP){
+    double ncollSum(0.);
+    for(int entry = 0; entry < nEntries; entry++){
+      hiTree_p->GetEntry(entry);
+      ncollSum+=findNcoll(fForestTree.hiBin);
+    }
+    if(ncollSum>0) ncollWgtNorm=1./ncollSum;
+  }
+
+  //loop over events
   for(int entry = 0; entry < nEntries; entry++){
     
     if(entry%entryDiv == 0) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
-
+    //try{
     globalTree_p->GetEntry(entry);
     lepTree_p->GetEntry(entry);
     pfCandTree_p->GetEntry(entry);
@@ -516,11 +539,16 @@ int main(int argc, char* argv[])
     hltTree_p->GetEntry(entry);
     hiTree_p->GetEntry(entry);
     if(rhoTree_p) rhoTree_p->GetEntry(entry);
-
+    //}catch(...){
+    //  cout << "An exception was caught reading the tree... ending loop now" << endl;
+    //  break;
+    // }
+    
     //gen level analysis
     float evWgt(1.0),topPtWgt(1.0),topMassUpWgt(1.0),topMassDnWgt(1.0);
     int genDileptonCat(1.);
     std::vector<TLorentzVector> genLeptons, genBjets;
+    std::vector<int> genLeptonIds;
     bool isGenDilepton(false),isLeptonFiducial(false),is1bFiducial(false),is2bFiducial(false);    
     if(isMC) {
      
@@ -551,6 +579,7 @@ int main(int argc, char* argv[])
             p4.SetPtEtaPhiM( fForestGen.mcPt->at(i), fForestGen.mcEta->at(i), fForestGen.mcPhi->at(i), fForestGen.mcMass->at(i) );
             //if(p4.Pt()>20 && fabs(p4.Eta())<2.5) 
             genLeptons.push_back(p4);
+            genLeptonIds.push_back(pid);
             genDileptonCat *= abs(pid);
           }
         }
@@ -565,19 +594,35 @@ int main(int argc, char* argv[])
       
       isGenDilepton=(genLeptons.size()==2);      
       isLeptonFiducial=(isGenDilepton && 
-                        genLeptons[0].Pt()>20 && fabs(genLeptons[0].Eta())<2.5 && 
-                        genLeptons[1].Pt()>20 && fabs(genLeptons[1].Eta())<2.5);
+                        genLeptons[0].Pt()>lepPtCut && fabs(genLeptons[0].Eta())<lepEtaCut && 
+                        genLeptons[1].Pt()>lepPtCut && fabs(genLeptons[1].Eta())<lepEtaCut);  
+
+      //further cuts for electrons (EE-EB transition, HEM15/16 transition)
+      if(isLeptonFiducial){
+        for(size_t igl=0; igl<2; igl++){
+          if(abs(genLeptonIds[igl])!=11) continue;
+          float eta(genLeptons[igl].Eta());
+          float phi(genLeptons[igl].Phi());
+          if(fabs(eta) > barrelEndcapEta[0] && fabs(eta) < barrelEndcapEta[1])  {
+            isLeptonFiducial=false;
+            break;
+          }
+          if(eta>hem1516Eta[0] && eta<hem1516Eta[1] && phi>hem1516Phi[0] && phi<hem1516Phi[1]){
+            isLeptonFiducial=false;
+            break;
+          }          
+        }
+      }
+
       is1bFiducial=(isLeptonFiducial && genBjets.size()>0);
       is2bFiducial=(isLeptonFiducial && genBjets.size()>1);
       
       //event weights and fiducial counters   
       if(isMC) {
-        evWgt=fForestTree.ttbar_w->size()==0 ? 1. : fForestTree.ttbar_w->at(0);
-        size_t nWgts(fForestTree.ttbar_w->size());
-        if(nWgts==0) nWgts=1;
-        if(allWgtSum.size()==0) allWgtSum.resize(nWgts,0.);
-        for(size_t i=0; i<nWgts; i++) {
-          Double_t iwgt(fForestTree.ttbar_w->size()==0 ? 1. : fForestTree.ttbar_w->at(i));
+        evWgt=fForestTree.ttbar_w->size()==0 ? 1. : fForestTree.ttbar_w->at(meIdxList[0]);
+        if(allWgtSum.size()==0) allWgtSum.resize(meIdxList.size(),0.);
+        for(size_t i=0; i<meIdxList.size(); i++) {
+          Double_t iwgt(fForestTree.ttbar_w->size()<i ? 1. : fForestTree.ttbar_w->at(meIdxList[i]));
           allWgtSum[i]+=iwgt;
           ht.fill2D("fidcounter",0,i,iwgt,"gen");
           if(isGenDilepton)    ht.fill2D("fidcounter",1,i,iwgt,"gen");
@@ -587,7 +632,7 @@ int main(int argc, char* argv[])
         }
       }
     }
-    
+        
     wgtSum += evWgt;    
     float plotWgt(evWgt);
     
@@ -633,8 +678,8 @@ int main(int argc, char* argv[])
     float cenBin=0;
     bool isCentralEvent(false);
     if(!isPP){
+      isCentralEvent=(fForestTree.hiBin<30);
       cenBin=0.5*fForestTree.hiBin;
-      isCentralEvent=(cenBin<30);
     }
     if(!isMC){
       Int_t runBin=lumiTool.getRunBin(fForestTree.run);
@@ -647,17 +692,18 @@ int main(int argc, char* argv[])
 
     //the selected leptons
     std::vector<LeptonSummary> selLeptons;
-
+    
     //select muons
     std::vector<LeptonSummary> noIdMu;
+    
     for(unsigned int muIter = 0; muIter < fForestLep.muPt->size(); ++muIter) {
-
+      
       //kinematics selection
       TLorentzVector p4(0,0,0,0);
       p4.SetPtEtaPhiM(fForestLep.muPt->at(muIter),fForestLep.muEta->at(muIter),fForestLep.muPhi->at(muIter),0.1057);
       if(TMath::Abs(p4.Eta()) > lepEtaCut) continue;
       if(p4.Pt() < lepPtCut) continue;
-
+      
       LeptonSummary l(13,p4);
       l.charge  = fForestLep.muCharge->at(muIter);
       l.chiso   = fForestLep.muPFChIso->at(muIter);
@@ -666,7 +712,7 @@ int main(int argc, char* argv[])
       l.isofull = l.chiso+l.nhiso+l.phoiso;
       int   tmp_rhoind  = getRhoIndex(p4.Eta(),t_etaMin,t_etaMax);
       l.rho = isPP ? globalrho : t_rho->at(tmp_rhoind);
-
+      
       l.isofullR=getIsolationFull( pfColl, l.p4);
       l.miniiso = getMiniIsolation( pfColl ,l.p4, l.id);
       l.d0      = fForestLep.muD0   ->at(muIter);
@@ -678,7 +724,7 @@ int main(int argc, char* argv[])
         if(genLeptons[ig].DeltaR(l.p4)<0.1) continue;
         l.isMatched=true;
       }
-
+    
       noIdMu.push_back(l);
 
       //id (Tight muon requirements)
@@ -701,7 +747,7 @@ int main(int argc, char* argv[])
       selLeptons.push_back(l);
     }
     std::sort(noIdMu.begin(),noIdMu.end(),orderByPt);
-    
+        
     //monitor muon id variables
     if(noIdMu.size()>1) {
       TLorentzVector p4[2] = {noIdMu[0].p4,      noIdMu[1].p4};
@@ -726,7 +772,7 @@ int main(int argc, char* argv[])
         }
       }
     }
-
+    
     //select electrons
     //cf. https://twiki.cern.ch/twiki/pub/CMS/HiHighPt2019/HIN_electrons2018_followUp.pdf
     std::vector<LeptonSummary> noIdEle;
@@ -790,7 +836,7 @@ int main(int argc, char* argv[])
       selLeptons.push_back(l);
     }
     std::sort(noIdEle.begin(),noIdEle.end(),orderByPt);       
-
+    
     //monitor electron id variables
     if(noIdEle.size()>1) {
       TLorentzVector p4[2] = {noIdEle[0].p4,noIdEle[1].p4};
@@ -855,7 +901,7 @@ int main(int argc, char* argv[])
       int charge(selLeptons[0].charge*selLeptons[1].charge);
       if(!isMC && !isZ && charge<0 && fForestTree.run>=326887) continue;
     }      
-          
+              
     //analyze jets
     std::vector<bool> drSafe_pfJet;
     std::vector<BtagInfo_t> pfJetsIdx,nodr_pfJetsIdx;
@@ -909,7 +955,7 @@ int main(int argc, char* argv[])
     std::sort(pfJetsIdx.begin(),       pfJetsIdx.end(),      orderByBtagInfo);
     std::sort(nodr_pfJetsIdx.begin(),  nodr_pfJetsIdx.end(), orderByBtagInfo);
 
-
+    
     //for gen fill again fiducial counters
     if(isMC) {      
       
@@ -926,10 +972,8 @@ int main(int argc, char* argv[])
         }
       }    
       
-      size_t nWgts(fForestTree.ttbar_w->size());
-      if(nWgts==0) nWgts=1;
-      for(size_t i=0; i<nWgts; i++){
-        Double_t iwgt(fForestTree.ttbar_w->size()==0 ? 1. : fForestTree.ttbar_w->at(i));
+      for(size_t i=0; i<meIdxList.size(); i++) {
+        Double_t iwgt(fForestTree.ttbar_w->size()<i ? 1. : fForestTree.ttbar_w->at(meIdxList[i]));
         ht.fill2D("fidcounter",0,i,iwgt,fidCats);
         if(isGenDilepton)    ht.fill2D("fidcounter",1,i,iwgt,fidCats);
         if(isLeptonFiducial) ht.fill2D("fidcounter",2,i,iwgt,fidCats);
@@ -965,8 +1009,8 @@ int main(int argc, char* argv[])
     }
     categs=addCategs;
 
-    
-    //fill histogams
+        
+    //fill histograms
     for(int i=0; i<2; i++) {
       TString pf(Form("l%d",i+1));
       float pt(selLeptons[i].p4.Pt());
@@ -1007,7 +1051,7 @@ int main(int argc, char* argv[])
       ht.fill( "pf"+ppf+"jcsv",     csv,             plotWgt, categs);
       ht.fill2D( "pf"+ppf+"jetavsphi",   p4.Eta(),p4.Phi(),   plotWgt, categs);
     }
-
+    
     std::vector<float> rapMoments=getRapidityMoments(pfFinalState);
     ht.fill( "pfrapavg",     rapMoments[0], plotWgt, categs);
     ht.fill( "pfraprms",     rapMoments[1], plotWgt, categs);
@@ -1030,7 +1074,7 @@ int main(int argc, char* argv[])
       t_meWeights.push_back(topMassUpWgt);
       t_meWeights.push_back(topMassDnWgt);
       if(fForestTree.ttbar_w->size()>0) {
-        float nomWgt=fForestTree.ttbar_w->at(0);
+        float nomWgt=fForestTree.ttbar_w->at(meIdxList[0]);
         for(auto meIdx : meIdxList){
           if(meIdx< fForestTree.ttbar_w->size()){
             t_meWeights.push_back( fForestTree.ttbar_w->at(meIdx)/nomWgt );
@@ -1038,10 +1082,10 @@ int main(int argc, char* argv[])
         }
       }
     }
-    
+        
     //centrality
-    t_cenbin = cenBin;
-    t_ncoll  = findNcoll(fForestTree.hiBin);
+    t_cenbin   = cenBin;
+    t_ncollWgt = findNcoll(fForestTree.hiBin)/ncollWgtNorm;
 
     t_globalrho = globalrho;
     t_etrig  = etrig;
@@ -1129,7 +1173,7 @@ int main(int argc, char* argv[])
       if(isIso && t_lep_ind1 < 0)                    t_lep_ind1 = ilep;
       if(isIso && t_lep_ind1 > -1 && t_lep_ind2 < 0) t_lep_ind2 = ilep;
     }
-
+    
     // fill the jets ordered by b-tag
     t_bjet_pt   .clear();
     t_bjet_eta  .clear();
@@ -1163,7 +1207,7 @@ int main(int argc, char* argv[])
 
     t_ht  = pfht;
     t_mht = vis.Pt();
-
+    
     // now set the 4 variables that we added for the tmva reader for the bdt evaluation
     bdt_l1pt      = t_lep_pt[0];
     bdt_apt       = (t_lep_pt[0]-t_lep_pt[1])/(t_lep_pt[0]+t_lep_pt[1]);
@@ -1178,7 +1222,7 @@ int main(int argc, char* argv[])
     t_fisher2     = readerFisher2->EvaluateMVA( methodNameFisher2 );
 
     t_isData = !isMC;
-
+    
     outTree->Fill();
   }
 
