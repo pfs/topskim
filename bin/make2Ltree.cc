@@ -808,7 +808,7 @@ int main(int argc, char* argv[])
       if(p4.Pt() < lepPtCut) continue;	      
       
       bool isTrigMatch(false);
-      for(auto hp4: muHLTP4) {
+      for(auto hp4: eleHLTP4) {
         if(hp4.DeltaR(p4)>0.1) continue;
         isTrigMatch=true;
         break;
