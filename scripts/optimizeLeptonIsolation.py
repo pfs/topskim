@@ -325,8 +325,8 @@ def tuneIsolation(mixFile,ch,matchedll=None):
                 for k in range(len(kin)):
                     pt,eta,_=kin[k]
                     cenbin=globalEvent[k][1]
-                    if tag=='cen' and cenbin>15 : continue
-                    elif tag=='periph' and cenbin<=15 : continue
+                    if tag=='cen' and cenbin>30 : continue
+                    elif tag=='periph' and cenbin<=30 : continue
                     isoeff_den.Fill(pt,abs(eta))
                     if corIsoEstimators[k]>cut : continue
                     isoeff.Fill(pt,abs(eta))
@@ -339,8 +339,8 @@ def tuneIsolation(mixFile,ch,matchedll=None):
                 for k in range(len(mc_kin)):
                     pt,eta,_=mc_kin[k]
                     cenbin=mc_globalEvent[k][1]
-                    if tag=='cen' and cenbin>15 : continue
-                    elif tag=='periph' and cenbin<15 : continue
+                    if tag=='cen' and cenbin>30 : continue
+                    elif tag=='periph' and cenbin<30 : continue
                     ncoll=mc_globalEvent[k][2]
                     ncoll=1
                     mcisoeff_den.Fill(pt,abs(eta),ncoll)

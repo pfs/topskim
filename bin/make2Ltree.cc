@@ -1270,7 +1270,7 @@ int main(int argc, char* argv[])
       t_lepSF.push_back(sfVal);
       t_lepSFUnc.push_back(sfValUnc);
 
-      TString isoKey(cenbin<30 ? "cen" : "periph");
+      TString isoKey(cenBin<30 ? "cen" : "periph");
       isoKey+=abs(selLeptons[ilep].id)==13 ? "_169" : "_121";
       Int_t xbin=isoEffSFs[isoKey]->GetXaxis()->FindBin( min(selLeptons[ilep].p4.Pt(), isoEffSFs[isoKey]->GetXaxis()->GetXmax()) );
       Int_t ybin=isoEffSFs[isoKey]->GetYaxis()->FindBin( min(fabs(selLeptons[ilep].p4.Eta()), isoEffSFs[isoKey]->GetYaxis()->GetXmax()) );
