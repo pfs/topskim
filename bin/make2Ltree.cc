@@ -182,6 +182,20 @@ int main(int argc, char* argv[])
   TGraphAsymmErrors *m_mctrigeff=(TGraphAsymmErrors *)fIn->Get("m_eta_trigeff");
   fIn->Close();
 
+  //read isolation efficiencies
+  TString isosfURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/isolation_sf.root");
+  gSystem->ExpandPathName(isosfURL);
+  fIn=TFile::Open(isosfURL);
+  std::map<TString, TH2 *> isoEffSFs;
+  TString isomaps[]={"cen_169","periph_169","cen_121","periph_121"};
+  for(size_t i=0; i<sizeof(isomaps)/sizeof(TString); i++){
+    TString key(isomaps[i]);
+    isoEffSFs[key]=(TH2*)fIn->Get("sfiso2eff_"+key);
+    isoEffSFs[key]->SetDirectory(0);
+  }
+  fIn->Close();
+  
+
   if(isPP)
     cout << "Treating as a pp collision file" << endl;
   if(isMC)
@@ -553,7 +567,7 @@ int main(int argc, char* argv[])
       hiTree_p->GetEntry(entry);
       ncollSum+=findNcoll(fForestTree.hiBin);
     }
-    if(ncollSum>0) ncollWgtNorm=1./ncollSum;
+    if(ncollSum>0) ncollWgtNorm=double(nEntries)/ncollSum;
   }
 
   //loop over events
@@ -1255,8 +1269,13 @@ int main(int argc, char* argv[])
       }    
       t_lepSF.push_back(sfVal);
       t_lepSFUnc.push_back(sfValUnc);
-      t_lepIsoSF.push_back(1.0);
-      t_lepIsoSFUnc.push_back(0.);
+
+      TString isoKey(cenbin<30 ? "cen" : "periph");
+      isoKey+=abs(selLeptons[ilep].id)==13 ? "_169" : "_121";
+      Int_t xbin=isoEffSFs[isoKey]->GetXaxis()->FindBin( min(selLeptons[ilep].p4.Pt(), isoEffSFs[isoKey]->GetXaxis()->GetXmax()) );
+      Int_t ybin=isoEffSFs[isoKey]->GetYaxis()->FindBin( min(fabs(selLeptons[ilep].p4.Eta()), isoEffSFs[isoKey]->GetYaxis()->GetXmax()) );
+      t_lepIsoSF.push_back( isoEffSFs[isoKey]->GetBinContent(xbin,ybin) );
+      t_lepIsoSFUnc.push_back( isoEffSFs[isoKey]->GetBinError(xbin,ybin) );
 
       //isolation-based indices
       bool isIso(true);
