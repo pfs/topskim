@@ -174,6 +174,14 @@ int main(int argc, char* argv[])
   LumiRun lumiTool;
   ElectronEfficiencyWrapper eleEff("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data");
 
+  //read expected trigger efficiencies
+  TString trigEffURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/trigeff_mc.root");
+  gSystem->ExpandPathName(trigEffURL);
+  TFile *fIn=TFile::Open(trigEffURL);
+  TGraphAsymmErrors *e_mctrigeff=(TGraphAsymmErrors *)fIn->Get("e_pt_trigeff");
+  TGraphAsymmErrors *m_mctrigeff=(TGraphAsymmErrors *)fIn->Get("m_eta_trigeff");
+  fIn->Close();
+
   if(isPP)
     cout << "Treating as a pp collision file" << endl;
   if(isMC)
@@ -341,12 +349,16 @@ int main(int argc, char* argv[])
 
   //trigger objects
   cout << "Using " << muTrigName << " " << eTrigName << " as triggers" << endl;
-  TChain *muHLTObj_p = new TChain("hltobject/"+muTrigName);
-  muHLTObj_p->Add(inURL);
-  ForestHLTObject muHLTObjs(muHLTObj_p);
-  TChain *eleHLTObj_p = new TChain("hltobject/"+eTrigName);
-  eleHLTObj_p->Add(inURL);
-  ForestHLTObject eleHLTObjs(eleHLTObj_p);
+  TChain *muHLTObj_p =NULL, *eleHLTObj_p=NULL;
+  ForestHLTObject *muHLTObjs=NULL, *eleHLTObjs=NULL;
+  if(!isPP){
+    muHLTObj_p=new TChain("hltobject/"+muTrigName);
+    muHLTObj_p->Add(inURL);
+    muHLTObjs=new ForestHLTObject(muHLTObj_p);
+    eleHLTObj_p = new TChain("hltobject/"+eTrigName);
+    eleHLTObj_p->Add(inURL);
+    eleHLTObjs=new ForestHLTObject(eleHLTObj_p);
+  }
 
   TChain *rhoTree_p = new TChain("hiFJRhoAnalyzerFinerBins/t");
   rhoTree_p->Add(inURL);
@@ -556,8 +568,8 @@ int main(int argc, char* argv[])
     hltTree_p->GetEntry(entry);
     hiTree_p->GetEntry(entry);
     if(rhoTree_p) rhoTree_p->GetEntry(entry);
-    muHLTObj_p->GetEntry(entry);
-    eleHLTObj_p->GetEntry(entry);
+    if(muHLTObj_p) muHLTObj_p->GetEntry(entry);
+    if(eleHLTObj_p) eleHLTObj_p->GetEntry(entry);
 
     //}catch(...){
     //  cout << "An exception was caught reading the tree... ending loop now" << endl;
@@ -705,7 +717,8 @@ int main(int argc, char* argv[])
     
     //select muons
     std::vector<LeptonSummary> noIdMu;
-    std::vector<TLorentzVector> muHLTP4=muHLTObjs.getHLTObjectsP4();
+    std::vector<TLorentzVector> muHLTP4;
+    if(muHLTObjs) muHLTObjs->getHLTObjectsP4();
     for(unsigned int muIter = 0; muIter < fForestLep.muPt->size(); ++muIter) {
       
       //kinematics selection
@@ -795,7 +808,8 @@ int main(int argc, char* argv[])
     //select electrons
     //cf. https://twiki.cern.ch/twiki/pub/CMS/HiHighPt2019/HIN_electrons2018_followUp.pdf
     std::vector<LeptonSummary> noIdEle;
-    std::vector<TLorentzVector> eleHLTP4=eleHLTObjs.getHLTObjectsP4();
+    std::vector<TLorentzVector> eleHLTP4;
+    if(eleHLTObjs) eleHLTP4=eleHLTObjs->getHLTObjectsP4() ;
     for(unsigned int eleIter = 0; eleIter < fForestLep.elePt->size(); ++eleIter) {
 
       //kinematics selection
@@ -907,12 +921,12 @@ int main(int argc, char* argv[])
         if(!selLeptons[ilep].isMatched) continue;
         TString cat( abs(selLeptons[ilep].id)==11 ? "e" : "m");
         float pt(selLeptons[ilep].p4.Pt()), abseta(fabs(selLeptons[ilep].p4.Eta()));
-        ht.fill("trig_pt",  pt,     1., cat);          
-        ht.fill("trig_eta", abseta, 1., cat);          
+        ht.fill("trig_pt",  pt,     ncoll, cat);          
+        ht.fill("trig_eta", abseta, ncoll, cat);          
         if(!selLeptons[ilep].isTrigMatch) continue;
         cat+="match";
-        ht.fill("trig_pt",  pt,     1., cat);          
-        ht.fill("trig_eta", abseta, 1., cat);          
+        ht.fill("trig_pt",  pt,     ncoll, cat);          
+        ht.fill("trig_eta", abseta, ncoll, cat);          
       }
     }
 
@@ -1150,11 +1164,13 @@ int main(int argc, char* argv[])
     //get expected trigger efficiencies and measured scale factors
     std::vector<std::pair<float,float>  > ltrigEff, ltrigSF;
     for(size_t ilep=0; ilep<2; ilep++){
+      float pt(selLeptons[ilep].p4.Pt()),abseta(fabs(selLeptons[ilep].p4.Eta()));
+
       if(abs(selLeptons[ilep].id)==11){
-        ltrigEff.push_back(  std::pair<float,float>(1.0,0.0) );
-        ltrigSF.push_back( eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, true) );
+        ltrigEff.push_back(  std::pair<float,float>(e_mctrigeff->Eval(pt),0.0) );
+        ltrigSF.push_back( eleEff.eval(pt, abseta<barrelEndcapEta[0], cenBin, true) );
       }else{
-        ltrigEff.push_back(  std::pair<float,float>(1.0,0.0) );
+        ltrigEff.push_back(  std::pair<float,float>(m_mctrigeff->Eval(abseta),0.0) );
         ltrigSF.push_back(  std::pair<float,float>(1.0,0.0) );
       }
     }

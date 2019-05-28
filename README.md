@@ -16,7 +16,7 @@ make2Ltree --in /eos/cms/store/cmst3/group/hintt/PbPb2018/TT_TuneCP5_5p02TeV-pow
 ```
 or to run on a data file:
 ```
-make2Ltree --in /eos/cms/store/cmst3/group/hintt/PbPb2018/SkimMuons_PromptRecov1/Chunk_0_ext0.root --out test.root --max 1000
+make2Ltree --in /eos/cms/store/cmst3/group/hintt/PbPb2018_rereco/SkimMuons_04Apr2019-v1/Chunk_0_ext0.root --out test.root --max 1000
 ```
 
 To loop over all the available forest trees better to use condor and then merge the outputs.
@@ -65,6 +65,12 @@ Plot the baseline preselection plots
 ```
 python scripts/makeAnalysisPlots.py ${out}
 ```
+
+Prepare the a file with the MC trigger efficiency expectations
+```
+python scripts/createTrigEffSummary.py ${out}/TTJets_TuneCP5_HydjetDrumMB-amcatnloFXFX.root
+```
+
 
 ## Luminosity
 
