@@ -48,12 +48,12 @@ class ElectronEfficiencyWrapper
    */
   std::pair<float,float> eval(float pt, bool isEB, int cenbin,bool hlt) {
 
-    std::vector<float,float> sfVal(1.0,0.0);
+    std::pair<float,float> sfVal(1.0,0.0);
 
     //build the key to the map
     TString reg(isEB ? "EB" : "EE");
     TString cen(cenbin<30 ? "0_30" : "30_100");
-    TString pfix(hlt? ? "_HLT" : "");
+    TString pfix(hlt ? "_HLT" : "");
     TString key(reg+cen+pfix);
 
     //check key exists

@@ -13,6 +13,7 @@
 #include "HeavyIonsAnalysis/topskim/include/tnp_weight.h"
 #include "HeavyIonsAnalysis/topskim/include/tnp_electrons.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestHiTree.h"
+#include "HeavyIonsAnalysis/topskim/include/ForestHLTObject.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestLeptons.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestSkim.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestPFCands.h"
@@ -211,6 +212,8 @@ int main(int argc, char* argv[])
   }
 
   //generic histograms
+  ht.addHist("trig_pt",  new TH1F("trig_pt",    ";Lepton transverse momentum [GeV];Events",20,20,200));
+  ht.addHist("trig_eta", new TH1F("trig_eta",   ";Lepton pseudo-rapidity;Events",20,0,2.5));
   for(int i=0; i<2; i++) {
     TString pf(Form("l%d",i+1));
     ht.addHist(pf+"pt",             new TH1F(pf+"pt",            ";Lepton transverse momentum [GeV];Events",20,20,200));
@@ -315,26 +318,35 @@ int main(int argc, char* argv[])
   TChain *hltTree_p     = new TChain("hltanalysis/HltTree");
   hltTree_p->Add(inURL);
   int etrig(0),mtrig(0);
+  TString muTrigName(""),eTrigName("");
   if(isPP){
-    TString muTrig("HLT_HIL3Mu20_v1");
-    if( !hltTree_p->FindBranch(muTrig) ) muTrig="HLT_HIL3Mu15ForPPRef_v1";
-    if( GT.find("75X_mcRun2")!=string::npos ) muTrig="HLT_HIL2Mu15ForPPRef_v1";
-    hltTree_p->SetBranchStatus(muTrig,1);
-    hltTree_p->SetBranchAddress(muTrig,&mtrig);
-    TString eTrig("HLT_HIEle20_WPLoose_Gsf_v1");
-    if( !hltTree_p->FindBranch(eTrig) ) eTrig="HLT_HISinglePhoton20_Eta3p1ForPPRef_v1";
-    if( GT.find("75X_mcRun2")!=string::npos ) eTrig="HLT_HISinglePhoton40_Eta3p1ForPPRef_v1";
-    hltTree_p->SetBranchStatus(eTrig,1);
-    hltTree_p->SetBranchAddress(eTrig,&etrig);
-    cout << "Using " << muTrig << " " << eTrig << " as MC triggers" << endl;
+    muTrigName="HLT_HIL3Mu20_v";
+    if( !hltTree_p->FindBranch(muTrigName+"1") ) muTrigName="HLT_HIL3Mu15ForPPRef_v";
+    if( GT.find("75X_mcRun2")!=string::npos ) muTrigName="HLT_HIL2Mu15ForPPRef_v";
+    hltTree_p->SetBranchStatus(muTrigName+"1",1);
+    hltTree_p->SetBranchAddress(muTrigName+"1",&mtrig);
+    eTrigName="HLT_HIEle20_WPLoose_Gsf_v";
+    if( !hltTree_p->FindBranch(eTrigName+"1") ) eTrigName="HLT_HISinglePhoton20_Eta3p1ForPPRef_v";
+    if( GT.find("75X_mcRun2")!=string::npos ) eTrigName="HLT_HISinglePhoton40_Eta3p1ForPPRef_v";
+    hltTree_p->SetBranchStatus(eTrigName+"1",1);
+    hltTree_p->SetBranchAddress(eTrigName+"1",&etrig);
   }else{
-    //hltTree_p->SetBranchStatus("HLT_HIL3Mu15_v1",1);
-    //hltTree_p->SetBranchAddress("HLT_HIL3Mu15_v1",&mtrig);
-    hltTree_p->SetBranchStatus("HLT_HIL3Mu12_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIL3Mu12_v1",&mtrig);
-    hltTree_p->SetBranchStatus("HLT_HIEle20Gsf_v1",1);
-    hltTree_p->SetBranchAddress("HLT_HIEle20Gsf_v1",&etrig);    
+    muTrigName="HLT_HIL3Mu12_v";
+    hltTree_p->SetBranchStatus(muTrigName+"1",1);
+    hltTree_p->SetBranchAddress(muTrigName+"1",&mtrig);
+    eTrigName="HLT_HIEle20Gsf_v";
+    hltTree_p->SetBranchStatus(eTrigName+"1",1);
+    hltTree_p->SetBranchAddress(eTrigName+"1",&etrig);    
   }
+
+  //trigger objects
+  cout << "Using " << muTrigName << " " << eTrigName << " as triggers" << endl;
+  TChain *muHLTObj_p = new TChain("hltobject/"+muTrigName);
+  muHLTObj_p->Add(inURL);
+  ForestHLTObject muHLTObjs(muHLTObj_p);
+  TChain *eleHLTObj_p = new TChain("hltobject/"+eTrigName);
+  eleHLTObj_p->Add(inURL);
+  ForestHLTObject eleHLTObjs(eleHLTObj_p);
 
   TChain *rhoTree_p = new TChain("hiFJRhoAnalyzerFinerBins/t");
   rhoTree_p->Add(inURL);
@@ -541,6 +553,9 @@ int main(int argc, char* argv[])
     hltTree_p->GetEntry(entry);
     hiTree_p->GetEntry(entry);
     if(rhoTree_p) rhoTree_p->GetEntry(entry);
+    muHLTObj_p->GetEntry(entry);
+    eleHLTObj_p->GetEntry(entry);
+
     //}catch(...){
     //  cout << "An exception was caught reading the tree... ending loop now" << endl;
     //  break;
@@ -638,17 +653,6 @@ int main(int argc, char* argv[])
     wgtSum += evWgt;    
     float plotWgt(evWgt);
     
-    //first of all require a trigger
-    int trig=etrig+mtrig;
-    if(trig==0) continue;
-    if(isSingleMuPD) {
-      if(mtrig==0) continue;
-      if(etrig!=0) continue;
-    }
-    if(isSingleElePD) {
-      if(etrig==0) continue;
-    }
-
     //apply global filters
     if(!isMC && GT.find("103X")!=string::npos){
       if(TMath::Abs(fForestTree.vz) > 20) continue;
@@ -697,7 +701,7 @@ int main(int argc, char* argv[])
     
     //select muons
     std::vector<LeptonSummary> noIdMu;
-    
+    std::vector<TLorentzVector> muHLTP4=muHLTObjs.getHLTObjectsP4();
     for(unsigned int muIter = 0; muIter < fForestLep.muPt->size(); ++muIter) {
       
       //kinematics selection
@@ -705,8 +709,16 @@ int main(int argc, char* argv[])
       p4.SetPtEtaPhiM(fForestLep.muPt->at(muIter),fForestLep.muEta->at(muIter),fForestLep.muPhi->at(muIter),0.1057);
       if(TMath::Abs(p4.Eta()) > lepEtaCut) continue;
       if(p4.Pt() < lepPtCut) continue;
+
+      bool isTrigMatch(false);
+      for(auto hp4: muHLTP4) {
+        if(hp4.DeltaR(p4)>0.1) continue;
+        isTrigMatch=true;
+        break;
+      }
       
       LeptonSummary l(13,p4);
+      l.isTrigMatch=isTrigMatch;
       l.charge  = fForestLep.muCharge->at(muIter);
       l.chiso   = fForestLep.muPFChIso->at(muIter);
       l.nhiso   = fForestLep.muPFNeuIso->at(muIter);
@@ -762,7 +774,7 @@ int main(int argc, char* argv[])
       if(mmm<20) continue;
 
       ht.fill("mmll",  mmm,         plotWgt,cat);
-      if( fabs(mmm-91)<15 ) {
+      if( fabs(mmm-91)<15 && isSingleMuPD && mtrig>0 ) {
         for(size_t i=0; i<2; i++) {
           ht.fill("mmusta",    fForestLep.muStations->at(midx[i]),            plotWgt,cat);
           ht.fill("mtrklay",   fForestLep.muTrkLayers->at(midx[i]),           plotWgt,cat);
@@ -774,10 +786,12 @@ int main(int argc, char* argv[])
         }
       }
     }
+
     
     //select electrons
     //cf. https://twiki.cern.ch/twiki/pub/CMS/HiHighPt2019/HIN_electrons2018_followUp.pdf
     std::vector<LeptonSummary> noIdEle;
+    std::vector<TLorentzVector> eleHLTP4=eleHLTObjs.getHLTObjectsP4();
     for(unsigned int eleIter = 0; eleIter < fForestLep.elePt->size(); ++eleIter) {
 
       //kinematics selection
@@ -788,12 +802,19 @@ int main(int argc, char* argv[])
       if(!isMC && fForestTree.run<=firstEEScaleShiftRun && TMath::Abs(p4.Eta())>=barrelEndcapEta[1] && GT.find("fixEcalADCToGeV")==string::npos && GT.find("75X")==string::npos)
         p4 *=eeScaleShift;         
 
-
       if(TMath::Abs(p4.Eta()) > lepEtaCut) continue;
       if(TMath::Abs(p4.Eta()) > barrelEndcapEta[0] && TMath::Abs(p4.Eta()) < barrelEndcapEta[1] ) continue;
       if(p4.Pt() < lepPtCut) continue;	      
       
+      bool isTrigMatch(false);
+      for(auto hp4: muHLTP4) {
+        if(hp4.DeltaR(p4)>0.1) continue;
+        isTrigMatch=true;
+        break;
+      }
+
       LeptonSummary l(11,p4);
+      l.isTrigMatch=isTrigMatch;
       l.charge  = fForestLep.eleCharge->at(eleIter);
       if(GT.find("75X_mcRun2")==string::npos) {
 	l.chiso   = fForestLep.elePFChIso03->at(eleIter);
@@ -858,7 +879,7 @@ int main(int argc, char* argv[])
         cat+="BB";
       ht.fill("emll",  mee,         plotWgt,cat);
 
-      if( fabs(mee-91)<15 ) {
+      if( fabs(mee-91)<15 && isSingleElePD && etrig>0) {
         for(size_t i=0; i<2; i++) {
           cat=basecat;
           cat += (fabs(p4[i].Eta())>=barrelEndcapEta[1] ? "EE" : "EB");
@@ -876,7 +897,30 @@ int main(int argc, char* argv[])
     //sort selected electrons by pt
     std::sort(selLeptons.begin(),selLeptons.end(),orderByPt);
 
+    //monitor trigger efficiency
+    if(selLeptons.size()>=2){
+      for(size_t ilep=0; ilep<2; ilep++){
+        TString cat( abs(selLeptons[ilep].id)==11 ? "e" : "m");
+        ht.fill("trig_pt",  selLeptons[ilep].p4.Pt(), plotWgt,cat);          
+        ht.fill("trig_eta", fabs(selLeptons[ilep].p4.Eta()), plotWgt,cat);          
+        if(!selLeptons[ilep].isTrigMatch) continue;
+        cat+="match";
+        ht.fill("trig_pt",  selLeptons[ilep].p4.Pt(), plotWgt,cat);          
+        ht.fill("trig_eta", fabs(selLeptons[ilep].p4.Eta()), plotWgt,cat);          
+      }
+    }
+
     //apply basic preselection
+    int trig=etrig+mtrig;
+    if(trig==0) continue;
+    if(isSingleMuPD) {
+      if(mtrig==0) continue;
+      if(etrig!=0) continue;
+    }
+    if(isSingleElePD) {
+      if(etrig==0) continue;
+    }
+
     if(mtrig+etrig==0) continue;
     if(selLeptons.size()<2) continue;
     TLorentzVector ll(selLeptons[0].p4+selLeptons[1].p4);
@@ -1097,11 +1141,12 @@ int main(int argc, char* argv[])
     t_trigSF    = 1.0;
     t_trigSFUnc = 0.;
 
+    //get expected trigger efficiencies and measured scale factors
     std::vector<std::pair<float,float>  > ltrigEff, ltrigSF;
     for(size_t ilep=0; ilep<2; ilep++){
       if(abs(selLeptons[ilep].id)==11){
         ltrigEff.push_back(  std::pair<float,float>(1.0,0.0) );
-        ltrigSF.push_back( eleEff.eval(selLeptons[ilep].p4.P4(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, true) );
+        ltrigSF.push_back( eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, true) );
       }
     }
 
@@ -1175,7 +1220,7 @@ int main(int argc, char* argv[])
         sfValUnc += pow(0.0032,2);
         sfValUnc = sqrt(sfValUnc);
       }else {
-        std::vector<float,float > elesf=eleEff.eval(selLeptons[ilep].p4.P4(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false);
+        std::pair<float,float > elesf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false);
         sfVal=elesf.first;
         sfValUnc=elesf.second;
       }    
