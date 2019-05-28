@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "HeavyIonsAnalysis/topskim/include/tnp_weight.h"
+#include "HeavyIonsAnalysis/topskim/include/tnp_electrons.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestHiTree.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestLeptons.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestSkim.h"
@@ -170,6 +171,7 @@ int main(int argc, char* argv[])
   bool isSingleMuPD( !isMC && inURL.Contains("SkimMuons"));
   bool isSingleElePD( !isMC && inURL.Contains("SkimElectrons"));
   LumiRun lumiTool;
+  ElectronEfficiencyWrapper eleEff("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data");
 
   if(isPP)
     cout << "Treating as a pp collision file" << endl;
@@ -1095,6 +1097,25 @@ int main(int argc, char* argv[])
     t_trigSF    = 1.0;
     t_trigSFUnc = 0.;
 
+    std::vector<std::pair<float,float>  > ltrigEff, ltrigSF;
+    for(size_t ilep=0; ilep<2; ilep++){
+      if(abs(selLeptons[ilep].id)==11){
+        ltrigEff.push_back(  std::pair<float,float>(1.0,0.0) );
+        ltrigSF.push_back( eleEff.eval(selLeptons[ilep].p4.P4(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, true) );
+      }
+    }
+
+    //trigeff = e1*e2 +e1*(1-e2)+e2*(1-e1), the rest is scale factor and error propagation
+    t_trigSF  = (ltrigSF[0].first*ltrigEff[0].first+ltrigSF[1].first*ltrigEff[1].first-ltrigSF[0].first*ltrigSF[1].first*ltrigEff[0].first*ltrigEff[1].first);
+    t_trigSF /= (                 ltrigEff[0].first+                 ltrigEff[1].first-                                  ltrigEff[0].first*ltrigEff[1].first);
+
+    t_trigSFUnc  = pow( ltrigSF[0].second*(ltrigEff[0].first-ltrigSF[1].first*ltrigEff[0].first*ltrigEff[1].first), 2 );
+    t_trigSFUnc += pow( ltrigSF[1].second*(ltrigEff[1].first-ltrigSF[0].first*ltrigEff[0].first*ltrigEff[1].first), 2 );
+    t_trigSFUnc  = sqrt(t_trigSFUnc);
+
+       
+
+
     // fill the leptons ordered by pt
     t_lep_pt    .clear();
     t_lep_eta   .clear();
@@ -1153,7 +1174,11 @@ int main(int argc, char* argv[])
         }
         sfValUnc += pow(0.0032,2);
         sfValUnc = sqrt(sfValUnc);
-      }      
+      }else {
+        std::vector<float,float > elesf=eleEff.eval(selLeptons[ilep].p4.P4(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false);
+        sfVal=elesf.first;
+        sfValUnc=elesf.second;
+      }    
       t_lepSF.push_back(sfVal);
       t_lepSFUnc.push_back(sfValUnc);
 
