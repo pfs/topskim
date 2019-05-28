@@ -397,9 +397,9 @@ int main(int argc, char* argv[])
   // variables per lepton, including iso
   Int_t t_nlep, t_lep_ind1, t_lep_ind2;
   std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_d0, t_lep_dz, t_lep_d0err, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_isofull, t_lep_miniiso,t_lep_isofull20,t_lep_isofull25,t_lep_isofull30;
-  std::vector<Bool_t> t_lep_matched;
+  std::vector<Bool_t> t_lep_matched,t_lep_trigmatch;
   std::vector<Int_t  > t_lep_pdgId, t_lep_charge,t_lep_idflags;
-  std::vector<Float_t> t_lepSF,t_lepSFUnc;
+  std::vector<Float_t> t_lepSF,t_lepSFUnc,t_lepIsoSF,t_lepIsoSFUnc;
   outTree->Branch("nlep"       , &t_nlep      , "nlep/I"            );
   outTree->Branch("lep_ind1"   , &t_lep_ind1  , "lep_ind1/I");
   outTree->Branch("lep_ind2"   , &t_lep_ind2  , "lep_ind2/I");
@@ -422,8 +422,11 @@ int main(int argc, char* argv[])
   outTree->Branch("lep_isofull30", &t_lep_isofull30);
   outTree->Branch("lep_miniiso", &t_lep_miniiso);
   outTree->Branch("lep_matched", &t_lep_matched);
+  outTree->Branch("lep_trigmatch", &t_lep_trigmatch);
   outTree->Branch("lepSF",      &t_lepSF);
   outTree->Branch("lepSFUnc",      &t_lepSFUnc);
+  outTree->Branch("lepIsoSF",      &t_lepIsoSF);
+  outTree->Branch("lepIsoSFUnc",      &t_lepIsoSFUnc);
 
   // variables from dilepton system
   Float_t t_llpt, t_lleta, t_llphi, t_llm, t_dphi, t_deta, t_sumeta;
@@ -809,7 +812,7 @@ int main(int argc, char* argv[])
       
       bool isTrigMatch(false);
       for(auto hp4: eleHLTP4) {
-        if(hp4.DeltaR(p4)>0.1) continue;
+        if(hp4.DeltaR(p4)>0.2) continue;
         isTrigMatch=true;
         break;
       }
@@ -901,6 +904,7 @@ int main(int argc, char* argv[])
     //monitor trigger efficiency
     if(selLeptons.size()>=2){
       for(size_t ilep=0; ilep<2; ilep++){
+        if(!selLeptons[ilep].isMatched) continue;
         TString cat( abs(selLeptons[ilep].id)==11 ? "e" : "m");
         float pt(selLeptons[ilep].p4.Pt()), abseta(fabs(selLeptons[ilep].p4.Eta()));
         ht.fill("trig_pt",  pt,     1., cat);          
@@ -1186,8 +1190,11 @@ int main(int argc, char* argv[])
     t_lep_isofull30.clear();
     t_lep_miniiso.clear();
     t_lep_matched.clear();
+    t_lep_trigmatch.clear();
     t_lepSF.clear();
     t_lepSFUnc.clear();
+    t_lepIsoSF.clear();
+    t_lepIsoSFUnc.clear();
     t_nlep = selLeptons.size();
     t_lep_ind1 = -1;
     t_lep_ind2 = -1;
@@ -1211,7 +1218,8 @@ int main(int argc, char* argv[])
       t_lep_isofull30.push_back( selLeptons[ilep].isofullR[2] );
       t_lep_miniiso.push_back( selLeptons[ilep].miniiso );
       t_lep_matched.push_back( selLeptons[ilep].isMatched );
-
+      t_lep_trigmatch.push_back( selLeptons[ilep].isTrigMatch );
+      
       //reco/tracking+id scale factors
       float sfVal(1.0),sfValUnc(0.0);
       if(abs(selLeptons[ilep].id)==13) {
@@ -1231,6 +1239,8 @@ int main(int argc, char* argv[])
       }    
       t_lepSF.push_back(sfVal);
       t_lepSFUnc.push_back(sfValUnc);
+      t_lepIsoSF.push_back(1.0);
+      t_lepIsoSFUnc.push_back(0.);
 
       //isolation-based indices
       bool isIso(true);
