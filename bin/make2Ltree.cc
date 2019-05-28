@@ -681,11 +681,12 @@ int main(int argc, char* argv[])
     Float_t globalrho = getRho(pfColl,{1,2,3,4,5,6},-1.,5.);
 
     //monitor trigger and centrality
-    float cenBin=0;
+    float cenBin(0.),ncoll(1.);
     bool isCentralEvent(false);
     if(!isPP){
       isCentralEvent=(fForestTree.hiBin<30);
       cenBin=0.5*fForestTree.hiBin;
+      ncoll=findNcoll(fForestTree.hiBin)/ncollWgtNorm;
     }
     if(!isMC){
       Int_t runBin=lumiTool.getRunBin(fForestTree.run);
@@ -901,12 +902,13 @@ int main(int argc, char* argv[])
     if(selLeptons.size()>=2){
       for(size_t ilep=0; ilep<2; ilep++){
         TString cat( abs(selLeptons[ilep].id)==11 ? "e" : "m");
-        ht.fill("trig_pt",  selLeptons[ilep].p4.Pt(), plotWgt,cat);          
-        ht.fill("trig_eta", fabs(selLeptons[ilep].p4.Eta()), plotWgt,cat);          
+        float pt(selLeptons[ilep].p4.Pt()), abseta(fabs(selLeptons[ilep].p4.Eta()));
+        ht.fill("trig_pt",  pt,     1., cat);          
+        ht.fill("trig_eta", abseta, 1., cat);          
         if(!selLeptons[ilep].isTrigMatch) continue;
         cat+="match";
-        ht.fill("trig_pt",  selLeptons[ilep].p4.Pt(), plotWgt,cat);          
-        ht.fill("trig_eta", fabs(selLeptons[ilep].p4.Eta()), plotWgt,cat);          
+        ht.fill("trig_pt",  pt,     1., cat);          
+        ht.fill("trig_eta", abseta, 1., cat);          
       }
     }
 
@@ -1131,7 +1133,7 @@ int main(int argc, char* argv[])
         
     //centrality
     t_cenbin   = cenBin;
-    t_ncollWgt = findNcoll(fForestTree.hiBin)/ncollWgtNorm;
+    t_ncollWgt = ncoll;
 
     t_globalrho = globalrho;
     t_etrig  = etrig;
@@ -1147,6 +1149,9 @@ int main(int argc, char* argv[])
       if(abs(selLeptons[ilep].id)==11){
         ltrigEff.push_back(  std::pair<float,float>(1.0,0.0) );
         ltrigSF.push_back( eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, true) );
+      }else{
+        ltrigEff.push_back(  std::pair<float,float>(1.0,0.0) );
+        ltrigSF.push_back(  std::pair<float,float>(1.0,0.0) );
       }
     }
 

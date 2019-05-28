@@ -20,7 +20,7 @@ class ElectronEfficiencyWrapper
    */
   ElectronEfficiencyWrapper(TString url) 
     {
-      TString baseF("ScaleFactors_PbPb_LooseWP_");
+      TString baseF("ScaleFactors_PbPb_LooseWP");
       TString regs[2]={"EB","EE"};
       TString centr[2]={"0_30","30_100"};
       TString pfix[2]={"","_HLT"};
