@@ -701,7 +701,7 @@ int main(int argc, char* argv[])
     if(!isPP){
       isCentralEvent=(fForestTree.hiBin<30);
       cenBin=0.5*fForestTree.hiBin;
-      ncoll=findNcoll(fForestTree.hiBin)/ncollWgtNorm;
+      ncoll=findNcoll(fForestTree.hiBin)*ncollWgtNorm;
     }
     if(!isMC){
       Int_t runBin=lumiTool.getRunBin(fForestTree.run);
