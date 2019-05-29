@@ -6,6 +6,7 @@
 #include "TChain.h"
 #include "TSystem.h"
 #include "TF1.h"
+#include "TRandom3.h"
 
 #include <string>
 #include <vector>
@@ -22,6 +23,7 @@
 #include "HeavyIonsAnalysis/topskim/include/LeptonSummary.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestGen.h"
 #include "HeavyIonsAnalysis/topskim/include/ElectronId.h"
+#include "HeavyIonsAnalysis/topskim/include/BtagUncertaintyComputer.h"
 
 #include "fastjet/ClusterSequence.hh"
 #include "fastjet/tools/JetMedianBackgroundEstimator.hh"
@@ -42,7 +44,7 @@ const int firstEEScaleShiftRun = 327402;
 const float barrelEndcapEta[2]={1.4442,1.5660};
 const float hem1516Eta[2]={-3.0,-1.9};
 const float hem1516Phi[2]={-1.6,-0.9};
-const float csvWP = 0.8838;
+const float csvWP = 0.91;
 
 using namespace std;
 using namespace fastjet;
@@ -86,6 +88,13 @@ static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
   float csv_a(std::get<3>(a)), csv_b(std::get<3>(b));
   if(csv_a>csv_b) return true;
   return false;
+}
+
+// btag efficiencies from the AN
+float btagEfficiencies(int flavor, float cenbin){
+  if      (fabs(flavor) == 5) return (cenbin <= 30 ? 0.543 : 0.665); // bs
+  else if (fabs(flavor) == 0) return (cenbin <= 30 ? 0.016 : 0.012); // unmatched
+  else                        return (cenbin <= 30 ? 0.008 : 0.002); // udsg
 }
 
 //
@@ -271,6 +280,10 @@ int main(int argc, char* argv[])
     ht.addHist("pf"+ppf+"jcsv",        new TH1F("pf"+ppf+"jcsv",     ";CSVv2;Events",25,0,1));
   }
 
+  // Initialize the btagging SF stuff
+  BTagSFUtil * myBTagUtil = new BTagSFUtil(42);
+  TRandom3 * rand = new TRandom3(2);
+
   //Get Tree info
   char* read = new char[100];
   TChain *hiInfoTree_p  = new TChain("HiForest/HiForestInfo");
@@ -442,6 +455,17 @@ int main(int argc, char* argv[])
   outTree->Branch("bjet_mass"  , &t_bjet_mass  );
   outTree->Branch("bjet_csvv2" , &t_bjet_csvv2 );
   outTree->Branch("bjet_drSafe" , &t_bjet_drSafe );
+
+  Int_t t_nbjet_sel, t_nbjet_sel_jecup, t_nbjet_sel_jecdn, t_nbjet_sel_jerup, t_nbjet_sel_jerdn, t_nbjet_sel_bup, t_nbjet_sel_bdn, t_nbjet_sel_udsgup, t_nbjet_sel_udsgdn;
+  outTree->Branch("nbjet_sel"       , &t_nbjet_sel       , "nbjet_sel/I"       );
+  outTree->Branch("nbjet_sel_jecup" , &t_nbjet_sel_jecup , "nbjet_sel_jecup/I" );
+  outTree->Branch("nbjet_sel_jecdn" , &t_nbjet_sel_jecdn , "nbjet_sel_jecdn/I" );
+  outTree->Branch("nbjet_sel_jerup" , &t_nbjet_sel_jerup , "nbjet_sel_jerup/I" );
+  outTree->Branch("nbjet_sel_jerdn" , &t_nbjet_sel_jerdn , "nbjet_sel_jerdn/I" );
+  outTree->Branch("nbjet_sel_bup"   , &t_nbjet_sel_bup   , "nbjet_sel_bup/I"   );
+  outTree->Branch("nbjet_sel_bdn"   , &t_nbjet_sel_bdn   , "nbjet_sel_bdn/I"   );
+  outTree->Branch("nbjet_sel_udsgup", &t_nbjet_sel_udsgup, "nbjet_sel_udsgup/I");
+  outTree->Branch("nbjet_sel_udsgdn", &t_nbjet_sel_udsgdn, "nbjet_sel_udsgdn/I");
 
   std::vector<Float_t> t_bjet_matchpt, t_bjet_matcheta, t_bjet_matchphi, t_bjet_matchmass;
   outTree->Branch("bjet_genpt"    , &t_bjet_matchpt    );
@@ -907,6 +931,13 @@ int main(int argc, char* argv[])
     std::vector<BtagInfo_t> pfJetsIdx,nodr_pfJetsIdx;
     std::vector<TLorentzVector> pfJetsP4,nodr_pfJetsP4,nodr_pfJetsP4GenMatch;
     int npfjets(0),npfbjets(0); 
+
+    // initialize all the counters
+    t_nbjet_sel = 0; t_nbjet_sel_jecup  = 0; t_nbjet_sel_jecdn  = 0;
+                     t_nbjet_sel_jerup  = 0; t_nbjet_sel_jerdn  = 0;
+                     t_nbjet_sel_bup    = 0; t_nbjet_sel_bdn    = 0;
+                     t_nbjet_sel_udsgup = 0; t_nbjet_sel_udsgdn = 0;
+
     for(int jetIter = 0; jetIter < fForestJets.nref; jetIter++){
 
       //at least two tracks
@@ -919,7 +950,7 @@ int main(int argc, char* argv[])
       int nsvtxTk=fForestJets.svtxntrk[jetIter];
       float msvtx=fForestJets.svtxm[jetIter];
 
-      if(jp4.Pt()<30.) continue;
+      if(jp4.Pt()<20.) continue; // smaller pT cut here to avoid the full loop
       if(fabs(jp4.Eta())>2.4) continue;
       bool isBTagged(csvVal>csvWP);      
 
@@ -937,8 +968,8 @@ int main(int argc, char* argv[])
         refFlavorForB=fForestJets.refparton_flavorForB[jetIter];
       }
 
-      nodr_pfJetsIdx.push_back( std::make_tuple(nodr_pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4,refFlavor,refFlavorForB) );
-      nodr_pfJetsP4.push_back(jp4);
+      // marc nodr_pfJetsIdx.push_back( std::make_tuple(nodr_pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4,refFlavor,refFlavorForB) );
+      // marc nodr_pfJetsP4.push_back(jp4);
       bool isdrSafe(false);
 
       //cross clean wrt to leptons
@@ -950,10 +981,68 @@ int main(int argc, char* argv[])
         isdrSafe=true;
       }
 
+      if (jp4.Pt() > 30. && isBTagged) t_nbjet_sel       += 1;
+
+      if (isMC){
+        if (jp4.Pt() > 30.*0.98 && isBTagged) t_nbjet_sel_jecup += 1;
+        if (jp4.Pt() > 30.*1.02 && isBTagged) t_nbjet_sel_jecdn += 1;
+
+        float cjer(0.);
+        if ( abs(refFlavorForB) ) cjer = 1. + (1.2 -1.) * (jp4.Pt() - matchjp4.Pt()) / jp4.Pt(); // hard coded 1.2
+        else cjer = rand->Gaus(1., 0.2);
+
+        if (jp4.Pt()*cjer > 30. && isBTagged) t_nbjet_sel_jerup += 1;
+        if (jp4.Pt()/cjer > 30. && isBTagged) t_nbjet_sel_jerdn += 1;
+
+        bool isBTaggedNew(0);
+        float tmp_btageff = btagEfficiencies(refFlavorForB, cenBin);
+
+        if (jp4.Pt() < 30.) continue;
+        t_nbjet_sel_bup    = t_nbjet_sel; t_nbjet_sel_bdn    = t_nbjet_sel;
+        t_nbjet_sel_udsgup = t_nbjet_sel; t_nbjet_sel_udsgdn = t_nbjet_sel;
+
+        if ( abs(refFlavorForB) == 5){
+
+          isBTaggedNew = isBTagged; 
+          myBTagUtil->modifyBTagsWithSF(isBTaggedNew, 1.05, tmp_btageff );
+          if (!isBTagged &&  isBTaggedNew) t_nbjet_sel_bup = t_nbjet_sel+1;
+          if ( isBTagged && !isBTaggedNew) t_nbjet_sel_bup = t_nbjet_sel-1;
+
+          isBTaggedNew = isBTagged; 
+          myBTagUtil->modifyBTagsWithSF(isBTaggedNew, 0.95, tmp_btageff );
+          if (!isBTagged &&  isBTaggedNew) t_nbjet_sel_bdn = t_nbjet_sel+1;
+          if ( isBTagged && !isBTaggedNew) t_nbjet_sel_bdn = t_nbjet_sel-1;
+        }
+
+        else {
+
+          isBTaggedNew = isBTagged; 
+          myBTagUtil->modifyBTagsWithSF(isBTaggedNew, 1.15, tmp_btageff );
+          if (!isBTagged &&  isBTaggedNew) t_nbjet_sel_udsgup = t_nbjet_sel+1;
+          if ( isBTagged && !isBTaggedNew) t_nbjet_sel_udsgup = t_nbjet_sel-1;
+
+          isBTaggedNew = isBTagged; 
+          myBTagUtil->modifyBTagsWithSF(isBTaggedNew, 0.85, tmp_btageff );
+          if (!isBTagged &&  isBTaggedNew) t_nbjet_sel_udsgdn = t_nbjet_sel+1;
+          if ( isBTagged && !isBTaggedNew) t_nbjet_sel_udsgdn = t_nbjet_sel-1;
+
+        }
+
+      }
+
       drSafe_pfJet.push_back(isdrSafe);      
     }
+
+    // set the bjet variations to the nominal one for data
+    if (!isMC){
+      t_nbjet_sel_jecup  = t_nbjet_sel; t_nbjet_sel_jecdn  = t_nbjet_sel;
+      t_nbjet_sel_jerup  = t_nbjet_sel; t_nbjet_sel_jerdn  = t_nbjet_sel;
+      t_nbjet_sel_bup    = t_nbjet_sel; t_nbjet_sel_bdn    = t_nbjet_sel;
+      t_nbjet_sel_udsgup = t_nbjet_sel; t_nbjet_sel_udsgdn = t_nbjet_sel;
+    }
+
     std::sort(pfJetsIdx.begin(),       pfJetsIdx.end(),      orderByBtagInfo);
-    std::sort(nodr_pfJetsIdx.begin(),  nodr_pfJetsIdx.end(), orderByBtagInfo);
+    // marc std::sort(nodr_pfJetsIdx.begin(),  nodr_pfJetsIdx.end(), orderByBtagInfo);
 
     
     //for gen fill again fiducial counters
