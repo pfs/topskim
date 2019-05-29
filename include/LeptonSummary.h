@@ -9,7 +9,7 @@ class LeptonSummary {
  LeptonSummary(int _id,TLorentzVector &_p4) : 
   id(_id), charge(0), p4(_p4),
     idFlags(0),
-    chiso(0.), nhiso(0.), phoiso(0.), rho(0.),isofull(0.), miniiso(0.), isofullR(0), d0(0.), d0err(0.), dz(0.), origIdx(-1), isMatched(false) { }
+    chiso(0.), nhiso(0.), phoiso(0.), rho(0.),isofull(0.), miniiso(0.), isofullR(0), d0(0.), d0err(0.), dz(0.), origIdx(-1), isMatched(false), isTrigMatch(false) { }
   LeptonSummary(const LeptonSummary &l) {
     id=l.id;
     p4=l.p4;
@@ -27,6 +27,7 @@ class LeptonSummary {
     dz = l.dz;
     origIdx=l.origIdx;
     isMatched=l.isMatched;
+    isTrigMatch=l.isTrigMatch;
   }
 
   int id;
@@ -39,7 +40,7 @@ class LeptonSummary {
   std::vector<float> isofullR;
   float d0, d0err, dz;
   int origIdx;
-  bool isMatched;
+  bool isMatched,isTrigMatch;
 };
 
 #endif

@@ -28,12 +28,14 @@ def prepareDileptonCollection(url,tag='Skim'):
     #loop over events
     print 'Analysing',t.GetEntries(),'events'
     dilCollection=defaultdict(list)
+    jetCollection=defaultdict(list)
     for iev in range(t.GetEntries()):
         t.GetEntry(iev)
         try:
             dil=getDilepton(t,[13,11])
-            dilCollection[(dil.flavour,dil.isZ)].append(dil)
-            #dilCollection[dil.flavour].append(dil)
+            key=(dil.flavour,dil.isZ)
+            dilCollection[key].append(dil)
+            jetCollection[key].append(getJets(t))
         except Exception as e:
             print e
             pass
@@ -42,6 +44,7 @@ def prepareDileptonCollection(url,tag='Skim'):
     pckURL='dilepton_summary.pck' if tag=='Skim' else 'dilepton_summary_%s.pck'%tag
     with open(pckURL,'w') as cache:
         pickle.dump( dilCollection,cache,pickle.HIGHEST_PROTOCOL)
+        pickle.dump( jetCollection,cache,pickle.HIGHEST_PROTOCOL)
     return pckURL
 
 
@@ -90,6 +93,7 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
     #read the dilepton collection to use for the mixing
     with open(mixFile,'r') as cache:
         mixDileptons=pickle.load(cache)
+        mixJets=pickle.load(cache)
 
     #start tmva reader
     tmva_reader = ROOT.TMVA.Reader( "!Color:!Silent" );
@@ -112,6 +116,7 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
         if not '.root' in f: continue
         if not 'Skim' in f : continue
 
+        #create output tree structure
         out_f=ROOT.TFile.Open(os.path.join(outURL,f),'RECREATE')
         out_t=ROOT.TTree('tree','tree')
         out_t_branches={}
@@ -125,13 +130,23 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
         out_t.Branch('ncoll',out_t_branches['ncoll'],'ncoll/F')
         out_t_branches['mixrank']=array('i',[0])
         out_t.Branch('mixrank',out_t_branches['mixrank'],'mixrank/I')
-
         for name in LEPTONBRANCHES:
             out_t_branches[name]=array('f',[0.,0.])
             out_t.Branch('lep_'+name,out_t_branches[name],'lep_%s[2]/F'%name)
         for name in DILEPTONBRANCHES:
             out_t_branches[name]=array('f',[0.])
             out_t.Branch(name,out_t_branches[name],'%s/F'%name)
+        out_t_branches['nbjet']=array('i',[0])
+        out_t.Branch('nbjet',out_t_branches['nbjet'],'nbjet/I')            
+        for name in JETBRANCHES:
+            atype,atempl,btype='f',[0.]*100,'F'
+            if name=='drSafe' : 
+                atype,atempl,btype='B',[False]*100,'O'
+            if 'flavor' in name:
+                atype,atempl,btype='I',[0]*100,'I'
+            out_t_branches['bjet_'+name]=array(atype,atempl)
+            out_t.Branch('bjet_'+name,out_t_branches['bjet_'+name],'bjet_%s[nbjet]/%s'%(name,btype))
+
 
         orig_t=ROOT.TChain('tree')
         orig_t.Add(os.path.join(url,f))
@@ -163,7 +178,6 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
                     mix_candidates=[]           
                     for imix in dilChoices:
                         mix_dil=mixDileptons[(orig_flav,orig_isZ)][imix]
-                        #mix_dil=mixDileptons[orig_flav][imix]
                     
                         #ensure this is not the same event
                         if orig_dil.evHeader==mix_dil.evHeader: continue
@@ -174,8 +188,11 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
                     #fill the tree with best matches in phase space for this chunk
                     best_idx=getBestMatch(orig_dil,mix_candidates)
                     for mix_rank in range(len(best_idx)):
-                        leptons=mix_candidates[ best_idx[mix_rank] ]
 
+                        #leptons
+                        mixCandIdx=best_idx[mix_rank]
+                        leptons=mix_candidates[mixCandIdx]
+                        
                         for il in range(2):                        
                             for name in LEPTONBRANCHES:                    
                                 out_t_branches[name][il]=getattr(leptons[il],name)
@@ -203,6 +220,20 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
                         out_t_branches['cenbin'][0]     = orig_t.cenbin
                         out_t_branches['ncoll'][0]      = orig_t.ncoll
                         out_t_branches['mixrank'][0]    = mix_rank    
+
+                        #jets (have to use the original index)
+                        dilCandIdx=dilChoices[mixCandIdx]
+                        jets=mixJets[(orig_flav,orig_isZ)][dilCandIdx]
+                        out_t_branches['nbjet'][0]=len(jets)
+                        for ij in range(len(jets)):
+                            for name in JETBRANCHES:
+                                val=getattr(jets[ij],name)
+                                if name=='drSafe': 
+                                    val=True if val>0 else False
+                                if 'flavor' in name: 
+                                    val=int(val)
+                                out_t_branches['bjet_'+name][ij]=val
+
                         out_t.Fill()
             
         #write tree

@@ -9,6 +9,8 @@ LEPTONBRANCHES=['pt','eta','phi',
 
 DILEPTONBRANCHES=['llpt','lleta','llphi','llm','dphi','deta','sumeta','apt','bdt','bdtrarity']
 
+JETBRANCHES=['pt','eta','phi','mass','csvv2','genpt','geneta','genphi','genmass','drSafe','flavor','flavorB']
+
 class PhysicsObject:
 
     """a container for a physics object, mostly a passive object waiting for properties to be added from the source"""
@@ -23,7 +25,7 @@ class PhysicsObject:
 
     def buildP4(self):
         try:
-            self.p4.SetPtEtaPhiM(self.pt,self.eta,self.phi,self.m)
+            self.p4.SetPtEtaPhiM(self.pt,self.eta,self.phi,self.mass)
         except Exception as e:
             print '<'*50
             print 'Unable to set p4'
@@ -68,7 +70,7 @@ def getLeptons(t,pdgIdColl=[13,11]):
 
         for name in LEPTONBRANCHES:
             lepColl[-1].addProperty(name,getattr(t,'lep_'+name)[il])
-        lepColl[-1].addProperty('m',mass)            
+        lepColl[-1].addProperty('mass',mass)            
         lepColl[-1].matched=bool(t.lep_matched[il])
         lepColl[-1].buildP4()
         lepColl[-1].setGlobalEventProperties({'cenbin':t.cenbin,
@@ -95,3 +97,17 @@ def getDilepton(t,pdgIdColl=[13,11]):
     """get the dilepton in the event"""
 
     return dileptonBuilder( getLeptons(t,pdgIdColl), (t.run,t.event,t.lumi) )
+
+
+def getJets(t):
+
+    """gets jets in the event"""
+
+    jetColl=[]
+    for il in range(t.nbjet):
+        jetColl.append( PhysicsObject() )
+        for name in JETBRANCHES:
+            jetColl[-1].addProperty(name,getattr(t,'bjet_'+name)[il])
+        jetColl[-1].buildP4()
+
+    return jetColl
