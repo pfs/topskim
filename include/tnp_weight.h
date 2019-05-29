@@ -37,7 +37,7 @@ double tnp_weight_trg_pbpb(double pt, double eta, int idx=0);  // NOT UPDATED
 double tnp_weight_muid_pbpb(double eta, int idx)
 {
    double x = eta;
-   double syst = 0.8e-2;  //preliminary
+   double syst = 0.6e-2;  //preliminary
 
    double num=1,den=1;
    

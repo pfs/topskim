@@ -172,6 +172,7 @@ def tuneIsolation(mixFile,ch,matchedll=None):
     qGlobalEvent=np.percentile(globalEvent,range(0,110,10),axis=0)
 
     rocCurves=[]
+    sfisoHistos=[]
     for i in range(len(ISOTITLES)):
 
         #parametrize the profile versus rho
@@ -324,8 +325,8 @@ def tuneIsolation(mixFile,ch,matchedll=None):
                 for k in range(len(kin)):
                     pt,eta,_=kin[k]
                     cenbin=globalEvent[k][1]
-                    if tag=='cen' and cenbin>15 : continue
-                    elif tag=='periph' and cenbin<=15 : continue
+                    if tag=='cen' and cenbin>30 : continue
+                    elif tag=='periph' and cenbin<=30 : continue
                     isoeff_den.Fill(pt,abs(eta))
                     if corIsoEstimators[k]>cut : continue
                     isoeff.Fill(pt,abs(eta))
@@ -338,8 +339,8 @@ def tuneIsolation(mixFile,ch,matchedll=None):
                 for k in range(len(mc_kin)):
                     pt,eta,_=mc_kin[k]
                     cenbin=mc_globalEvent[k][1]
-                    if tag=='cen' and cenbin>15 : continue
-                    elif tag=='periph' and cenbin<15 : continue
+                    if tag=='cen' and cenbin>30 : continue
+                    elif tag=='periph' and cenbin<30 : continue
                     ncoll=mc_globalEvent[k][2]
                     ncoll=1
                     mcisoeff_den.Fill(pt,abs(eta),ncoll)
@@ -365,6 +366,9 @@ def tuneIsolation(mixFile,ch,matchedll=None):
                 sfisoeff.GetXaxis().SetMoreLogLabels()
                 sfisoeff.GetZaxis().SetTitle('SF = #varepsilon(data)/#varepsilon(MC)')
                 sfisoeff.GetZaxis().SetRangeUser(0.8,1.2)
+                #save a copy before drawing
+                sfisoHistos.append( sfisoeff.Clone('sfiso%deff_%s_%d'%(i,tag,ch) ) )
+                sfisoHistos[-1].SetDirectory(0)
                 drawIsolationProfile(hmain=sfisoeff,
                                      hextra=[],
                                      extraTxt=[isoTitle,'I_{rel}<%f'%cut],                                       
@@ -428,6 +432,7 @@ def tuneIsolation(mixFile,ch,matchedll=None):
 
     #overall performance summary
     drawROCSummary(rocCurves,'rocsummary_%d'%ch)
+    return sfisoHistos
 
 def main():
     ROOT.gROOT.SetBatch(True)
@@ -448,8 +453,17 @@ def main():
             for ch in matchedll:
                 matchedll[ch]=[ll for ll in allDileptons[(ch,False)] if ll.l1.matched and ll.l2.matched]
 
+    sfisoHistos=[]
     for ch in matchedll:
-        tuneIsolation('dilepton_summary.pck',ch,matchedll[ch])
+        sfisoHistos += tuneIsolation('dilepton_summary.pck',ch,matchedll[ch])
+
+
+    fOut=ROOT.TFile.Open('data/isolation_sf.root','RECREATE')
+    for h in sfisoHistos:
+        h.SetDirectory(fOut)
+        h.Write()
+    fOut.Close()
+
 
 if __name__ == "__main__":
     main()
