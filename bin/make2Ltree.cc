@@ -1253,14 +1253,10 @@ int main(int argc, char* argv[])
       //reco/tracking+id scale factors
       float sfVal(1.0),sfValUnc(0.0);
       if(abs(selLeptons[ilep].id)==13) {
-        sfVal=tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(), 0 );
-        for(size_t iunc=1; iunc<=2; iunc++){
-          sfValUnc += pow(
-                          max(fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(), iunc )-sfVal),
-                              fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(), -iunc )-sfVal)),
-                          2);
-        }
-        sfValUnc += pow(0.0032,2);
+        sfVal=tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(), 0 );                         //central value
+        sfValUnc += pow(fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(),+1)-sfVal),2); //stat
+        sfValUnc += pow(fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(),-1)-sfVal),2); //syst
+        sfValUnc += pow(0.0032,2);                                                          //centrality dependence
         sfValUnc = sqrt(sfValUnc);
       }else {
         std::pair<float,float > elesf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false);
