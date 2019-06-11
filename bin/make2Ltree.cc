@@ -161,6 +161,8 @@ float weightBW(TF1 *bwigner,std::vector<float> obsm,float g,float m,float gini,f
   return wgt;
 }
 
+TF1 * quenchingModel = new TF1("quenchingModel", "[0]./(TMath::Sqrt(2.*TMath::Pi())*0.73*x)*TMath::Exp(-1.*TMath::Power(TMath::Log(x/[0])+1.5,2)/2./0.73/0.73)", 0., 300.);
+
 
 //
 int main(int argc, char* argv[])
@@ -499,7 +501,7 @@ int main(int argc, char* argv[])
   outTree->Branch("bjet_csvv2" , &t_bjet_csvv2 );
   outTree->Branch("bjet_drSafe" , &t_bjet_drSafe );
 
-  Int_t t_nbjet_sel, t_nbjet_sel_jecup, t_nbjet_sel_jecdn, t_nbjet_sel_jerup, t_nbjet_sel_jerdn, t_nbjet_sel_bup, t_nbjet_sel_bdn, t_nbjet_sel_udsgup, t_nbjet_sel_udsgdn;
+  Int_t t_nbjet_sel, t_nbjet_sel_jecup, t_nbjet_sel_jecdn, t_nbjet_sel_jerup, t_nbjet_sel_jerdn, t_nbjet_sel_bup, t_nbjet_sel_bdn, t_nbjet_sel_udsgup, t_nbjet_sel_udsgdn, t_nbjet_sel_quenchup, t_nbjet_sel_quenchdn;
   outTree->Branch("nbjet_sel"       , &t_nbjet_sel       , "nbjet_sel/I"       );
   outTree->Branch("nbjet_sel_jecup" , &t_nbjet_sel_jecup , "nbjet_sel_jecup/I" );
   outTree->Branch("nbjet_sel_jecdn" , &t_nbjet_sel_jecdn , "nbjet_sel_jecdn/I" );
@@ -509,6 +511,8 @@ int main(int argc, char* argv[])
   outTree->Branch("nbjet_sel_bdn"   , &t_nbjet_sel_bdn   , "nbjet_sel_bdn/I"   );
   outTree->Branch("nbjet_sel_udsgup", &t_nbjet_sel_udsgup, "nbjet_sel_udsgup/I");
   outTree->Branch("nbjet_sel_udsgdn", &t_nbjet_sel_udsgdn, "nbjet_sel_udsgdn/I");
+  outTree->Branch("nbjet_sel_quenchup", &t_nbjet_sel_quenchup, "nbjet_sel_quenchup/I");
+  outTree->Branch("nbjet_sel_quenchdn", &t_nbjet_sel_quenchdn, "nbjet_sel_quenchdn/I");
 
   std::vector<Float_t> t_bjet_matchpt, t_bjet_matcheta, t_bjet_matchphi, t_bjet_matchmass;
   outTree->Branch("bjet_genpt"    , &t_bjet_matchpt    );
@@ -1013,10 +1017,11 @@ int main(int argc, char* argv[])
     int npfjets(0),npfbjets(0); 
 
     // initialize all the counters
-    t_nbjet_sel = 0; t_nbjet_sel_jecup  = 0; t_nbjet_sel_jecdn  = 0;
-                     t_nbjet_sel_jerup  = 0; t_nbjet_sel_jerdn  = 0;
-                     t_nbjet_sel_bup    = 0; t_nbjet_sel_bdn    = 0;
-                     t_nbjet_sel_udsgup = 0; t_nbjet_sel_udsgdn = 0;
+    t_nbjet_sel = 0; t_nbjet_sel_jecup    = 0; t_nbjet_sel_jecdn    = 0;
+                     t_nbjet_sel_jerup    = 0; t_nbjet_sel_jerdn    = 0;
+                     t_nbjet_sel_bup      = 0; t_nbjet_sel_bdn      = 0;
+                     t_nbjet_sel_udsgup   = 0; t_nbjet_sel_udsgdn   = 0;
+                     t_nbjet_sel_quenchup = 0; t_nbjet_sel_quenchdn = 0;
 
     for(int jetIter = 0; jetIter < fForestJets.nref; jetIter++){
 
@@ -1074,6 +1079,12 @@ int main(int argc, char* argv[])
         if (jp4.Pt()*cjer > 30. && isBTagged) t_nbjet_sel_jerup += 1;
         if (jp4.Pt()/cjer > 30. && isBTagged) t_nbjet_sel_jerdn += 1;
 
+        quenchingModel->SetParameter(0, 50.);
+        float tmp_quench_loss = quenchingModel->GetRandom();
+
+        if (jp4.Pt()                 > 30. && isBTagged) t_nbjet_sel_quenchup += 1;
+        if (jp4.Pt()-tmp_quench_loss > 30. && isBTagged) t_nbjet_sel_quenchdn += 1;
+
         bool isBTaggedNew(0);
         float tmp_btageff = btagEfficiencies(refFlavorForB, cenBin);
 
@@ -1115,10 +1126,11 @@ int main(int argc, char* argv[])
 
     // set the bjet variations to the nominal one for data
     if (!isMC){
-      t_nbjet_sel_jecup  = t_nbjet_sel; t_nbjet_sel_jecdn  = t_nbjet_sel;
-      t_nbjet_sel_jerup  = t_nbjet_sel; t_nbjet_sel_jerdn  = t_nbjet_sel;
-      t_nbjet_sel_bup    = t_nbjet_sel; t_nbjet_sel_bdn    = t_nbjet_sel;
-      t_nbjet_sel_udsgup = t_nbjet_sel; t_nbjet_sel_udsgdn = t_nbjet_sel;
+      t_nbjet_sel_jecup    = t_nbjet_sel; t_nbjet_sel_jecdn    = t_nbjet_sel;
+      t_nbjet_sel_jerup    = t_nbjet_sel; t_nbjet_sel_jerdn    = t_nbjet_sel;
+      t_nbjet_sel_bup      = t_nbjet_sel; t_nbjet_sel_bdn      = t_nbjet_sel;
+      t_nbjet_sel_udsgup   = t_nbjet_sel; t_nbjet_sel_udsgdn   = t_nbjet_sel;
+      t_nbjet_sel_quenchup = t_nbjet_sel; t_nbjet_sel_quenchdn = t_nbjet_sel;
     }
 
     std::sort(pfJetsIdx.begin(),       pfJetsIdx.end(),      orderByBtagInfo);
