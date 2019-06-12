@@ -161,12 +161,12 @@ float weightBW(TF1 *bwigner,std::vector<float> obsm,float g,float m,float gini,f
   return wgt;
 }
 
-TF1 * quenchingModel = new TF1("quenchingModel", "[0]./(TMath::Sqrt(2.*TMath::Pi())*0.73*x)*TMath::Exp(-1.*TMath::Power(TMath::Log(x/[0])+1.5,2)/2./0.73/0.73)", 0., 300.);
 
 
 //
 int main(int argc, char* argv[])
 {
+  TF1 * quenchingModel = new TF1("quenchingModel", "[0]/(TMath::Sqrt(2.*TMath::Pi())*0.73*x)*TMath::Exp(-1.*TMath::Power(TMath::Log(x/[0])+1.5,2)/2./0.73/0.73)", 0., 50.);
   bool blind(true);
   TString inURL,outURL;
   bool isMC(false),isPP(false);
@@ -1079,11 +1079,15 @@ int main(int argc, char* argv[])
         if (jp4.Pt()*cjer > 30. && isBTagged) t_nbjet_sel_jerup += 1;
         if (jp4.Pt()/cjer > 30. && isBTagged) t_nbjet_sel_jerdn += 1;
 
-        quenchingModel->SetParameter(0, 50.);
+        quenchingModel->SetParameter(0, 50.); // this sets the omega_c parameter. if we want to make this centrality dependent
         float tmp_quench_loss = quenchingModel->GetRandom();
+        // std::cout << "energy loss " << tmp_quench_loss << " due to quenching " << std::endl;
+        // std::cout << "jet has eta " << jp4.Eta() << std::endl;
+        // std::cout << "pT loss     " << TMath::Abs(TMath::Sin(jp4.Theta())*tmp_quench_loss) << " due to quenching " << std::endl << std::endl;
+        tmp_quench_loss = TMath::Abs(TMath::Sin(jp4.Theta())*tmp_quench_loss); // make it only on the transverse part...
 
-        if (jp4.Pt()                 > 30. && isBTagged) t_nbjet_sel_quenchup += 1;
-        if (jp4.Pt()-tmp_quench_loss > 30. && isBTagged) t_nbjet_sel_quenchdn += 1;
+        if (jp4.Pt()                  > 30. && isBTagged) t_nbjet_sel_quenchup += 1;
+        if (jp4.Pt()-tmp_quench_loss  > 30. && isBTagged) t_nbjet_sel_quenchdn += 1;
 
         bool isBTaggedNew(0);
         float tmp_btageff = btagEfficiencies(refFlavorForB, cenBin);
