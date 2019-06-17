@@ -22,7 +22,8 @@ with open('condor_%s.sub'%tag,'w') as c:
     c.write('output      = condor_%s.out\n'%tag)
     c.write('error       = condor_%s.err\n'%tag)
     c.write('log         = condor_%s.log\n'%tag)
-    c.write('requirements = (OpSysAndVer =?= "SLCern6")\n')
+    #c.write('requirements = (OpSysAndVer =?= "SLCern6")\n')
+    c.write('+AccountingGroup = "group_u_CMST3.all"\n')
     c.write('+MaxRuntime = 10800\n')
 
     chunks=os.listdir(input)
