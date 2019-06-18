@@ -49,7 +49,8 @@ if len(resubArgs):
         c.write('output      = condor_resubmit_$(ProcId).out\n')
         c.write('error       = condor_resubmit_$(ProcId).err\n')
         c.write('log         = condor_resubmit_$(ProcId).log\n')
-        c.write('requirements = (OpSysAndVer =?= "SLCern6")\n')
+        #c.write('requirements = (OpSysAndVer =?= "SLCern6")\n')
+        c.write('+AccountingGroup = "group_u_CMST3.all"\n')
         c.write('+MaxRuntime = 14400\n')
     
         for res in resubArgs:
