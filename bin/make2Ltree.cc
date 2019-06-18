@@ -607,7 +607,6 @@ int main(int argc, char* argv[])
   for(int entry = 0; entry < nEntries; entry++){
     
     if(entry%entryDiv == 0) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
-    //try{
     globalTree_p->GetEntry(entry);
     lepTree_p->GetEntry(entry);
     pfCandTree_p->GetEntry(entry);
@@ -615,13 +614,8 @@ int main(int argc, char* argv[])
     hltTree_p->GetEntry(entry);
     hiTree_p->GetEntry(entry);
     if(rhoTree_p) rhoTree_p->GetEntry(entry);
-    if(muHLTObj_p) muHLTObj_p->GetEntry(entry);
-    if(eleHLTObj_p) eleHLTObj_p->GetEntry(entry);
-
-    //}catch(...){
-    //  cout << "An exception was caught reading the tree... ending loop now" << endl;
-    //  break;
-    // }
+    if(muHLTObj_p && mtrig>0) muHLTObj_p->GetEntry(entry);
+    if(eleHLTObj_p && etrig>0) eleHLTObj_p->GetEntry(entry);
     
     //gen level analysis
     float evWgt(1.0),topPtWgt(1.0),topMassUpWgt(1.0),topMassDnWgt(1.0);
@@ -765,7 +759,7 @@ int main(int argc, char* argv[])
     //select muons
     std::vector<LeptonSummary> noIdMu;
     std::vector<TLorentzVector> muHLTP4;
-    if(muHLTObjs) muHLTObjs->getHLTObjectsP4();
+    if(muHLTObjs && mtrig>0) muHLTP4=muHLTObjs->getHLTObjectsP4();
     for(unsigned int muIter = 0; muIter < fForestLep.muPt->size(); ++muIter) {
       
       //kinematics selection
@@ -856,7 +850,7 @@ int main(int argc, char* argv[])
     //cf. https://twiki.cern.ch/twiki/pub/CMS/HiHighPt2019/HIN_electrons2018_followUp.pdf
     std::vector<LeptonSummary> noIdEle;
     std::vector<TLorentzVector> eleHLTP4;
-    if(eleHLTObjs) eleHLTP4=eleHLTObjs->getHLTObjectsP4() ;
+    if(eleHLTObjs && etrig>0) eleHLTP4=eleHLTObjs->getHLTObjectsP4() ;
     for(unsigned int eleIter = 0; eleIter < fForestLep.elePt->size(); ++eleIter) {
 
       //kinematics selection

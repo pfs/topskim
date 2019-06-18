@@ -12,10 +12,6 @@
 class ForestHLTObject {
  public :
  ForestHLTObject(TChain *t) :
-  TriggerObjId(0),
-    pt(0),
-    phi(0),
-    mass(0),
     isvalid(false){
     
     if(t){
@@ -45,7 +41,7 @@ class ForestHLTObject {
 
 
  private:
-  std::vector<Double_t> *TriggerObjId, *pt, *eta, *phi, *mass;
+  std::vector<Double_t> *TriggerObjId=0, *pt=0, *eta=0, *phi=0, *mass=0;
   bool isvalid;
 };
 
