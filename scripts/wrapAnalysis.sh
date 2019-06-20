@@ -12,15 +12,7 @@ cd $HOME
 input=${2}
 output=${3}
 
-extraOpts=""
-isMC=${4}
-if [ ! -z "${isMC}" ]; then
-   extraOpts="${extraOpts} --mc"
-fi
-isPP=${5}
-if [ ! -z "${isPP}" ]; then
-    extraOpts="${extraOpts} --pp"
-fi
+extraOpts=${*:4}
 opts="--in ${input} --out tto2l.root ${extraOpts}"
 
 echo "Calling make2Ltree with [${opts}]"
