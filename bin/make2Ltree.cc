@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
 
   bool blind(true);
   TString inURL,outURL;
-  bool isMC(false),isPP(false);
+  bool isMC(false),isPP(false),isAMCATNLO(false);
   int maxEvents(-1);
   for(int i=1;i<argc;i++){
     string arg(argv[i]);
@@ -183,6 +183,7 @@ int main(int argc, char* argv[])
     else if(arg.find("--max")!=string::npos && i+1<argc) { sscanf(argv[i+1],"%d",&maxEvents); }
     else if(arg.find("--mc")!=string::npos)              { isMC=true;  }
     else if(arg.find("--pp")!=string::npos)              { isPP=true;  }
+    else if(arg.find("--amcatnlo")!=string::npos)        { isAMCATNLO=true;  }
   }
 
   bool isSingleMuPD( !isMC && inURL.Contains("SkimMuons"));
@@ -216,6 +217,10 @@ int main(int argc, char* argv[])
     cout << "Treating as a pp collision file" << endl;
   if(isMC)
     cout << "Treating as a MC file" << endl;
+  if(isAMCATNLO)
+    cout << "This is an amc@NLO file (for the ME weights)" << endl;
+  else
+    cout << "Will assume that this is a powheg file!" << endl;
 
   
   std::vector<size_t> meIdxList={0,1,2,3,4,6,8}; //qcd weights
@@ -225,10 +230,14 @@ int main(int argc, char* argv[])
     if(isPP){
       for(size_t i=10; i<=111; i++) meIdxList.push_back(i); //hessian NNPDF3.1
       meIdxList.push_back(116); meIdxList.push_back(117);   //alphaS variation +/-0.001
+    }else if(isAMCATNLO){    
+      meIdxList[0]=1080;
+      for(size_t i=1081; i<=1176; i++) meIdxList.push_back(i); //EPPS16nlo_CT14nlo_Pb208
+      for(size_t i=1177; i<=1209; i++) meIdxList.push_back(i); //nCTEQ15FullNuc_208_82
     }else{    
-      meIdxList[0]=1081;
-      for(size_t i=1081; i<1177; i++) meIdxList.push_back(i); //EPPS16nlo_CT14nlo_Pb208
-      for(size_t i=1178; i<1210; i++) meIdxList.push_back(i); //nCTEQ15FullNuc_208_82
+      meIdxList[0]=864;
+      for(size_t i=865; i<=960; i++) meIdxList.push_back(i); //EPPS16nlo_CT14nlo_Pb208
+      for(size_t i=961; i<=993; i++) meIdxList.push_back(i); //nCTEQ15FullNuc_208_82
     }
     cout << "Will store " <<  meIdxList.size() << " ME weights" << endl;
   }
@@ -695,7 +704,7 @@ int main(int argc, char* argv[])
         evWgt=fForestTree.ttbar_w->size()==0 ? 1. : fForestTree.ttbar_w->at(meIdxList[0]);
         if(allWgtSum.size()==0) allWgtSum.resize(meIdxList.size(),0.);
         for(size_t i=0; i<meIdxList.size(); i++) {
-          Double_t iwgt(fForestTree.ttbar_w->size()<i ? 1. : fForestTree.ttbar_w->at(meIdxList[i]));
+          Double_t iwgt(fForestTree.ttbar_w->size()<i  || fForestTree.ttbar_w->size() == 0 ? 1. : fForestTree.ttbar_w->at(meIdxList[i]));
           allWgtSum[i]+=iwgt;
           ht.fill2D("fidcounter",0,i,iwgt,"gen");
           if(isGenDilepton)    ht.fill2D("fidcounter",1,i,iwgt,"gen");
@@ -1161,7 +1170,7 @@ int main(int argc, char* argv[])
       }    
       
       for(size_t i=0; i<meIdxList.size(); i++) {
-        Double_t iwgt(fForestTree.ttbar_w->size()<i ? 1. : fForestTree.ttbar_w->at(meIdxList[i]));
+        Double_t iwgt(fForestTree.ttbar_w->size()<i || fForestTree.ttbar_w->size() == 0 ? 1. : fForestTree.ttbar_w->at(meIdxList[i]));
         ht.fill2D("fidcounter",0,i,iwgt,fidCats);
         if(isGenDilepton)    ht.fill2D("fidcounter",1,i,iwgt,fidCats);
         if(isLeptonFiducial) ht.fill2D("fidcounter",2,i,iwgt,fidCats);
@@ -1269,6 +1278,7 @@ int main(int argc, char* argv[])
           }
         }
       }
+      else {t_meWeights.push_back(1.0); } 
     }
         
     //centrality
