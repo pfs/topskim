@@ -445,7 +445,7 @@ def main():
     if len(sys.argv)>1:
        
         print 'Processing MC truth from',MCTAG
-        #prepareDileptonCollection(sys.argv[1],MCTAG)
+        prepareDileptonCollection(sys.argv[1],MCTAG)
 
         #readout matched leptons
         with open('dilepton_summary_%s.pck'%MCTAG,'r') as cache:

@@ -126,8 +126,8 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
         out_t.Branch('weight',out_t_branches['weight'],'weight/F')
         out_t_branches['cenbin']=array('f',[0.])
         out_t.Branch('cenbin',out_t_branches['cenbin'],'cenbin/F')
-        out_t_branches['ncoll']=array('f',[0.])
-        out_t.Branch('ncoll',out_t_branches['ncoll'],'ncoll/F')
+        out_t_branches['ncollWgt']=array('f',[0.])
+        out_t.Branch('ncollWgt',out_t_branches['ncollWgt'],'ncollWgt/F')
         out_t_branches['mixrank']=array('i',[0])
         out_t.Branch('mixrank',out_t_branches['mixrank'],'mixrank/I')
         for name in LEPTONBRANCHES:
@@ -218,7 +218,7 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
                         out_t_branches['bdt'][0]        = tmva_reader.EvaluateMVA(BDTMETHOD)
                         out_t_branches['bdtrarity'][0]  = tmva_reader.GetRarity(BDTMETHOD)
                         out_t_branches['cenbin'][0]     = orig_t.cenbin
-                        out_t_branches['ncoll'][0]      = orig_t.ncoll
+                        out_t_branches['ncollWgt'][0]   = orig_t.ncollWgt
                         out_t_branches['mixrank'][0]    = mix_rank    
 
                         #jets (have to use the original index)
