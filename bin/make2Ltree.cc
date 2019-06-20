@@ -1293,7 +1293,7 @@ int main(int argc, char* argv[])
         ltrigSF.push_back( eleEff.eval(pt, abseta<barrelEndcapEta[0], cenBin, true) );
       }else{
         ltrigEff.push_back(  std::pair<float,float>(m_mctrigeff->Eval(abseta),0.0) );
-        ltrigSF.push_back(  std::pair<float,float>(1.0,0.0) );
+        ltrigSF.push_back(  tnp_weight_trg_pbpb(pt,abseta) );
       }
     }
 
