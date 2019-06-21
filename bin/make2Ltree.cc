@@ -48,6 +48,9 @@ const float barrelEndcapEta[2]={1.4442,1.5660};
 const float hem1516Eta[2]={-3.0,-1.9};
 const float hem1516Phi[2]={-1.6,-0.9};
 const float csvWP = 0.91;
+// runs with HLT issues: any path using tracking was disabled => includes L3 muon paths. 
+// total lumi in these runs is 30.103/ub (total lumi available in golden json unblinde period is 425.349/ub)
+std::vector<int> badMuonTriggerRuns={326482,326483,326500,326520,326527,326528,326530,326532,326533,326534,326535,326546,326548,326549,326550,326568,326569,326571};
 
 using namespace std;
 using namespace fastjet;
@@ -989,6 +992,7 @@ int main(int argc, char* argv[])
     int trig=etrig+mtrig;
     if(trig==0) continue;
     if(isSingleMuPD) {
+      if(std::find(badMuonTriggerRuns.begin(), badMuonTriggerRuns.end(), fForestTree.run) != badMuonTriggerRuns.end()) continue;
       if(mtrig==0) continue;
       if(etrig!=0) continue;
     }

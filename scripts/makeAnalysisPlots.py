@@ -436,8 +436,8 @@ def doJetHotSpots(url,cats):
 
 
 url=sys.argv[1]
-doEleIDPlots(url)
-doMuIDPlots(url)
-#showRateVsRun(url)
+#doEleIDPlots(url)
+#doMuIDPlots(url)
+showRateVsRun(url)
 #doJetHotSpots(url,['zmm','zee','em'])
 
