@@ -39,7 +39,8 @@
 
 const bool isDebug = true;
 const float lepPtCut  = 20.;
-const float lepEtaCut = 2.4;
+const float muEtaCut = 2.4;
+const float eleEtaCut = 2.1;
 //see https://indico.cern.ch/event/803679/contributions/3342407/attachments/1808912/2953435/egm-minipog-190308.pdf
 const float eeScaleShift = 6.8182E-2/5.9097E-2;
 const int firstEEScaleShiftRun = 327402; 
@@ -47,6 +48,9 @@ const float barrelEndcapEta[2]={1.4442,1.5660};
 const float hem1516Eta[2]={-3.0,-1.9};
 const float hem1516Phi[2]={-1.6,-0.9};
 const float csvWP = 0.91;
+// runs with HLT issues: any path using tracking was disabled => includes L3 muon paths. 
+// total lumi in these runs is 30.103/ub (total lumi available in golden json unblinde period is 425.349/ub)
+std::vector<int> badMuonTriggerRuns={326482,326483,326500,326520,326527,326528,326530,326532,326533,326534,326535,326546,326548,326549,326550,326568,326569,326571};
 
 using namespace std;
 using namespace fastjet;
@@ -676,8 +680,8 @@ int main(int argc, char* argv[])
       
       isGenDilepton=(genLeptons.size()==2);      
       isLeptonFiducial=(isGenDilepton && 
-                        genLeptons[0].Pt()>lepPtCut && fabs(genLeptons[0].Eta())<lepEtaCut && 
-                        genLeptons[1].Pt()>lepPtCut && fabs(genLeptons[1].Eta())<lepEtaCut);  
+                        genLeptons[0].Pt()>lepPtCut && fabs(genLeptons[0].Eta())<muEtaCut && 
+                        genLeptons[1].Pt()>lepPtCut && fabs(genLeptons[1].Eta())<muEtaCut);  
 
       //further cuts for electrons (EE-EB transition, HEM15/16 transition)
       if(isLeptonFiducial){
@@ -686,6 +690,10 @@ int main(int argc, char* argv[])
           float eta(genLeptons[igl].Eta());
           float phi(genLeptons[igl].Phi());
           if(fabs(eta) > barrelEndcapEta[0] && fabs(eta) < barrelEndcapEta[1])  {
+            isLeptonFiducial=false;
+            break;
+          }
+          if(fabs(eta)>eleEtaCut) {
             isLeptonFiducial=false;
             break;
           }
@@ -774,7 +782,7 @@ int main(int argc, char* argv[])
       //kinematics selection
       TLorentzVector p4(0,0,0,0);
       p4.SetPtEtaPhiM(fForestLep.muPt->at(muIter),fForestLep.muEta->at(muIter),fForestLep.muPhi->at(muIter),0.1057);
-      if(TMath::Abs(p4.Eta()) > lepEtaCut) continue;
+      if(TMath::Abs(p4.Eta()) > muEtaCut) continue;
       if(p4.Pt() < lepPtCut) continue;
 
       bool isTrigMatch(false);
@@ -870,7 +878,7 @@ int main(int argc, char* argv[])
       if(!isMC && fForestTree.run<=firstEEScaleShiftRun && TMath::Abs(p4.Eta())>=barrelEndcapEta[1] && GT.find("fixEcalADCToGeV")==string::npos && GT.find("75X")==string::npos)
         p4 *=eeScaleShift;         
 
-      if(TMath::Abs(p4.Eta()) > lepEtaCut) continue;
+      if(TMath::Abs(p4.Eta()) > eleEtaCut) continue;
       if(TMath::Abs(p4.Eta()) > barrelEndcapEta[0] && TMath::Abs(p4.Eta()) < barrelEndcapEta[1] ) continue;
       if(p4.Pt() < lepPtCut) continue;	      
       
@@ -927,7 +935,7 @@ int main(int argc, char* argv[])
       selLeptons.push_back(l);
     }
     std::sort(noIdEle.begin(),noIdEle.end(),orderByPt);       
-    
+
     //monitor electron id variables
     if(noIdEle.size()>1) {
       TLorentzVector p4[2] = {noIdEle[0].p4,noIdEle[1].p4};
@@ -984,6 +992,7 @@ int main(int argc, char* argv[])
     int trig=etrig+mtrig;
     if(trig==0) continue;
     if(isSingleMuPD) {
+      if(std::find(badMuonTriggerRuns.begin(), badMuonTriggerRuns.end(), fForestTree.run) != badMuonTriggerRuns.end()) continue;
       if(mtrig==0) continue;
       if(etrig!=0) continue;
     }
@@ -1303,19 +1312,18 @@ int main(int argc, char* argv[])
         ltrigSF.push_back( eleEff.eval(pt, abseta<barrelEndcapEta[0], cenBin, true) );
       }else{
         ltrigEff.push_back(  std::pair<float,float>(m_mctrigeff->Eval(abseta),0.0) );
-        ltrigSF.push_back(  std::pair<float,float>(1.0,0.0) );
+        ltrigSF.push_back(  tnp_weight_trg_pbpb(pt,abseta) );
       }
     }
 
     //trigeff = e1*e2 +e1*(1-e2)+e2*(1-e1), the rest is scale factor and error propagation
     t_trigSF  = (ltrigSF[0].first*ltrigEff[0].first+ltrigSF[1].first*ltrigEff[1].first-ltrigSF[0].first*ltrigSF[1].first*ltrigEff[0].first*ltrigEff[1].first);
-    t_trigSF /= (                 ltrigEff[0].first+                 ltrigEff[1].first-                                  ltrigEff[0].first*ltrigEff[1].first);
+    t_trigSF /= (           
+      ltrigEff[0].first+                 ltrigEff[1].first-                                  ltrigEff[0].first*ltrigEff[1].first);
 
     t_trigSFUnc  = pow( ltrigSF[0].second*(ltrigEff[0].first-ltrigSF[1].first*ltrigEff[0].first*ltrigEff[1].first), 2 );
     t_trigSFUnc += pow( ltrigSF[1].second*(ltrigEff[1].first-ltrigSF[0].first*ltrigEff[0].first*ltrigEff[1].first), 2 );
     t_trigSFUnc  = sqrt(t_trigSFUnc);
-
-       
 
 
     // fill the leptons ordered by pt

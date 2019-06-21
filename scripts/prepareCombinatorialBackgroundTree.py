@@ -14,7 +14,7 @@ import numpy as np
 BDTMETHOD=ROOT.TString('BDTG')
 BDTWGTS="/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_9_4_6_patch1/src/HeavyIonsAnalysis/topskim/scripts/training_dy/weights/TMVAClassification_BDTG.weights.xml"
 
-def prepareDileptonCollection(url,tag='Skim'):
+def prepareDileptonCollection(url,tag='Skim',maxEvents=-1):
 
     """loops over all the available events and stores the information on the dileptons in each event"""
 
@@ -29,7 +29,9 @@ def prepareDileptonCollection(url,tag='Skim'):
     print 'Analysing',t.GetEntries(),'events'
     dilCollection=defaultdict(list)
     jetCollection=defaultdict(list)
-    for iev in range(t.GetEntries()):
+    nevts=t.GetEntries()
+    if maxEvents>0 : nevts=min(nevts,maxEvents)
+    for iev in range(nevts):
         t.GetEntry(iev)
         try:
             dil=getDilepton(t,[13,11])
@@ -126,8 +128,8 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
         out_t.Branch('weight',out_t_branches['weight'],'weight/F')
         out_t_branches['cenbin']=array('f',[0.])
         out_t.Branch('cenbin',out_t_branches['cenbin'],'cenbin/F')
-        out_t_branches['ncoll']=array('f',[0.])
-        out_t.Branch('ncoll',out_t_branches['ncoll'],'ncoll/F')
+        out_t_branches['ncollWgt']=array('f',[0.])
+        out_t.Branch('ncollWgt',out_t_branches['ncollWgt'],'ncollWgt/F')
         out_t_branches['mixrank']=array('i',[0])
         out_t.Branch('mixrank',out_t_branches['mixrank'],'mixrank/I')
         for name in LEPTONBRANCHES:
@@ -218,7 +220,7 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
                         out_t_branches['bdt'][0]        = tmva_reader.EvaluateMVA(BDTMETHOD)
                         out_t_branches['bdtrarity'][0]  = tmva_reader.GetRarity(BDTMETHOD)
                         out_t_branches['cenbin'][0]     = orig_t.cenbin
-                        out_t_branches['ncoll'][0]      = orig_t.ncoll
+                        out_t_branches['ncollWgt'][0]   = orig_t.ncollWgt
                         out_t_branches['mixrank'][0]    = mix_rank    
 
                         #jets (have to use the original index)

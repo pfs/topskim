@@ -1,3 +1,4 @@
+
 from ROOT import TLorentzVector
 
 
@@ -74,8 +75,7 @@ def getLeptons(t,pdgIdColl=[13,11]):
         lepColl[-1].matched=bool(t.lep_matched[il])
         lepColl[-1].buildP4()
         lepColl[-1].setGlobalEventProperties({'cenbin':t.cenbin,
-                                              'ncoll':t.ncoll})
-        
+                                              'ncollWgt':t.ncollWgt})
 
     return lepColl
 
