@@ -317,13 +317,13 @@ def tuneIsolation(mixFile,ch,matchedll=None):
         #data/MC scale factors
         if mc_coriso:
             for tag in ['cen','periph','inc']:
-
+                ptBins=[20,40,100]
                 etaBins=[0,1.4442,1.5,2.5]
                 if ch==169: 
                     etaBins=[0,0.8,2,2.5]
                 isoeff=ROOT.TH2F('effvsptvseta_iso%d'%i, 
                                  ';Transverse momentum [GeV];Pseudo-rapidity;Efficiency', 
-                                 3,array('d',qkin[:,0]),len(etaBins)-1,array('d',etaBins))
+                                 len(ptBins)-1,array('d',ptBins),len(etaBins)-1,array('d',etaBins))
                 isoeff.Sumw2()
                 isoeff_den=isoeff.Clone('isoeffden')               
                 for k in range(len(kin)):
@@ -333,7 +333,7 @@ def tuneIsolation(mixFile,ch,matchedll=None):
                     elif tag=='periph' and cenbin<=30 : continue
                     isoeff_den.Fill(pt,abs(eta))
                     if corIsoEstimators[k]>cut : continue
-                    isoeff.Fill(pt,abs(eta))
+                    isoeff.Fill(min(pt,ptBins[-1]-0.1),min(abs(eta),etaBins[-1]-0.1))
                 isoeff.Divide(isoeff_den)
                 isoeff_den.Delete()
 
@@ -449,14 +449,16 @@ def main():
     if len(sys.argv)>1:
        
         print 'Processing MC truth from',MCTAG
-        #prepareDileptonCollection(sys.argv[1],MCTAG)
+        prepareDileptonCollection(sys.argv[1],MCTAG,maxEvents=50000)
 
         #readout matched leptons
+        print 'Opening pickle file'
         with open('dilepton_summary_%s.pck'%MCTAG,'r') as cache:
             allDileptons=pickle.load(cache)
             for ch in matchedll:
-                matchedll[ch]=[ll for ll in allDileptons[(ch,False)] if ll.l1.matched and ll.l2.matched]
-
+                #matchedll[ch]=[ll for ll in allDileptons[(ch,False)] if ll.l1.matched and ll.l2.matched]
+                matchedll[ch]=[ll for ll in allDileptons[(ch,True)] ]
+                print len(matchedll[ch]),ch
     sfisoHistos=[]
     for ch in matchedll:
         sfisoHistos += tuneIsolation('dilepton_summary.pck',ch,matchedll[ch])

@@ -14,7 +14,7 @@ import numpy as np
 BDTMETHOD=ROOT.TString('BDTG')
 BDTWGTS="/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_9_4_6_patch1/src/HeavyIonsAnalysis/topskim/scripts/training_dy/weights/TMVAClassification_BDTG.weights.xml"
 
-def prepareDileptonCollection(url,tag='Skim'):
+def prepareDileptonCollection(url,tag='Skim',maxEvents=-1):
 
     """loops over all the available events and stores the information on the dileptons in each event"""
 
@@ -29,7 +29,9 @@ def prepareDileptonCollection(url,tag='Skim'):
     print 'Analysing',t.GetEntries(),'events'
     dilCollection=defaultdict(list)
     jetCollection=defaultdict(list)
-    for iev in range(t.GetEntries()):
+    nevts=t.GetEntries()
+    if maxEvents>0 : nevts=min(nevts,maxEvents)
+    for iev in range(nevts):
         t.GetEntry(iev)
         try:
             dil=getDilepton(t,[13,11])
