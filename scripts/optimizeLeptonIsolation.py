@@ -318,9 +318,9 @@ def tuneIsolation(mixFile,ch,matchedll=None):
         if mc_coriso:
             for tag in ['cen','periph','inc']:
                 ptBins=[20,40,100]
-                etaBins=[0,1.4442,1.5,2.5]
+                etaBins=[0,1.4442,1.5,2.5] //EE-EB
                 if ch==169: 
-                    etaBins=[0,0.8,2,2.5]
+                    etaBins=[0,0.8,2.5] //DT-RPC+CSC
                 isoeff=ROOT.TH2F('effvsptvseta_iso%d'%i, 
                                  ';Transverse momentum [GeV];Pseudo-rapidity;Efficiency', 
                                  len(ptBins)-1,array('d',ptBins),len(etaBins)-1,array('d',etaBins))
@@ -449,7 +449,7 @@ def main():
     if len(sys.argv)>1:
        
         print 'Processing MC truth from',MCTAG
-        prepareDileptonCollection(sys.argv[1],MCTAG,maxEvents=50000)
+        prepareDileptonCollection(sys.argv[1],MCTAG,maxEvents=100000)
 
         #readout matched leptons
         print 'Opening pickle file'
