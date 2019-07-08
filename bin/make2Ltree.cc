@@ -497,27 +497,15 @@ int main(int argc, char* argv[])
   outTree->Branch("deta"   , &t_deta   , "deta/F");
   outTree->Branch("sumeta" , &t_sumeta , "sumeta/F");
 
-  // variables per jet (jets ordered by pt)
-  Int_t t_njet;
-  std::vector<Float_t> t_jet_pt, t_jet_eta, t_jet_phi, t_jet_mass, t_jet_csvv2;
-  outTree->Branch("njet"      , &t_njet      , "njet/I"            );
-  outTree->Branch("jet_pt"    , &t_jet_pt    , "jet_pt[njet]/F"    );
-  outTree->Branch("jet_eta"   , &t_jet_eta   , "jet_eta[njet]/F"   );
-  outTree->Branch("jet_phi"   , &t_jet_phi   , "jet_phi[njet]/F"   );
-  outTree->Branch("jet_mass"  , &t_jet_mass  , "jet_mass[njet]/F" );
-  outTree->Branch("jet_csvv2" , &t_jet_csvv2 , "jet_csvv2[njet]/F");
-
   // variables per bjet (jets ordered by csvv2)
   Int_t t_nbjet;
   std::vector<Float_t> t_bjet_pt, t_bjet_eta, t_bjet_phi, t_bjet_mass, t_bjet_csvv2;
-  std::vector<Bool_t> t_bjet_drSafe;
   outTree->Branch("nbjet"      , &t_nbjet      , "nbjet/I"            );
   outTree->Branch("bjet_pt"    , &t_bjet_pt    );
   outTree->Branch("bjet_eta"   , &t_bjet_eta   );
   outTree->Branch("bjet_phi"   , &t_bjet_phi   );
   outTree->Branch("bjet_mass"  , &t_bjet_mass  );
   outTree->Branch("bjet_csvv2" , &t_bjet_csvv2 );
-  outTree->Branch("bjet_drSafe" , &t_bjet_drSafe );
 
   Int_t t_nbjet_sel, t_nbjet_sel_jecup, t_nbjet_sel_jecdn, t_nbjet_sel_jerup, t_nbjet_sel_jerdn, t_nbjet_sel_bup, t_nbjet_sel_bdn, t_nbjet_sel_udsgup, t_nbjet_sel_udsgdn, t_nbjet_sel_quenchup, t_nbjet_sel_quenchdn;
   outTree->Branch("nbjet_sel"       , &t_nbjet_sel       , "nbjet_sel/I"       );
@@ -1028,18 +1016,17 @@ int main(int argc, char* argv[])
     }      
               
     //analyze jets
-    std::vector<bool> drSafe_pfJet;
-    std::vector<BtagInfo_t> pfJetsIdx,nodr_pfJetsIdx;
-    std::vector<TLorentzVector> pfJetsP4,nodr_pfJetsP4,nodr_pfJetsP4GenMatch;
+    std::vector<BtagInfo_t> pfJetsIdx;
+    std::vector<TLorentzVector> pfJetsP4;
     int npfjets(0),npfbjets(0); 
 
     // initialize all the counters
-    t_nbjet_sel = 0; t_nbjet_sel_jecup    = 0; t_nbjet_sel_jecdn    = 0;
-                     t_nbjet_sel_jerup    = 0; t_nbjet_sel_jerdn    = 0;
-                     t_nbjet_sel_bup      = 0; t_nbjet_sel_bdn      = 0;
-                     t_nbjet_sel_udsgup   = 0; t_nbjet_sel_udsgdn   = 0;
-                     t_nbjet_sel_quenchup = 0; t_nbjet_sel_quenchdn = 0;
-
+    t_nbjet_sel = 0; 
+    t_nbjet_sel_jecup    = 0; t_nbjet_sel_jecdn    = 0;
+    t_nbjet_sel_jerup    = 0; t_nbjet_sel_jerdn    = 0;
+    t_nbjet_sel_bup      = 0; t_nbjet_sel_bdn      = 0;
+    t_nbjet_sel_udsgup   = 0; t_nbjet_sel_udsgdn   = 0;
+    t_nbjet_sel_quenchup = 0; t_nbjet_sel_quenchdn = 0;
     for(int jetIter = 0; jetIter < fForestJets.nref; jetIter++){
 
       //at least two tracks
@@ -1070,19 +1057,15 @@ int main(int argc, char* argv[])
         refFlavorForB=fForestJets.refparton_flavorForB[jetIter];
       }
 
-      // marc nodr_pfJetsIdx.push_back( std::make_tuple(nodr_pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4,refFlavor,refFlavorForB) );
-      // marc nodr_pfJetsP4.push_back(jp4);
-      bool isdrSafe(false);
-
       //cross clean wrt to leptons
-      if(jp4.DeltaR(selLeptons[0].p4)<0.4 || jp4.DeltaR(selLeptons[1].p4)<0.4) {
-        pfJetsIdx.push_back(std::make_tuple(pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4,refFlavor,refFlavorForB));
-        pfJetsP4.push_back(jp4);
-        npfjets++;
-        npfbjets += isBTagged;
-        isdrSafe=true;
-      }
-
+      if(jp4.DeltaR(selLeptons[0].p4)<0.4 || jp4.DeltaR(selLeptons[1].p4)<0.4) continue;
+      
+      pfJetsIdx.push_back(std::make_tuple(pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4,refFlavor,refFlavorForB));
+      pfJetsP4.push_back(jp4);
+      npfjets++;
+      npfbjets += isBTagged;
+      
+      
       if (jp4.Pt() > 30. && isBTagged) t_nbjet_sel       += 1;
 
       if (isMC){
@@ -1143,10 +1126,7 @@ int main(int argc, char* argv[])
           if ( isBTagged && !isBTaggedNew) t_nbjet_sel_udsgdn = t_nbjet_sel-1;
 
         }
-
       }
-
-      drSafe_pfJet.push_back(isdrSafe);      
     }
 
     // set the bjet variations to the nominal one for data
@@ -1159,9 +1139,7 @@ int main(int argc, char* argv[])
     }
 
     std::sort(pfJetsIdx.begin(),       pfJetsIdx.end(),      orderByBtagInfo);
-    // marc std::sort(nodr_pfJetsIdx.begin(),  nodr_pfJetsIdx.end(), orderByBtagInfo);
 
-    
     //for gen fill again fiducial counters
     if(isMC) {      
       
@@ -1422,28 +1400,26 @@ int main(int argc, char* argv[])
     t_bjet_phi  .clear();
     t_bjet_mass .clear();
     t_bjet_csvv2.clear();
-    t_bjet_drSafe.clear();
     t_bjet_matchpt  .clear();
     t_bjet_matcheta .clear();
     t_bjet_matchphi .clear();
     t_bjet_matchmass.clear();
     t_bjet_flavor.clear();
     t_bjet_flavorForB.clear();
-    t_nbjet = nodr_pfJetsIdx.size();
+    t_nbjet = pfJetsIdx.size();
     for (int ij = 0; ij < t_nbjet; ij++) {
-      int idx = std::get<0>(nodr_pfJetsIdx[ij]);
-      t_bjet_pt   .push_back( nodr_pfJetsP4[idx].Pt()  );
-      t_bjet_eta  .push_back( nodr_pfJetsP4[idx].Eta() );
-      t_bjet_phi  .push_back( nodr_pfJetsP4[idx].Phi() );
-      t_bjet_mass .push_back( nodr_pfJetsP4[idx].M()   );
-      t_bjet_csvv2.push_back( std::get<3>(nodr_pfJetsIdx[ij])   );
-      t_bjet_drSafe.push_back( drSafe_pfJet[idx] );
-      t_bjet_matchpt  .push_back( std::get<4>(nodr_pfJetsIdx[ij]).Pt());
-      t_bjet_matcheta .push_back( std::get<4>(nodr_pfJetsIdx[ij]).Eta());
-      t_bjet_matchphi .push_back( std::get<4>(nodr_pfJetsIdx[ij]).Phi());
-      t_bjet_matchmass.push_back( std::get<4>(nodr_pfJetsIdx[ij]).M());
-      t_bjet_flavor.push_back( std::get<5>(nodr_pfJetsIdx[ij]) );
-      t_bjet_flavorForB.push_back( std::get<6>(nodr_pfJetsIdx[ij]) );
+      int idx = std::get<0>(pfJetsIdx[ij]);
+      t_bjet_pt   .push_back( pfJetsP4[idx].Pt()  );
+      t_bjet_eta  .push_back( pfJetsP4[idx].Eta() );
+      t_bjet_phi  .push_back( pfJetsP4[idx].Phi() );
+      t_bjet_mass .push_back( pfJetsP4[idx].M()   );
+      t_bjet_csvv2.push_back( std::get<3>(pfJetsIdx[ij])   );      
+      t_bjet_matchpt  .push_back( std::get<4>(pfJetsIdx[ij]).Pt());
+      t_bjet_matcheta .push_back( std::get<4>(pfJetsIdx[ij]).Eta());
+      t_bjet_matchphi .push_back( std::get<4>(pfJetsIdx[ij]).Phi());
+      t_bjet_matchmass.push_back( std::get<4>(pfJetsIdx[ij]).M());
+      t_bjet_flavor.push_back( std::get<5>(pfJetsIdx[ij]) );
+      t_bjet_flavorForB.push_back( std::get<6>(pfJetsIdx[ij]) );
     }
 
 
