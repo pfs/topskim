@@ -18,12 +18,12 @@ class ElectronEfficiencyWrapper
   /**
      @short CTOR - just parses all the files from the directory given
    */
-  ElectronEfficiencyWrapper(TString url) 
+  ElectronEfficiencyWrapper(TString url,bool useOldId=true) 
     {
       TString baseF("ScaleFactors_PbPb_LooseWP");
       TString regs[2]={"EB","EE"};
       TString centr[2]={"0_30","30_100"};
-      TString pfix[2]={"","_HLT"};
+      TString pfix[2]={useOldId ? "" : "_AlpaFixed_BWResCBErfExp_preliminary","_HLT"};
       for(size_t i=0; i<2; i++) {
         for(size_t j=0; j<2; j++) {
           for(size_t k=0; k<2; k++) {
