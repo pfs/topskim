@@ -71,6 +71,25 @@ Prepare the a file with the MC trigger efficiency expectations
 python scripts/createTrigEffSummary.py ${out}/TTJets_TuneCP5_HydjetDrumMB-amcatnloFXFX.root
 ```
 
+## Fitting the cross section
+
+The physics model to be used in combine is implemented in `test/TopBtagInMediumModel.py`.
+The first time it is used it should be copied to `HiggsAnalysis/CombinedLimit/python/` and compiled with `scram b`.
+An example datacard is given in `test/datacard_example.txt`. 
+The structure is the usual one, but notice the last lines instantiating the nuisances associated to 
+the uncertainty in the b-finding parameter. 
+To run the fit (creation of workspace, fit and scan of the likelihood one can do:
+
+```
+sh test/runPhysicsModelFit.sh test/datacard_example.txt
+```
+
+The likelihood scan can then be plotted with
+
+```
+sh test/drawLikelihood.sh
+```
+
 
 ## Luminosity
 

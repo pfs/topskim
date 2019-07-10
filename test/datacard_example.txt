@@ -1,0 +1,20 @@
+imax *  number of channels
+jmax *  number of backgrounds 
+kmax *  number of nuisance parameters (sources of systematical uncertainties)
+------------
+bin         em0b em1b em2b
+observation 54   51   18
+------------
+
+bin           em0b   em0b   em1b   em1b   em2b   em2b
+process       tt     bkg    tt     bkg    tt     bkg
+process       0      1      0      1      0      1
+rate          33.9   20     48.6   2      17.4   0.1
+------------
+lumi  lnN     1.05   -      1.05   -      1.05    -
+bkg   lnN     0      1.3    -      1.3    -       1.3
+
+eb_beff_nuis    param 0 1
+eb_udsgeff_nuis param 0 1
+eb_jecjer_nuis  param 0 1
+eb_quench_nuis  param 0 1
