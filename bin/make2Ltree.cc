@@ -248,7 +248,7 @@ int main(int argc, char* argv[])
   gSystem->ExpandPathName(trigEffURL);
   TFile *fIn=TFile::Open(trigEffURL);
   TGraphAsymmErrors *e_mctrigeff=(TGraphAsymmErrors *)fIn->Get("e_pt_trigeff");
-  TGraphAsymmErrors *m_mctrigeff=(TGraphAsymmErrors *)fIn->Get("m_eta_trigeff");
+  //TGraphAsymmErrors *m_mctrigeff=(TGraphAsymmErrors *)fIn->Get("m_eta_trigeff");
   fIn->Close();
 
   //read isolation efficiencies
@@ -1334,14 +1334,19 @@ int main(int argc, char* argv[])
     //get expected trigger efficiencies and measured scale factors
     std::vector<std::pair<float,float>  > ltrigEff, ltrigSF;
     for(size_t ilep=0; ilep<2; ilep++){
-      float pt(selLeptons[ilep].p4.Pt()),abseta(fabs(selLeptons[ilep].p4.Eta()));
+      float pt(selLeptons[ilep].p4.Pt()),eta(selLeptons[ilep].p4.Eta()),abseta(fabs(eta));
 
       if(abs(selLeptons[ilep].id)==11){
         ltrigEff.push_back(  std::pair<float,float>(e_mctrigeff->Eval(pt),0.0) );
         ltrigSF.push_back( eleEff.eval(pt, abseta<barrelEndcapEta[0], cenBin, true) );
       }else{
-        ltrigEff.push_back(  std::pair<float,float>(m_mctrigeff->Eval(abseta),0.0) );
-        ltrigSF.push_back(  tnp_weight_trg_pbpb(pt,abseta) );
+
+        ltrigEff.push_back(  std::pair<float,float>(tnp_weight_trig_pbpb(pt,eta,300),0.0) );
+        float mutrigSF=tnp_weight_trig_pbpb(pt,eta,0);
+        float deltaTnp=max(fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,-1)),fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,-2)));
+        float deltaStat=max(fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,1)),fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,2)));
+        float deltaSF=sqrt(deltaTnp*deltaTnp+deltaStat*deltaStat);
+        ltrigSF.push_back(  std::pair<float,float>(mutrigSF,deltaSF)  );        
       }
     }
 
@@ -1353,7 +1358,6 @@ int main(int argc, char* argv[])
     t_trigSFUnc  = pow( ltrigSF[0].second*(ltrigEff[0].first-ltrigSF[1].first*ltrigEff[0].first*ltrigEff[1].first), 2 );
     t_trigSFUnc += pow( ltrigSF[1].second*(ltrigEff[1].first-ltrigSF[0].first*ltrigEff[0].first*ltrigEff[1].first), 2 );
     t_trigSFUnc  = sqrt(t_trigSFUnc);
-
 
     // fill the leptons ordered by pt
     t_lep_pt    .clear();

@@ -4,6 +4,57 @@
  
 See details in the analysis twiki page https://twiki.cern.ch/twiki/bin/view/CMS/PbPbTTBar2018
 
+## Running HiForrest over the grid
+
+The full installation is as follows
+
+```
+cmsrel CMSSW_10_3_3_patch1
+cd CMSSW_10_3_3_patch1/src/
+cmsenv
+git cms-merge-topic -u CmsHI:forest_CMSSW_10_3_1
+git remote add cmshi git@github.com:CmsHI/cmssw.git
+git checkout -b forest_CMSSW_10_3_1 remotes/cmshi/forest_CMSSW_10_3_1
+cd HeavyIonsAnalysis/JetAnalysis/python/jets
+./makeJetSequences.sh
+cd -
+scram build -j4
+cd HeavyIonsAnalysis/JetAnalysis/test
+./tests.sh
+cd -
+git fetch cmshi --no-tags
+git checkout -b forest_CMSSW_10_3_1 remotes/cmshi/forest_CMSSW_10_3_1
+git checkout forest_CMSSW_10_3_1 
+git pull --rebase --no-tags
+git cms-addpkg RecoHI/ZDCRecHit
+git cms-addpkg RecoVertex/PrimaryVertexProducer
+git cms-addpkg HLTrigger/HLTanalyzers
+scram b -j 8
+```
+
+The configuration files are located in `HeavyIonsAnalysis/JetAnalysis/test/runForestAOD_pponAA_*_103X.py`
+To run on the grid you can use `test/submitSkimsToCrab.py`.
+You may want to edit the script for the datasets you want to process, 
+the file splitting to use, output, etc. The script will produce the crab configuration files
+and submit them to the crab server afterwards. 
+
+```
+source /cvmfs/cms.cern.ch/crab3/crab.sh
+voms-proxy-init --voms cms
+python scripts/submitSkimsToCrab.py
+```
+
+## Merging the grid output
+
+Once jobs are done you can run the following command
+
+```
+python scripts/mergeGridOutputs.py -i /store/group/phys_top/gkrintir/TopHI/HINPbPbAutumn18DR -o /store/cmst3/group/hintt/HIN-19-001-19Jul -s 2
+```
+
+The last number is the desired size of the merged sizes in Gb.
+
+
 ## Running the analysis
 
 The selection/plot filling is implemented in bin/runTTto2Lselection.cc.
