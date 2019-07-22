@@ -83,6 +83,54 @@ int getRhoIndex(float eta,std::vector<Double_t> *etaMin=NULL, std::vector<Double
   return -1;
 }
 
+TRandom3 * smearRand = new TRandom3(42);
+
+float calibratedPt(float pt, float eta, float cen, bool isMC){
+
+  float newpt;
+  float scale = 0.;
+
+  if (isMC){
+    if (fabs(eta) < 1.45) {
+      if      (cen < 10.) scale = 0.974;
+      else if (cen < 30.) scale = 0.992;
+      else                scale = 1.005;
+    else {
+      if      (cen < 10.) scale = 0.913;
+      else if (cen < 30.) scale = 0.952;
+      else                scale = 0.992;
+  } else {
+    if (fabs(eta) < 1.45) {
+      if      (cen < 10.) scale = 0.990;
+      else if (cen < 30.) scale = 1.006;
+      else                scale = 1.016;
+    else {
+      if      (cen < 10.) scale = 0.976;
+      else if (cen < 30.) scale = 1.015;
+      else                scale = 1.052;
+  }
+
+  newpt = pt * scale;
+
+  float smear = 1.;
+
+  if (isMC){
+    if (fabs(eta) < 1.45) {
+      if      (cen < 10.) smear = 0.904;
+      else if (cen < 30.) smear = 1.379;
+      else                smear = 1.786;
+    } else {
+      if      (cen < 10.) smear = 3.051;
+      else if (cen < 30.) smear = 1.214;
+      else                smear = 3.451;
+    }
+
+    newpt = newpt * smearRand->Gaus(1., smear / 91.1876);
+  }
+
+  return newpt;
+
+}
 
 // index, ntks in svtx, m svtx, csv
 typedef std::tuple<int,int,float,float,TLorentzVector,int,int> BtagInfo_t;
@@ -455,7 +503,7 @@ int main(int argc, char* argv[])
 
   // variables per lepton, including iso
   Int_t t_nlep, t_lep_ind1, t_lep_ind2;
-  std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_d0, t_lep_dz, t_lep_d0err, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_isofull, t_lep_miniiso,t_lep_isofull20,t_lep_isofull25,t_lep_isofull30;
+  std::vector<Float_t> t_lep_pt, t_lep_calpt, t_lep_eta, t_lep_phi, t_lep_d0, t_lep_dz, t_lep_d0err, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_isofull, t_lep_miniiso,t_lep_isofull20,t_lep_isofull25,t_lep_isofull30;
   std::vector<Bool_t> t_lep_matched,t_lep_trigmatch;
   std::vector<Int_t  > t_lep_pdgId, t_lep_charge,t_lep_idflags;
   std::vector<Float_t> t_lepSF,t_lepSFUnc,t_lepIsoSF,t_lepIsoSFUnc;
@@ -463,6 +511,7 @@ int main(int argc, char* argv[])
   outTree->Branch("lep_ind1"   , &t_lep_ind1  , "lep_ind1/I");
   outTree->Branch("lep_ind2"   , &t_lep_ind2  , "lep_ind2/I");
   outTree->Branch("lep_pt"     , &t_lep_pt);
+  outTree->Branch("lep_calpt"     , &t_lep_calpt);
   outTree->Branch("lep_eta"    , &t_lep_eta);
   outTree->Branch("lep_phi"    , &t_lep_phi);
   outTree->Branch("lep_idflags", &t_lep_idflags);
@@ -781,6 +830,7 @@ int main(int argc, char* argv[])
       }
       
       LeptonSummary l(13,p4);
+      l.calpt = p4.Pt(); // calpt == pt for muons
       l.isTrigMatch=isTrigMatch;
       l.charge  = fForestLep.muCharge->at(muIter);
       l.chiso   = fForestLep.muPFChIso->at(muIter);
@@ -878,6 +928,7 @@ int main(int argc, char* argv[])
       }
 
       LeptonSummary l(11,p4);
+      l.calpt = calibratedPt(p4.Pt(), p4.Eta(), cenBin, isMC);
       l.isTrigMatch=isTrigMatch;
       l.charge  = fForestLep.eleCharge->at(eleIter);
       if(GT.find("75X_mcRun2")==string::npos) {
@@ -1306,6 +1357,7 @@ int main(int argc, char* argv[])
 
     // fill the leptons ordered by pt
     t_lep_pt    .clear();
+    t_lep_calpt .clear();
     t_lep_eta   .clear();
     t_lep_phi   .clear();
     t_lep_pdgId .clear();
@@ -1334,6 +1386,7 @@ int main(int argc, char* argv[])
     t_lep_ind2 = -1;
     for (int ilep = 0; ilep < t_nlep; ++ilep){
       t_lep_pt    .push_back( selLeptons[ilep].p4.Pt()  );
+      t_lep_calpt .push_back( selLeptons[ilep].calpt    );
       t_lep_eta   .push_back( selLeptons[ilep].p4.Eta() );
       t_lep_phi   .push_back( selLeptons[ilep].p4.Phi() );
       t_lep_idflags.push_back(selLeptons[ilep].idFlags);
