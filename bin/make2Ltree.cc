@@ -909,12 +909,11 @@ int main(int argc, char* argv[])
       
       l.idFlags=getElectronId(TMath::Abs(fForestLep.eleSCEta->at(eleIter))< barrelEndcapEta[0],
                                  fForestLep.eleSigmaIEtaIEta->at(eleIter),
-                                 fForestLep.eledEtaAtVtx->at(eleIter),
+                                 fForestLep.eledEtaSeedAtVtx->at(eleIter),
                                  fForestLep.eledPhiAtVtx->at(eleIter),
-                                 fForestLep.eleHoverE->at(eleIter),
+                                 fForestLep.eleHoverEBc->at(eleIter),
                                  fForestLep.eleEoverPInv->at(eleIter),
-                                 fForestLep.eleD0->at(eleIter),
-                                 fForestLep.eleDz->at(eleIter),
+                                 fForestLep.eleIP3D->at(eleIter),
                                  fForestLep.eleMissHits->at(eleIter),
                                  isCentralEvent);
       
@@ -948,12 +947,11 @@ int main(int argc, char* argv[])
           cat=basecat;
           cat += (fabs(p4[i].Eta())>=barrelEndcapEta[1] ? "EE" : "EB");
           ht.fill("esihih",  fForestLep.eleSigmaIEtaIEta->at(eidx[i]),         plotWgt,cat);
-          ht.fill("edetavtx", TMath::Abs(fForestLep.eledEtaAtVtx->at(eidx[i])), plotWgt,cat);
+          ht.fill("edetaseedvtx", TMath::Abs(fForestLep.eledEtaSeedAtVtx->at(eidx[i])), plotWgt,cat);
           ht.fill("edphivtx", TMath::Abs(fForestLep.eledPhiAtVtx->at(eidx[i])), plotWgt,cat);
-          ht.fill("ehoe",     fForestLep.eleHoverE->at(eidx[i]),                plotWgt,cat);
+          ht.fill("ehoebc",     fForestLep.eleHoverEBc->at(eidx[i]),                plotWgt,cat);
           ht.fill("eempinv",  fForestLep.eleEoverPInv->at(eidx[i]),             plotWgt,cat);
-          ht.fill("ed0",      TMath::Abs(fForestLep.eleD0->at(eidx[i])),        plotWgt,cat);
-          ht.fill("edz",      TMath::Abs(fForestLep.eleDz->at(eidx[i])),        plotWgt,cat);          
+          ht.fill("e3dip",    TMath::Abs(fForestLep.eleIP3D->at(eidx[i])),        plotWgt,cat);
         }
       }
     }
