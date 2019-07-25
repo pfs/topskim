@@ -85,7 +85,7 @@ int getRhoIndex(float eta,std::vector<Double_t> *etaMin=NULL, std::vector<Double
 
 TRandom3 * smearRand = new TRandom3(42);
 
-float calibratedPt(float pt, float eta, float cen, bool isMC){
+float calibratedPt(float pt, float eta, float cen, bool isMC) {
 
   float newpt;
   float scale = 0.;
@@ -95,19 +95,21 @@ float calibratedPt(float pt, float eta, float cen, bool isMC){
       if      (cen < 10.) scale = 0.974;
       else if (cen < 30.) scale = 0.992;
       else                scale = 1.005;
-    else {
+    }else {
       if      (cen < 10.) scale = 0.913;
       else if (cen < 30.) scale = 0.952;
       else                scale = 0.992;
+    }
   } else {
     if (fabs(eta) < 1.45) {
       if      (cen < 10.) scale = 0.990;
       else if (cen < 30.) scale = 1.006;
       else                scale = 1.016;
-    else {
+    }else {
       if      (cen < 10.) scale = 0.976;
       else if (cen < 30.) scale = 1.015;
       else                scale = 1.052;
+    }
   }
 
   newpt = pt * scale;
