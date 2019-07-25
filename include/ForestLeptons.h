@@ -31,10 +31,12 @@ public :
     eleSCEtaWidth(0),
     eleSCPhiWidth(0),
     eleHoverE(0),
+    eleHoverEBc(0),
     eleEoverP(0),
     eleEoverPInv(0),
     eleBrem(0),
     eledEtaAtVtx(0),
+    eledEtaSeedAtVtx(0),
     eledPhiAtVtx(0),
     eleSigmaIEtaIEta(0),
     eleSigmaIEtaIEta_2012(0),
@@ -52,6 +54,7 @@ public :
     elePFPhoIso04(0),
     elePFNeuIso04(0),
     eleD0(0),
+    eleIP3D(0),
     eleCharge(0),
     eleD0Err(0),
     eleBC2Eta(0),
@@ -86,9 +89,12 @@ public :
        t->SetBranchAddress("eleCharge", &eleCharge);
        t->SetBranchAddress("eleSigmaIEtaIEta", &eleSigmaIEtaIEta);
        t->SetBranchAddress("eledEtaAtVtx", &eledEtaAtVtx);
+       t->SetBranchAddress("eledEtaSeedAtVtx", &eledEtaSeedAtVtx);
        t->SetBranchAddress("eledPhiAtVtx", &eledPhiAtVtx);
        t->SetBranchAddress("eleHoverE", &eleHoverE);
+       t->SetBranchAddress("eleHoverEBc", &eleHoverEBc);
        t->SetBranchAddress("eleD0", &eleD0);
+       t->SetBranchAddress("eleIP3D", &eleIP3D);
        t->SetBranchAddress("eleD0Err", &eleD0Err);
        t->SetBranchAddress("eleDz", &eleDz);
        t->SetBranchAddress("eleEoverPInv", &eleEoverPInv);
@@ -158,10 +164,12 @@ public :
    std::vector<Float_t>   *eleSCEtaWidth;
    std::vector<Float_t>   *eleSCPhiWidth;
    std::vector<Float_t>   *eleHoverE;
+   std::vector<Float_t>   *eleHoverEBc;
    std::vector<Float_t>   *eleEoverP;
    std::vector<Float_t>   *eleEoverPInv;
    std::vector<Float_t>   *eleBrem;
    std::vector<Float_t>   *eledEtaAtVtx;
+   std::vector<Float_t>   *eledEtaSeedAtVtx;
    std::vector<Float_t>   *eledPhiAtVtx;
    std::vector<Float_t>   *eleSigmaIEtaIEta;
    std::vector<Float_t>   *eleSigmaIEtaIEta_2012;
@@ -179,6 +187,7 @@ public :
    std::vector<Float_t>   *elePFPhoIso04;
    std::vector<Float_t>   *elePFNeuIso04;
    std::vector<Float_t>   *eleD0;
+   std::vector<Float_t>   *eleIP3D;
    std::vector<Int_t>     *eleCharge;
    std::vector<Float_t>   *eleD0Err;
    std::vector<Float_t>   *eleDz;
