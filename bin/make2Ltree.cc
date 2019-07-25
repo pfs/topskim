@@ -19,6 +19,8 @@
 #include "HeavyIonsAnalysis/topskim/include/ForestSkim.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestPFCands.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestJets.h"
+#include "HeavyIonsAnalysis/topskim/include/JetCorrector.h"
+#include "HeavyIonsAnalysis/topskim/include/JetUncertainty.h"
 #include "HeavyIonsAnalysis/topskim/include/LumiRun.h"
 #include "HeavyIonsAnalysis/topskim/include/HistTool.h"
 #include "HeavyIonsAnalysis/topskim/include/PFAnalysis.h"
@@ -1025,13 +1027,46 @@ int main(int argc, char* argv[])
     t_nbjet_sel_bup      = 0; t_nbjet_sel_bdn      = 0;
     t_nbjet_sel_udsgup   = 0; t_nbjet_sel_udsgdn   = 0;
     t_nbjet_sel_quenchup = 0; t_nbjet_sel_quenchdn = 0;
+
+    // initialize the JEC and associated unc files
+    std::vector<std::string> FilesData;
+    FilesData.push_back("data/Autumn18_HI_V1_DATA_L2Relative_AK4PF.txt");
+    FilesData.push_back("data/Autumn18_HI_V1_DATA_L2Residual_AK4PF.txt");
+	
+    JetCorrector JECData(FilesData);
+    JetUncertainty JEUData("data/Autumn18_HI_V1_DATA_Uncertainty_AK4PF.txt");
+
+    std::vector<std::string> FilesMC;
+    FilesMC.push_back("data/Autumn18_HI_V1_MC_L2Relative_AK4PF.txt");
+	
+    JetCorrector JECMC(FilesData);
+    JetUncertainty JEUMC("data/Autumn18_HI_V1_MC_Uncertainty_AK4PF.txt");
+	
     for(int jetIter = 0; jetIter < fForestJets.nref; jetIter++){
 
       //at least two tracks
       if(fForestJets.trackN[jetIter]<2) continue;
 
       TLorentzVector jp4(0,0,0,0);
-      jp4.SetPtEtaPhiM( fForestJets.jtpt[jetIter],fForestJets.jteta[jetIter],fForestJets.jtphi[jetIter],fForestJets.jtm[jetIter]);
+      if(isMC){
+	JECMC.SetJetPT(fForestJets.jtpt[jetIter]);
+	JECMC.SetJetEta(fForestJets.jteta[jetIter]);
+	JECMC.SetJetPhi(fForestJets.jtphi[jetIter]);
+	jp4.SetPtEtaPhiM( JECMC.GetCorrectedPT(),fForestJets.jteta[jetIter],fForestJets.jtphi[jetIter],fForestJets.jtm[jetIter]);
+	JEUMC.SetJetPT(fForestJets.jtpt[jetIter]);
+	JEUMC.SetJetEta(fForestJets.jteta[jetIter]);
+	JEUMC.SetJetPhi(fForestJets.jtphi[jetIter]);
+      }
+      else{
+	JECData.SetJetPT(fForestJets.jtpt[jetIter]);
+	JECData.SetJetEta(fForestJets.jteta[jetIter]);
+	JECData.SetJetPhi(fForestJets.jtphi[jetIter]);
+	jp4.SetPtEtaPhiM( JECData.GetCorrectedPT(),fForestJets.jteta[jetIter],fForestJets.jtphi[jetIter],fForestJets.jtm[jetIter]);
+	JEUData.SetJetPT(fForestJets.jtpt[jetIter]);
+	JEUData.SetJetEta(fForestJets.jteta[jetIter]);
+	JEUData.SetJetPhi(fForestJets.jtphi[jetIter]);
+      }
+
 
       float csvVal=fForestJets.discr_csvV2[jetIter];
       int nsvtxTk=fForestJets.svtxntrk[jetIter];
@@ -1067,9 +1102,9 @@ int main(int argc, char* argv[])
       if (jp4.Pt() > 30. && isBTagged) t_nbjet_sel       += 1;
 
       if (isMC){
-        if (jp4.Pt() > 30.*0.98 && isBTagged) t_nbjet_sel_jecup += 1;
-        if (jp4.Pt() > 30.*1.02 && isBTagged) t_nbjet_sel_jecdn += 1;
 
+        if (jp4.Pt() > 30 * (1 + JEUMC.GetUncertainty().first) && isBTagged) t_nbjet_sel_jecup += 1;
+        if (jp4.Pt() > 30 * (1 - JEUMC.GetUncertainty().second) && isBTagged) t_nbjet_sel_jecdn += 1;
         float cjer(0.);
         if ( abs(refFlavorForB) ) cjer = 1. + (1.2 -1.) * (jp4.Pt() - matchjp4.Pt()) / jp4.Pt(); // hard coded 1.2
         else cjer = rand->Gaus(1., 0.2);
