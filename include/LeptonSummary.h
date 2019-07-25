@@ -34,7 +34,6 @@ class LeptonSummary {
   int id;
   int charge;
   TLorentzVector p4;
-  float calpt;
   unsigned int idFlags;
   float chiso, nhiso, phoiso;
   float rho;
@@ -43,6 +42,7 @@ class LeptonSummary {
   float d0, d0err, dz;
   int origIdx;
   bool isMatched,isTrigMatch;
+  float calpt;
 };
 
 #endif
