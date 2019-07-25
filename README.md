@@ -44,6 +44,16 @@ voms-proxy-init --voms cms
 python scripts/submitSkimsToCrab.py
 ```
 
+## Merging the grid output
+
+Once jobs are done you can run the following command
+
+```
+python scripts/mergeGridOutputs.py -i /store/group/phys_top/gkrintir/TopHI/HINPbPbAutumn18DR -o /store/cmst3/group/hintt/HIN-19-001-19Jul -s 2
+```
+
+The last number is the desired size of the merged sizes in Gb.
+
 ## Skimming the AOD via condor:
 
 ```
