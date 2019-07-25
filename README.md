@@ -54,6 +54,16 @@ python scripts/mergeGridOutputs.py -i /store/group/phys_top/gkrintir/TopHI/HINPb
 
 The last number is the desired size of the merged sizes in Gb.
 
+## Skimming the AOD via condor:
+
+```
+cd scripts/
+python skimCondor.py -d <eosAODParentDirectory> -o <outputDirectoryForSkims> (--dryRun)
+```
+
+The code uses os.walk, so the parent directory should be something like: '/eos/cms/store/hidata/HIRun2018A/HISingleMuon/AOD/04Apr2019-v1/'
+It makes all the configs and then the condor submission file to submit with condor_submit.
+
 
 ## Running the analysis
 

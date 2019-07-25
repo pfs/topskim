@@ -278,3 +278,11 @@ process.pAna = cms.EndPath(process.skimanalysis)
 ###############################################################################
 
 # Customization
+import HLTrigger.HLTfilters.hltHighLevel_cfi
+process.hltfilter = HLTrigger.HLTfilters.hltHighLevel_cfi.hltHighLevel.clone()
+process.hltfilter.HLTPaths = ["HLT_HIEle20Gsf_v*","HLT_HIDoubleEle*Gsf*_v*","HLT_HIL3Mu12_v*","HLT_HIL3Mu15_v*","HLT_HIL3_L1DoubleMu10_v*"] 
+process.superFilterPath = cms.Path(process.hltfilter)
+process.skimanalysis.superFilters = cms.vstring("superFilterPath")
+##filter all path with the production filter sequence
+for path in process.paths:
+    getattr(process,path)._seq = process.hltfilter * getattr(process,path)._seq
