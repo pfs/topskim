@@ -438,12 +438,20 @@ int main(int argc, char* argv[])
     hltTree_p->SetBranchStatus(eTrigName+"1",1);
     hltTree_p->SetBranchAddress(eTrigName+"1",&etrig);
   }else{
-    muTrigName="HLT_HIL3Mu12_v";
-    hltTree_p->SetBranchStatus(muTrigName+"1",1);
-    hltTree_p->SetBranchAddress(muTrigName+"1",&mtrig);
-    eTrigName="HLT_HIEle20Gsf_v";
-    hltTree_p->SetBranchStatus(eTrigName+"1",1);
-    hltTree_p->SetBranchAddress(eTrigName+"1",&etrig);    
+    if(isSingleMuPD || isMC){
+      muTrigName="HLT_HIL3Mu12_v";
+      mtrig = 1;
+    }
+    if(isSingleElePD || isMC){
+      eTrigName="HLT_HIEle20Gsf_v";
+      etrig = 1;
+    }
+    if(isMC){
+      hltTree_p->SetBranchStatus(muTrigName+"1",1);
+      hltTree_p->SetBranchAddress(muTrigName+"1",&mtrig);
+      hltTree_p->SetBranchStatus(eTrigName+"1",1);
+      hltTree_p->SetBranchAddress(eTrigName+"1",&etrig);
+    }
   }
 
   //trigger objects
@@ -1083,17 +1091,28 @@ int main(int argc, char* argv[])
 
     // initialize the JEC and associated unc files
     std::vector<std::string> FilesData;
-    FilesData.push_back("data/Autumn18_HI_V1_DATA_L2Relative_AK4PF.txt");
-    FilesData.push_back("data/Autumn18_HI_V1_DATA_L2Residual_AK4PF.txt");
+    TString DATA_L2RelativeURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V1_DATA_L2Relative_AK4PF.txt");
+    gSystem->ExpandPathName(DATA_L2RelativeURL);
+    TString DATA_L2ResidualURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V1_DATA_L2Residual_AK4PF.txt");
+    gSystem->ExpandPathName(DATA_L2ResidualURL);
+    FilesData.push_back(DATA_L2RelativeURL.Data());
+    FilesData.push_back(DATA_L2ResidualURL.Data());
 	
     JetCorrector JECData(FilesData);
-    JetUncertainty JEUData("data/Autumn18_HI_V1_DATA_Uncertainty_AK4PF.txt");
+    TString JEUDataURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V1_DATA_Uncertainty_AK4PF.txt");
+    gSystem->ExpandPathName(DATA_L2RelativeURL);
+    JetUncertainty JEUData(DATA_L2RelativeURL.Data());
 
     std::vector<std::string> FilesMC;
-    FilesMC.push_back("data/Autumn18_HI_V1_MC_L2Relative_AK4PF.txt");
+     TString FilesMCURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V1_MC_L2Relative_AK4PF.txt");
+    gSystem->ExpandPathName(FilesMCURL);
+
+    FilesMC.push_back(FilesMCURL.Data());
 	
     JetCorrector JECMC(FilesData);
-    JetUncertainty JEUMC("data/Autumn18_HI_V1_MC_Uncertainty_AK4PF.txt");
+    TString JECMCURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V1_MC_Uncertainty_AK4PF.txt");
+    gSystem->ExpandPathName(JECMCURL);
+    JetUncertainty JEUMC(JECMCURL.Data());
 	
     for(int jetIter = 0; jetIter < fForestJets.nref; jetIter++){
 
