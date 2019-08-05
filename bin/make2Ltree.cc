@@ -1125,7 +1125,7 @@ int main(int argc, char* argv[])
 	JECMC.SetJetEta(fForestJets.jteta[jetIter]);
 	JECMC.SetJetPhi(fForestJets.jtphi[jetIter]);
 	jp4.SetPtEtaPhiM( JECMC.GetCorrectedPT(),fForestJets.jteta[jetIter],fForestJets.jtphi[jetIter],fForestJets.jtm[jetIter]);
-	JEUMC.SetJetPT(fForestJets.rawpt[jetIter]);
+	JEUMC.SetJetPT(JECMC.GetCorrectedPT());
 	JEUMC.SetJetEta(fForestJets.jteta[jetIter]);
 	JEUMC.SetJetPhi(fForestJets.jtphi[jetIter]);
       }
@@ -1134,11 +1134,11 @@ int main(int argc, char* argv[])
 	JECData.SetJetEta(fForestJets.jteta[jetIter]);
 	JECData.SetJetPhi(fForestJets.jtphi[jetIter]);
 	jp4.SetPtEtaPhiM( JECData.GetCorrectedPT(),fForestJets.jteta[jetIter],fForestJets.jtphi[jetIter],fForestJets.jtm[jetIter]);
-	JEUData.SetJetPT(fForestJets.rawpt[jetIter]);
+	JEUData.SetJetPT(JECMC.GetCorrectedPT());
 	JEUData.SetJetEta(fForestJets.jteta[jetIter]);
 	JEUData.SetJetPhi(fForestJets.jtphi[jetIter]);
       }
-
+      std::cout << fForestJets.rawpt[jetIter] << " " << fForestJets.jtpt[jetIter] << " "<<jp4.Pt() << std::endl;
 
       float csvVal=fForestJets.discr_csvV2[jetIter];
       int nsvtxTk=fForestJets.svtxntrk[jetIter];
