@@ -1138,7 +1138,6 @@ int main(int argc, char* argv[])
 	JEUData.SetJetEta(fForestJets.jteta[jetIter]);
 	JEUData.SetJetPhi(fForestJets.jtphi[jetIter]);
       }
-      std::cout << fForestJets.rawpt[jetIter] << " " << fForestJets.jtpt[jetIter] << " "<<jp4.Pt() << std::endl;
 
       float csvVal=fForestJets.discr_csvV2[jetIter];
       int nsvtxTk=fForestJets.svtxntrk[jetIter];
