@@ -1,12 +1,15 @@
 import os, optparse
 
+## usage:
+## python skimCondor.py -d /eos/cms/store/hidata/HIRun2018A/HIHardProbes/AOD/04Apr2019-v1/ -n 100 -o /eos/cms/store/cmst3/group/hintt/SkimAOD_HardProbes_Aug05/ --dryRun
+
 
 if __name__ == '__main__':                                                                                                                                                                    
 
     parser = optparse.OptionParser(usage='usage: %prog [opts] ', version='%prog 1.0')
     parser.add_option('-d', '--directory', type=str, default='',    help='directory with the output directories [%default]')
     parser.add_option(      '--dryRun',              default=False, help='dry run (do not submit to condor) [%default]', action='store_true')
-    parser.add_option('-n', '--nfiles',  type=float, default=100 ,  help='skim nfiles files in each job.')
+    parser.add_option('-n', '--nfiles',  type=int, default=100 ,  help='skim nfiles files in each job.')
     parser.add_option('-o', '--targetdir', type=str, default='',    help='target directory for the output [%default]')
     (options, args) = parser.parse_args()
 
@@ -25,12 +28,31 @@ if __name__ == '__main__':
 
     t = 'SingleMuon' if 'SingleMuon' in options.directory else 'HardProbes' if 'HardProbes' in options.directory else ''
 
+    ## get the list of valid files. the list should be readable for everyone
+    validFileListBase = '/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_10_3_3_patch1/src/HeavyIonsAnalysis/topskim/scripts/'
+
+    if t == 'SingleMuon':
+        fn_validFileList = validFileListBase+'/validFiles_SingleMuon.txt'
+    elif t == 'HardProbes':
+        fn_validFileList = validFileListBase+'/validFiles_HardProbes.txt'
+
+    f_validFileList = open(fn_validFileList, 'r')
+
+    validFileList = [i.strip().split('/')[-1] for i in f_validFileList.readlines() ]
+
+    ## done getting the valid file list
+
+    nInvalid = 0
+
     for p,d,f in os.walk(options.directory) : #'/eos/cms/store/hidata/HIRun2018A/HISingleMuon/AOD/04Apr2019-v1/'):
         for fn in f:
             if not '.root' in fn: continue
+            if not fn in validFileList:
+                nInvalid += 1
+                continue
             filelist.append(os.path.join(p,fn))
 
-    print 'there are {n} files in the directory {d} and its subdirectories'.format(n=len(filelist), d=options.directory)
+    print 'there are {n} valid files in the directory {d} and its subdirectories'.format(n=len(filelist), d=options.directory)
 
     print 'grouping them into bunches of', str(options.nfiles)
 
