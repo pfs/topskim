@@ -1121,20 +1121,20 @@ int main(int argc, char* argv[])
 
       TLorentzVector jp4(0,0,0,0);
       if(isMC){
-	JECMC.SetJetPT(fForestJets.jtpt[jetIter]);
+	JECMC.SetJetPT(fForestJets.rawpt[jetIter]);
 	JECMC.SetJetEta(fForestJets.jteta[jetIter]);
 	JECMC.SetJetPhi(fForestJets.jtphi[jetIter]);
 	jp4.SetPtEtaPhiM( JECMC.GetCorrectedPT(),fForestJets.jteta[jetIter],fForestJets.jtphi[jetIter],fForestJets.jtm[jetIter]);
-	JEUMC.SetJetPT(fForestJets.jtpt[jetIter]);
+	JEUMC.SetJetPT(fForestJets.rawpt[jetIter]);
 	JEUMC.SetJetEta(fForestJets.jteta[jetIter]);
 	JEUMC.SetJetPhi(fForestJets.jtphi[jetIter]);
       }
       else{
-	JECData.SetJetPT(fForestJets.jtpt[jetIter]);
+	JECData.SetJetPT(fForestJets.rawpt[jetIter]);
 	JECData.SetJetEta(fForestJets.jteta[jetIter]);
 	JECData.SetJetPhi(fForestJets.jtphi[jetIter]);
 	jp4.SetPtEtaPhiM( JECData.GetCorrectedPT(),fForestJets.jteta[jetIter],fForestJets.jtphi[jetIter],fForestJets.jtm[jetIter]);
-	JEUData.SetJetPT(fForestJets.jtpt[jetIter]);
+	JEUData.SetJetPT(fForestJets.rawpt[jetIter]);
 	JEUData.SetJetEta(fForestJets.jteta[jetIter]);
 	JEUData.SetJetPhi(fForestJets.jtphi[jetIter]);
       }
@@ -1538,10 +1538,10 @@ int main(int argc, char* argv[])
     t_mht = vis.Pt();
     
     // now set the 4 variables that we added for the tmva reader for the bdt evaluation
-    bdt_l1pt      = t_lep_pt[0];
-    bdt_apt       = (t_lep_pt[0]-t_lep_pt[1])/(t_lep_pt[0]+t_lep_pt[1]);
+    bdt_l1pt      = t_lep_calpt[0];
+    bdt_apt       = (t_lep_calpt[0]-t_lep_calpt[1])/(t_lep_calpt[0]+t_lep_calpt[1]);
     bdt_abslleta  = fabs(t_lleta);
-    bdt_dphilll2  = fabs(dphi_2(t_lep_pt[0],t_lep_eta[0],t_lep_phi[0],t_lep_pt[1],t_lep_eta[1],t_lep_phi[1],2)); // this function is in functions.cc in scripts/
+    bdt_dphilll2  = fabs(dphi_2(t_lep_calpt[0],t_lep_eta[0],t_lep_phi[0],t_lep_calpt[1],t_lep_eta[1],t_lep_phi[1],2)); // this function is in functions.cc in scripts/
     bdt_sumabseta = fabs(t_lep_eta[0])+fabs(t_lep_eta[1]);
     //bdt_flavor    = abs(t_lep_pdgId[0]*t_lep_pdgId[1]); //abs should be fine here, it's an int
     t_apt         = bdt_apt;
