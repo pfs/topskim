@@ -4,7 +4,6 @@
 #include "TMath.h"
 #include "TLorentzVector.h"
 #include "TChain.h"
-#include "TTree.h"
 #include "TSystem.h"
 #include "TF1.h"
 #include "TRandom3.h"

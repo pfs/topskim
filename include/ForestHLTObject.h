@@ -2,6 +2,7 @@
 #define ForestHLTObject_h
 
 #include <TROOT.h>
+#include <TChain.h>
 #include <vector>
 
 /**
