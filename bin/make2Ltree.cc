@@ -244,6 +244,8 @@ int main(int argc, char* argv[])
 
   bool isSingleMuPD( !isMC && inURL.Contains("SkimMuons"));
   bool isSingleElePD( !isMC && inURL.Contains("SkimElectrons"));
+  bool isMuSkimedMCPD( isMC && inURL.Contains("HINPbPbAutumn18DR_skims") && inURL.Contains("Muons"));
+  bool isEleSkimedMCPD( isMC && inURL.Contains("HINPbPbAutumn18DR_skims") && inURL.Contains("Electrons"));
   LumiRun lumiTool;
   ElectronEfficiencyWrapper eleEff("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data");
 
@@ -440,9 +442,9 @@ int main(int argc, char* argv[])
   }else{
     muTrigName="HLT_HIL3Mu12_v";
     eTrigName="HLT_HIEle20Gsf_v";
-    if(isSingleMuPD || isMC) mtrig = 1;
-    if(isSingleElePD || isMC) etrig = 1;
-    if(isMC){
+    if(isSingleMuPD || isMuSkimedMCPD) mtrig = 1;
+    if(isSingleElePD || isEleSkimedMCPD) etrig = 1;
+    if(isMC and !isMuSkimedMCPD and !isEleSkimedMCPD){
       hltTree_p->SetBranchStatus(muTrigName+"1",1);
       hltTree_p->SetBranchAddress(muTrigName+"1",&mtrig);
       hltTree_p->SetBranchStatus(eTrigName+"1",1);
@@ -1037,14 +1039,14 @@ int main(int argc, char* argv[])
     //apply basic preselection & duplicate event removal
     int trig=etrig+mtrig;
     if(trig==0) continue;
-    if(isSingleMuPD) {
-      if(std::find(badMuonTriggerRuns.begin(), badMuonTriggerRuns.end(), fForestTree.run) != badMuonTriggerRuns.end()) continue;
+    if(isSingleMuPD || isMuSkimedMCPD) {
+      if(std::find(badMuonTriggerRuns.begin(), badMuonTriggerRuns.end(), fForestTree.run) != badMuonTriggerRuns.end() and !isMuSkimedMCPD) continue;
       if(mtrig==0) continue;
       if(etrig!=0) continue;
       if(selLeptons.size()>=2)
 	if ( (abs(selLeptons[0].id)==11 and selLeptons[0].isTrigMatch==1) and (abs(selLeptons[1].id)==11 and selLeptons[1].isTrigMatch==1) ) continue;
     }
-    if(isSingleElePD) {
+    if(isSingleElePD || isEleSkimedMCPD) {
       if(etrig==0) continue;
       if(selLeptons.size()>=2)
 	if ( (abs(selLeptons[0].id)==13 and selLeptons[0].isTrigMatch==1) or (abs(selLeptons[1].id)==13 and selLeptons[1].isTrigMatch==1) ) continue;
@@ -1066,9 +1068,9 @@ int main(int argc, char* argv[])
     if(dilCode==11*11) dilCat="ee";
 
     //ee and mm events should come from the appropriate primary dataset
-    if(!isMC) {
-      if(dilCode==11*11 && !isSingleElePD) continue;
-      if(dilCode==13*13 && !isSingleMuPD) continue;
+    if(isSingleMuPD || isSingleMuPD || isMuSkimedMCPD || isEleSkimedMCPD) {
+      if(dilCode==11*11 && !isSingleElePD && !isEleSkimedMCPD) continue;
+      if(dilCode==13*13 && !isSingleMuPD && !isMuSkimedMCPD) continue;
     }
 
     if(blind) {
