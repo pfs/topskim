@@ -414,7 +414,7 @@ int main(int argc, char* argv[])
   ForestPFCands fForestPF(pfCandTree_p);
 
   //configure jets
-  TChain *jetTree_p     = new TChain(isPP ? "ak4PFJetAnalyzer/t" : "akPu4PFJetAnalyzer/t");
+  TChain *jetTree_p     = new TChain(isPP ? "ak4PFJetAnalyzer/t" : "akFlowPuCs4PFJetAnalyzer/t");
   jetTree_p->Add(inURL);
   ForestJets fForestJets(jetTree_p);
 
