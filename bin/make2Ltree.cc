@@ -1395,7 +1395,7 @@ int main(int argc, char* argv[])
 
       if(abs(selLeptons[ilep].id)==11){
         ltrigEff.push_back(  std::pair<float,float>(e_mctrigeff->Eval(pt),0.0) );
-        ltrigSF.push_back( eleEff.eval(pt, abseta<barrelEndcapEta[0], cenBin, true) );
+        ltrigSF.push_back( eleEff.eval(pt, abseta<barrelEndcapEta[0], cenBin, true, false) ); //HLT (L1 is unity by definition in this trigger menu)
       }else{
 
         ltrigEff.push_back(  std::pair<float,float>(tnp_weight_trig_pbpb(pt,eta,300),0.0) );
@@ -1477,9 +1477,12 @@ int main(int argc, char* argv[])
         sfValUnc += pow(0.0032,2);                                                          //centrality dependence
         sfValUnc = sqrt(sfValUnc);
       }else {
-        std::pair<float,float > elesf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false);
-        sfVal=elesf.first;
-        sfValUnc=elesf.second;
+        std::pair<float,float > eleIDsf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false, false); //ID
+        sfVal=eleIDsf.first;
+        sfValUnc=eleIDsf.second;
+	std::pair<float,float > eleRECOsf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false, true); //RECO                                     
+	sfValUnc = sqrt(pow(sfValUnc/sfVal,2)+pow(eleRECOsf.second/eleRECOsf.first,2));
+        sfVal*=eleRECOsf.first;
       }    
       t_lepSF.push_back(sfVal);
       t_lepSFUnc.push_back(sfValUnc);
