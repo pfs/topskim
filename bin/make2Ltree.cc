@@ -244,6 +244,8 @@ int main(int argc, char* argv[])
 
   bool isSingleMuPD( !isMC && inURL.Contains("SkimMuons"));
   bool isSingleElePD( !isMC && inURL.Contains("SkimElectrons"));
+  bool isMuSkimedMCPD( isMC && inURL.Contains("HINPbPbAutumn18DR_skims") && inURL.Contains("Muons"));
+  bool isEleSkimedMCPD( isMC && inURL.Contains("HINPbPbAutumn18DR_skims") && inURL.Contains("Electrons"));
   LumiRun lumiTool;
   ElectronEfficiencyWrapper eleEff("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data");
 
@@ -438,15 +440,11 @@ int main(int argc, char* argv[])
     hltTree_p->SetBranchStatus(eTrigName+"1",1);
     hltTree_p->SetBranchAddress(eTrigName+"1",&etrig);
   }else{
-    if(isSingleMuPD || isMC){
-      muTrigName="HLT_HIL3Mu12_v";
-      mtrig = 1;
-    }
-    if(isSingleElePD || isMC){
-      eTrigName="HLT_HIEle20Gsf_v";
-      etrig = 1;
-    }
-    if(isMC){
+    muTrigName="HLT_HIL3Mu12_v";
+    eTrigName="HLT_HIEle20Gsf_v";
+    if(isSingleMuPD || isMuSkimedMCPD) mtrig = 1;
+    if(isSingleElePD || isEleSkimedMCPD) etrig = 1;
+    if(isMC and !isMuSkimedMCPD and !isEleSkimedMCPD){
       hltTree_p->SetBranchStatus(muTrigName+"1",1);
       hltTree_p->SetBranchAddress(muTrigName+"1",&mtrig);
       hltTree_p->SetBranchStatus(eTrigName+"1",1);
@@ -464,6 +462,7 @@ int main(int argc, char* argv[])
     muHLTObjs=new ForestHLTObject(muHLTObj_p);
     eleHLTObj_p = new TChain("hltobject/"+eTrigName);
     eleHLTObj_p->Add(inURL);
+    eleHLTObj_p->AddFriend(muHLTObj_p);
     eleHLTObjs=new ForestHLTObject(eleHLTObj_p);
   }
 
@@ -668,7 +667,7 @@ int main(int argc, char* argv[])
   //loop over events
   for(int entry = 0; entry < nEntries; entry++){
     
-    if(entry%entryDiv == 0) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
+    if(entryDiv!=0)if(entry%entryDiv == 0) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
     globalTree_p->GetEntry(entry);
     lepTree_p->GetEntry(entry);
     pfCandTree_p->GetEntry(entry);
@@ -676,8 +675,8 @@ int main(int argc, char* argv[])
     hltTree_p->GetEntry(entry);
     hiTree_p->GetEntry(entry);
     if(rhoTree_p) rhoTree_p->GetEntry(entry);
-    if(muHLTObj_p && mtrig>0) muHLTObj_p->GetEntry(entry);
-    if(eleHLTObj_p && etrig>0) eleHLTObj_p->GetEntry(entry);
+    if(muHLTObj_p ) muHLTObj_p->GetEntry(entry);
+    if(eleHLTObj_p)  eleHLTObj_p->GetEntry(entry);
     
     //gen level analysis
     float evWgt(1.0),topPtWgt(1.0),topMassUpWgt(1.0),topMassDnWgt(1.0);
@@ -825,7 +824,7 @@ int main(int argc, char* argv[])
     //select muons
     std::vector<LeptonSummary> noIdMu;
     std::vector<TLorentzVector> muHLTP4;
-    if(muHLTObjs && mtrig>0) muHLTP4=muHLTObjs->getHLTObjectsP4();
+    if(muHLTObjs) muHLTP4=muHLTObjs->getHLTObjectsP4();
     for(unsigned int muIter = 0; muIter < fForestLep.muPt->size(); ++muIter) {
       
       //kinematics selection
@@ -912,12 +911,12 @@ int main(int argc, char* argv[])
       }
     }
 
-    
+
     //select electrons
     //cf. https://twiki.cern.ch/twiki/pub/CMS/HiHighPt2019/HIN_electrons2018_followUp.pdf
     std::vector<LeptonSummary> noIdEle;
     std::vector<TLorentzVector> eleHLTP4;
-    if(eleHLTObjs && etrig>0) eleHLTP4=eleHLTObjs->getHLTObjectsP4() ;
+    if(eleHLTObjs) eleHLTP4=eleHLTObjs->getHLTObjectsP4() ;
     for(unsigned int eleIter = 0; eleIter < fForestLep.elePt->size(); ++eleIter) {
 
       //kinematics selection
@@ -1037,16 +1036,20 @@ int main(int argc, char* argv[])
       }
     }
 
-    //apply basic preselection
+    //apply basic preselection & duplicate event removal
     int trig=etrig+mtrig;
     if(trig==0) continue;
-    if(isSingleMuPD) {
-      if(std::find(badMuonTriggerRuns.begin(), badMuonTriggerRuns.end(), fForestTree.run) != badMuonTriggerRuns.end()) continue;
+    if(isSingleMuPD || isMuSkimedMCPD) {
+      if(std::find(badMuonTriggerRuns.begin(), badMuonTriggerRuns.end(), fForestTree.run) != badMuonTriggerRuns.end() and !isMuSkimedMCPD) continue;
       if(mtrig==0) continue;
       if(etrig!=0) continue;
+      if(selLeptons.size()>=2)
+	if ( (abs(selLeptons[0].id)==11 and selLeptons[0].isTrigMatch==1) and (abs(selLeptons[1].id)==11 and selLeptons[1].isTrigMatch==1) ) continue;
     }
-    if(isSingleElePD) {
+    if(isSingleElePD || isEleSkimedMCPD) {
       if(etrig==0) continue;
+      if(selLeptons.size()>=2)
+	if ( (abs(selLeptons[0].id)==13 and selLeptons[0].isTrigMatch==1) or (abs(selLeptons[1].id)==13 and selLeptons[1].isTrigMatch==1) ) continue;
     }
 
     if(mtrig+etrig==0) continue;
@@ -1065,9 +1068,9 @@ int main(int argc, char* argv[])
     if(dilCode==11*11) dilCat="ee";
 
     //ee and mm events should come from the appropriate primary dataset
-    if(!isMC) {
-      if(dilCode==11*11 && !isSingleElePD) continue;
-      if(dilCode==13*13 && !isSingleMuPD) continue;
+    if(isSingleMuPD || isSingleMuPD || isMuSkimedMCPD || isEleSkimedMCPD) {
+      if(dilCode==11*11 && !isSingleElePD && !isEleSkimedMCPD) continue;
+      if(dilCode==13*13 && !isSingleMuPD && !isMuSkimedMCPD) continue;
     }
 
     if(blind) {

@@ -12,16 +12,22 @@
 class ForestHLTObject {
  public :
  ForestHLTObject(TChain *t) :
+    TriggerObjId(0),
+    pt(0),
+    eta(0),
+    phi(0),
+    mass(0),
     isvalid(false){
     
-    if(t){
+      if(t){
+      t->SetBranchStatus("pt", 1);
       t->SetBranchAddress("TriggerObjID", &TriggerObjId);
       t->SetBranchAddress("pt", &pt);
       t->SetBranchAddress("eta", &eta);
       t->SetBranchAddress("phi", &phi);
       t->SetBranchAddress("mass", &mass);
       isvalid=true;
-    }
+      }
   }
   
   std::vector<TLorentzVector> getHLTObjectsP4(){
@@ -41,7 +47,11 @@ class ForestHLTObject {
 
 
  private:
-  std::vector<Double_t> *TriggerObjId=0, *pt=0, *eta=0, *phi=0, *mass=0;
+  std::vector<double> *TriggerObjId;
+  std::vector<double> *pt;
+  std::vector<double> *eta;
+  std::vector<double> *phi;
+  std::vector<double> *mass;
   bool isvalid;
 };
 
