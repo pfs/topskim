@@ -15,6 +15,9 @@ def checkPacked(args):
                 toRun.append((jobArgs,'missing'))
             else:
                 try:
+                    if not os.path.getsize(outF):
+                        print 'file has size 0', outF
+                        raise ValueError
                     fIn=ROOT.TFile.Open(outF)
                     n=fIn.GetListOfKeys().GetSize()
                     if n<=1:
