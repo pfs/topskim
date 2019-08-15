@@ -23,10 +23,10 @@ class ElectronEfficiencyWrapper
       TString baseF("ScaleFactors_PbPb_LooseWP");
       TString regs[2]={"EB","EE"};
       TString centr[2]={"0_30","30_100"};
-      TString pfix[2]={useOldId ? "" : "_AlpaFixedDataOnly_BWResCBErfExp_preliminary_v2","_HLT"};
+      TString pfix[3]={useOldId ? "" : "_AlpaFixedDataOnly_BWResCBErfExp_preliminary_v2","_HLT","_RECO"};
       for(size_t i=0; i<2; i++) {
         for(size_t j=0; j<2; j++) {
-          for(size_t k=0; k<2; k++) {
+          for(size_t k=0; k<3; k++) {
             TString path(Form("%s/%s_%s_Centr_%s%s.root",
                               url.Data(),
                               baseF.Data(),
@@ -46,14 +46,16 @@ class ElectronEfficiencyWrapper
   /**
      @short returns the SF and the uncertainty
    */
-  std::pair<float,float> eval(float pt, bool isEB, int cenbin,bool hlt) {
+  std::pair<float,float> eval(float pt, bool isEB, int cenbin, bool hlt, bool reco) {
 
     std::pair<float,float> sfVal(1.0,0.0);
 
     //build the key to the map
     TString reg(isEB ? "EB" : "EE");
     TString cen(cenbin<30 ? "0_30" : "30_100");
-    TString pfix(hlt ? "_HLT" : "");
+    TString pfix("");
+    if(hlt) pfix.Append("_HLT");
+    if(reco) pfix.Append("_RECO");
     TString key(reg+cen+pfix);
 
     //check key exists
