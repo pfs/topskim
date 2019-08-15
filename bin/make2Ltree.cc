@@ -49,7 +49,7 @@ const int firstEEScaleShiftRun = 327402;
 const float barrelEndcapEta[2]={1.4442,1.5660};
 const float hem1516Eta[2]={-3.0,-1.9};
 const float hem1516Phi[2]={-1.6,-0.9};
-const float csvWP = 0.91;
+const float csvWP = 0.81;
 // runs with HLT issues: any path using tracking was disabled => includes L3 muon paths. 
 // total lumi in these runs is 30.103/ub (total lumi available in golden json unblinde period is 425.349/ub)
 std::vector<int> badMuonTriggerRuns={326482,326483,326500,326520,326527,326528,326530,326532,326533,326534,326535,326546,326548,326549,326550,326568,326569,326571};
@@ -150,9 +150,9 @@ static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
 
 // btag efficiencies from the AN
 float btagEfficiencies(int flavor, float cenbin){
-  if      (fabs(flavor) == 5) return (cenbin <= 30 ? 0.543 : 0.665); // bs
-  else if (fabs(flavor) == 0) return (cenbin <= 30 ? 0.016 : 0.012); // unmatched
-  else                        return (cenbin <= 30 ? 0.008 : 0.002); // udsg
+  if      (fabs(flavor) == 5) return (cenbin <= 30 ? 0.556 : 0.683); // bs
+  else if (fabs(flavor) == 0) return (cenbin <= 30 ? 0.057 : 0.042); // unmatched
+  else                        return (cenbin <= 30 ? 0.023 : 0.008); // udsg
 }
 
 //
@@ -270,7 +270,32 @@ int main(int argc, char* argv[])
   }
   fIn->Close();
   
-
+  // initialize the JEC and associated unc files
+  std::vector<std::string> FilesData;
+  TString DATA_L2RelativeURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V4_DATA_L2Relative_AK4PF.txt");
+  gSystem->ExpandPathName(DATA_L2RelativeURL);
+  TString DATA_L2ResidualURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V4_DATA_L2Residual_AK4PF.txt");
+  gSystem->ExpandPathName(DATA_L2ResidualURL);
+  FilesData.push_back(DATA_L2RelativeURL.Data());
+  FilesData.push_back(DATA_L2ResidualURL.Data());
+  
+  JetCorrector JECData(FilesData);
+  TString JEUDataURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V4_DATA_Uncertainty_AK4PF.txt");
+  gSystem->ExpandPathName(DATA_L2RelativeURL);
+  JetUncertainty JEUData(DATA_L2RelativeURL.Data());
+  
+  std::vector<std::string> FilesMC;
+  TString FilesMCURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V4_MC_L2Relative_AK4PF.txt");
+  gSystem->ExpandPathName(FilesMCURL);
+  
+  FilesMC.push_back(FilesMCURL.Data());
+  
+  JetCorrector JECMC(FilesData);
+  TString JECMCURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V4_MC_Uncertainty_AK4PF.txt");
+  gSystem->ExpandPathName(JECMCURL);
+  JetUncertainty JEUMC(JECMCURL.Data());
+  
+  
   if(isPP)
     cout << "Treating as a pp collision file" << endl;
   if(isMC)
@@ -414,7 +439,7 @@ int main(int argc, char* argv[])
   ForestPFCands fForestPF(pfCandTree_p);
 
   //configure jets
-  TChain *jetTree_p     = new TChain(isPP ? "ak4PFJetAnalyzer/t" : "akPu4PFJetAnalyzer/t");
+  TChain *jetTree_p     = new TChain(isPP ? "ak4PFJetAnalyzer/t" : "akFlowPuCs4PFJetAnalyzer/t");
   jetTree_p->Add(inURL);
   ForestJets fForestJets(jetTree_p);
 
@@ -1092,30 +1117,6 @@ int main(int argc, char* argv[])
     t_nbjet_sel_udsgup   = 0; t_nbjet_sel_udsgdn   = 0;
     t_nbjet_sel_quenchup = 0; t_nbjet_sel_quenchdn = 0;
 
-    // initialize the JEC and associated unc files
-    std::vector<std::string> FilesData;
-    TString DATA_L2RelativeURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V1_DATA_L2Relative_AK4PF.txt");
-    gSystem->ExpandPathName(DATA_L2RelativeURL);
-    TString DATA_L2ResidualURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V1_DATA_L2Residual_AK4PF.txt");
-    gSystem->ExpandPathName(DATA_L2ResidualURL);
-    FilesData.push_back(DATA_L2RelativeURL.Data());
-    FilesData.push_back(DATA_L2ResidualURL.Data());
-	
-    JetCorrector JECData(FilesData);
-    TString JEUDataURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V1_DATA_Uncertainty_AK4PF.txt");
-    gSystem->ExpandPathName(DATA_L2RelativeURL);
-    JetUncertainty JEUData(DATA_L2RelativeURL.Data());
-
-    std::vector<std::string> FilesMC;
-     TString FilesMCURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V1_MC_L2Relative_AK4PF.txt");
-    gSystem->ExpandPathName(FilesMCURL);
-
-    FilesMC.push_back(FilesMCURL.Data());
-	
-    JetCorrector JECMC(FilesData);
-    TString JECMCURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V1_MC_Uncertainty_AK4PF.txt");
-    gSystem->ExpandPathName(JECMCURL);
-    JetUncertainty JEUMC(JECMCURL.Data());
 	
     for(int jetIter = 0; jetIter < fForestJets.nref; jetIter++){
 
@@ -1147,7 +1148,7 @@ int main(int argc, char* argv[])
       float msvtx=fForestJets.svtxm[jetIter];
 
       if(jp4.Pt()<20.) continue; // smaller pT cut here to avoid the full loop
-      if(fabs(jp4.Eta())>2.4) continue;
+      if(fabs(jp4.Eta())>2.0) continue;
       bool isBTagged(csvVal>csvWP);      
 
       // simple matching to the closest jet in dR. require at least dR < 0.3
@@ -1394,7 +1395,7 @@ int main(int argc, char* argv[])
 
       if(abs(selLeptons[ilep].id)==11){
         ltrigEff.push_back(  std::pair<float,float>(e_mctrigeff->Eval(pt),0.0) );
-        ltrigSF.push_back( eleEff.eval(pt, abseta<barrelEndcapEta[0], cenBin, true) );
+        ltrigSF.push_back( eleEff.eval(pt, abseta<barrelEndcapEta[0], cenBin, true, false) ); //HLT (L1 is unity by definition in this trigger menu)
       }else{
 
         ltrigEff.push_back(  std::pair<float,float>(tnp_weight_trig_pbpb(pt,eta,300),0.0) );
@@ -1476,9 +1477,12 @@ int main(int argc, char* argv[])
         sfValUnc += pow(0.0032,2);                                                          //centrality dependence
         sfValUnc = sqrt(sfValUnc);
       }else {
-        std::pair<float,float > elesf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false);
-        sfVal=elesf.first;
-        sfValUnc=elesf.second;
+        std::pair<float,float > eleIDsf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false, false); //ID
+        sfVal=eleIDsf.first;
+        sfValUnc=eleIDsf.second;
+	std::pair<float,float > eleRECOsf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false, true); //RECO                                     
+	sfValUnc = sqrt(pow(sfValUnc/sfVal,2)+pow(eleRECOsf.second/eleRECOsf.first,2));
+        sfVal*=eleRECOsf.first;
       }    
       t_lepSF.push_back(sfVal);
       t_lepSFUnc.push_back(sfValUnc);
