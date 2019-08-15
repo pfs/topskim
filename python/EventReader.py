@@ -2,7 +2,7 @@
 from ROOT import TLorentzVector
 
 
-LEPTONBRANCHES=['pt','eta','phi',
+LEPTONBRANCHES=['pt','calpt','eta','phi',
                 'idflags','d0','d0err','dz',
                 'phiso','chiso','nhiso','rho',
                 'pdgId','charge',
@@ -10,7 +10,7 @@ LEPTONBRANCHES=['pt','eta','phi',
 
 DILEPTONBRANCHES=['llpt','lleta','llphi','llm','dphi','deta','sumeta','apt','bdt','bdtrarity']
 
-JETBRANCHES=['pt','eta','phi','mass','csvv2','genpt','geneta','genphi','genmass','drSafe','flavor','flavorB']
+JETBRANCHES=['pt','eta','phi','mass','csvv2','genpt','geneta','genphi','genmass','flavor','flavorB']
 
 class PhysicsObject:
 
@@ -26,7 +26,8 @@ class PhysicsObject:
 
     def buildP4(self):
         try:
-            self.p4.SetPtEtaPhiM(self.pt,self.eta,self.phi,self.mass)
+            pt=self.calpt if hasattr(self,'calpt') else self.pt
+            self.p4.SetPtEtaPhiM(pt,self.eta,self.phi,self.mass)
         except Exception as e:
             print '<'*50
             print 'Unable to set p4'
