@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
 
   bool blind(true);
   TString inURL,outURL;
-  bool isMC(false),isPP(false),isAMCATNLO(false);
+  bool isMC(false),isPP(false),isAMCATNLO(false),isSkim(false);
   int maxEvents(-1);
   for(int i=1;i<argc;i++){
     string arg(argv[i]);
@@ -240,6 +240,7 @@ int main(int argc, char* argv[])
     else if(arg.find("--mc")!=string::npos)              { isMC=true;  }
     else if(arg.find("--pp")!=string::npos)              { isPP=true;  }
     else if(arg.find("--amcatnlo")!=string::npos)        { isAMCATNLO=true;  }
+    else if(arg.find("--skim")!=string::npos)            { isSkim=true;  }
   }
 
   bool isSingleMuPD( !isMC && inURL.Contains("SkimMuons"));
@@ -1061,9 +1062,24 @@ int main(int argc, char* argv[])
       }
     }
 
-    //apply basic preselection & duplicate event removal
+    //require at least two leptons matched to trigger objects
+    if(selLeptons.size()<2) continue;
+    bool hasOneTrigMatchLepton(selLeptons[0].isTrigMatch || selLeptons[1].isTrigMatch);
+    if( !hasOneTrigMatchLepton ) continue;
+    
+    //apply trigger preselection & duplicate event removal
+    //in skim mode assume that the hltobject matched to offline will give the HLT trigger bit
+    //this is a hack when hlt tree is missing...
+    if(isSkim) {
+      if( (abs(selLeptons[0].id)==11 && selLeptons[0].isTrigMatch) ||
+          (abs(selLeptons[1].id)==11 && selLeptons[1].isTrigMatch) ) etrig=true;
+      if( (abs(selLeptons[0].id)==13 && selLeptons[0].isTrigMatch) ||
+          (abs(selLeptons[1].id)==13 && selLeptons[1].isTrigMatch) ) mtrig=true;
+    }
+
     int trig=etrig+mtrig;
     if(trig==0) continue;
+
     if(isSingleMuPD || isMuSkimedMCPD) {
       if(std::find(badMuonTriggerRuns.begin(), badMuonTriggerRuns.end(), fForestTree.run) != badMuonTriggerRuns.end() and !isMuSkimedMCPD) continue;
       if(mtrig==0) continue;
@@ -1077,8 +1093,7 @@ int main(int argc, char* argv[])
 	if ( (abs(selLeptons[0].id)==13 and selLeptons[0].isTrigMatch==1) or (abs(selLeptons[1].id)==13 and selLeptons[1].isTrigMatch==1) ) continue;
     }
 
-    if(mtrig+etrig==0) continue;
-    if(selLeptons.size()<2) continue;
+    //dilepton selection
     TLorentzVector ll(selLeptons[0].p4+selLeptons[1].p4);
     t_llpt=ll.Pt();
     t_lleta=ll.Eta();
