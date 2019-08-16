@@ -11,17 +11,9 @@ CHLUMI={'mm':1587.941*(1e-6),
 
 ABEAM=208
 SAMPLES=[
-    ('WJetsToLNu_TuneCP5_5020GeV-amcatnloFXFX-pythia8',          'W',                    21159*(ABEAM**2)*LUMI,        17),         
-    ('DYJetsToLL_M-10to50_TuneCP5_5020GeV-amcatnloFXFX-pythia8', 'Z/#gamma^{*}',         1506*(ABEAM**2)*LUMI,         "#fdc086"),         
-    ('DYJetsToLL_TuneCUETP8M1_5020GeV-amcatnloFXFX-pythia8',     'Z/#gamma^{*}',         2010*(ABEAM**2)*LUMI,         "#fdc086"),         
-    ('TT_TuneCP5_5p02TeV-powheg-pythia8',                        't#bar{t}',             69*(ABEAM**2)*LUMI,           633),
-    ('ST_tW_antitop_5f_NoFullyHadronicDecays_hdampDOWN_TuneCP5_5p02TeV-powheg-pythia8', 'tW', 3.04*(ABEAM**2)*LUMI,    "#7fc97f"),
-    ('ST_tW_top_5f_NoFullyHadronicDecays_TuneCP5down_5p02TeV-powheg-pythia8',           'tW', 3.04*(ABEAM**2)*LUMI,    "#7fc97f"),
-    ('WWTo2L2Nu_NNPDF31_TuneCP5_5p02TeV-powheg-pythia8',         'VV',                   1.21*(ABEAM**2)*LUMI,         "#386cb0"),         
-    ('WZTo3LNU_NNPDF30_TuneCP5_5p20TeV-powheg',                  'VV',                   1.77*(ABEAM**2)*LUMI,         "#386cb0"),         
-    ('ZZTo4L_5p02TeV_powheg_pythia8',                            'VV',                   0.441*(ABEAM**2)*LUMI,        "#386cb0"),         
-    ('Skim',                                                     'Comb. (data)',         None,                         17),
-    ('Skim',                                                     'Data',                 None,                         1),
+    ('DYJetsToLL_MLL-50_TuneCP5_HydjetDrumMB_5p02TeV-amcatnloFXFX-pythia8',     'Z/#gamma^{*}',  2010*(ABEAM**2)*LUMI, "#fdc086"),         
+    ('Skim',                                                                    'Comb. (data)',  None,                 17),
+    ('Skim',                                                                    'Data',          None,                 1),
 ]
 
 
@@ -77,7 +69,7 @@ def showRateVsRun(url,catList=['e','m']):
     histos=getDataSummedUp(url)
     p=Plot('ratevsrun',com='5.02 TeV')
     p.spimposeWithErrors=True
-    p.forceRange=[0,5000]
+    p.forceRange=[0,70]
     for c in catList:
 
         rates=np.array([[i+1,histos[c].GetBinContent(i+1)] for i in range(histos[c].GetNbinsX())])
@@ -253,18 +245,21 @@ def doEleIDPlots(url):
 
     for reg in ['EB','EE','BB']:
         cats=['zeectrl'+reg,'sszeectrl'+reg]
-        for dist in ['esihih','edetavtx','edphivtx','ehoe','eempinv','ed0', 'edz','emll']:
+        for dist in ['esihih','edphivtx','eempinv','ed0', 'edz','emll','ehoe', 'edetaseedvtx']:
             
             if dist!='emll' and reg=='BB': continue
 
-            plots=getDataSummedUp(url,cats,dist,'Skim',False)
-
-            #show the plots for simple variables
-            p=Plot('%s%s'%(dist,reg),com='5.02 TeV')
-            p.add(plots[cats[0]],title='Z#rightarrowee (data)',color=1,isData=True,spImpose=False,isSyst=False)
-            p.add(plots[cats[1]],title='Comb. (data)',color=17,isData=False,spImpose=False,isSyst=False)
-            p.savelog=True
-            p.show(outDir='./',lumi=LUMI)
+            try:
+                plots=getDataSummedUp(url,cats,dist,'Skim',False)
+                print dist,reg
+                #show the plots for simple variables
+                p=Plot('%s%s'%(dist,reg),com='5.02 TeV')
+                p.add(plots[cats[0]],title='Z#rightarrowee (data)',color=1,isData=True,spImpose=False,isSyst=False)
+                p.add(plots[cats[1]],title='Comb. (data)',color=17,isData=False,spImpose=False,isSyst=False)
+                p.savelog=True
+                p.show(outDir='./',lumi=LUMI)
+            except:
+                print 'Failed for',dist,'in',reg
 
 def doMuIDPlots(url):
 
@@ -435,9 +430,14 @@ def doJetHotSpots(url,cats):
         c.SaveAs('jetetavsphi.%s'%ext)
 
 
-url=sys.argv[1]
-#doEleIDPlots(url)
-#doMuIDPlots(url)
-showRateVsRun(url)
-#doJetHotSpots(url,['zmm','zee','em'])
+def main():
+    url=sys.argv[1]
+    #doEleIDPlots(url)
+    #doMuIDPlots(url)
+    showRateVsRun(url)
+    #doJetHotSpots(url,['zmm','zee','em'])
+
+if __name__ == "__main__":
+    sys.exit(main())
+
 

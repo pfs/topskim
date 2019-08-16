@@ -82,7 +82,7 @@ def showEfficiencyCurves(grColl,name):
 def main():
     ROOT.gROOT.SetBatch(True)
     baseDir=sys.argv[1]
-    mixSig='TTJets_TuneCP5_HydjetDrumMB-amcatnloFXFX.root'   
+    mixSig='TTJets_TuneCP5_HydjetDrumMB_5p02TeV-amcatnloFXFX-pythia8.root'
     ppSample='/eos/cms/store/cmst3/group/hintt/PbPb2018_skim27Apr/TT_TuneCP5_5p02TeV-powheg-pythia8.root'
     ptRange=[30,120]
 
@@ -91,15 +91,15 @@ def main():
     for tag,sample,flav,cenRange,ms,ci in [ ('b',                  baseDir+mixSig, [5],        None,     20, 1),
                                             ('b (0-30)',           baseDir+mixSig, [5],        [0,30],   20, ROOT.kRed ),
                                             ('b (30-100)',         baseDir+mixSig, [5],        [30,100], 20, ROOT.kGray ),
-                                            ('b (pp)',             ppSample,       [5],        None,     20, ROOT.kGreen),
+                                            #('b (pp)',             ppSample,       [5],        None,     20, ROOT.kGreen),
                                             ('udsg',               baseDir+mixSig, [1,2,3,21], None,     24, 1),
                                             ('udsg (0-30)',        baseDir+mixSig, [1,2,3,21], [0,30],   24, ROOT.kRed),
                                             ('udsg (30-100)',      baseDir+mixSig, [1,2,3,21], [30,100], 24, ROOT.kGray),
-                                            ('udsg (pp)',          ppSample,       [1,2,3,21], None,     24, ROOT.kGreen),
+                                            #('udsg (pp)',          ppSample,       [1,2,3,21], None,     24, ROOT.kGreen),
                                             ('unmatched',          baseDir+mixSig, [0],        None,     21, 1),
                                             ('unmatched (0-30)',   baseDir+mixSig, [0],        [0,30],   21, ROOT.kRed),
                                             ('unmatched (30-100)', baseDir+mixSig, [0],        [30,100], 21, ROOT.kGray),
-                                            ('unmatched (pp)',     ppSample,  [0],             None,     21, ROOT.kGreen)
+                                            #('unmatched (pp)',     ppSample,  [0],             None,     21, ROOT.kGreen)
                                             ]:
         csv[tag]=getEfficiency([sample],flav,ptRange,cenRange)
         csv[tag].SetTitle(tag)
@@ -108,8 +108,8 @@ def main():
         csv[tag].SetMarkerColor(ci)
 
     #tune the working point
-    wpEff=0.015
-    bestCut=0.8
+    wpEff=0.05
+    bestCut=0.0
     bestEff=csv['udsg'].Eval(bestCut)
     for x in np.arange(bestCut,1,0.01):
         eff=max(csv['udsg'].Eval(x),csv['unmatched'].Eval(x))
@@ -123,7 +123,8 @@ def main():
     print '<'*50
 
     #compare the curves
-    for name,grNames in [ ('csveff',       ['b',  'b (pp)', 'udsg',  'udsg (pp)', 'unmatched', 'unmatched (pp)']),
+    for name,grNames in [ ('csveff',       ['b',  'udsg',  'unmatched']), 
+                          #('csveff',       ['b',  'b (pp)', 'udsg',  'udsg (pp)', 'unmatched', 'unmatched (pp)']), 
                           ('beff',         ['b',    'b (0-30)',    'b (30-100)']),
                           ('udsgeff',      ['udsg', 'udsg (0-30)', 'udsg (30-100)']),
                           ('unmatchedeff', ['unmatched', 'unmatched (0-30)', 'unmatched (30-100)']),

@@ -362,14 +362,14 @@ int main(int argc, char* argv[])
   }
 
   //electron specific
-  ht.addHist("esihih",      new TH1F("esihih",      ";#sigma(i#etai#eta);Electrons",       50,0,0.06));
-  ht.addHist("edetavtx",    new TH1F("edetavtx",    ";#Delta#eta(vtx);Electrons",          50,0,0.015));
-  ht.addHist("edphivtx",    new TH1F("edphivtx",    ";#Delta#phi(vtx) [rad];Electrons",    50,0,0.015));
-  ht.addHist("ehoe",        new TH1F("ehoe"    ,    ";h/e;Electrons",                      50,0,0.25));
-  ht.addHist("eempinv",     new TH1F("eempinv",     ";|1/E-1/p| [1/GeV];Electrons",        50,0,0.05));
-  ht.addHist("ed0",         new TH1F("ed0",         ";d_{0} [cm];Electrons",               50,0,0.05));
-  ht.addHist("edz",         new TH1F("edz",         ";d_{z} [cm];Electrons",               50,0,0.05));
-  ht.addHist("emll",        new TH1F("emll",        ";Di-electron invariant mass [GeV];Events",  40,20,200));
+  ht.addHist("esihih",       new TH1F("esihih",      ";#sigma(i#etai#eta);Electrons",       50,0,0.06));
+  ht.addHist("edetaseedvtx", new TH1F("edetaseedvtx",    ";#Delta#eta(vtx);Electrons",          50,0,0.015));
+  ht.addHist("edphivtx",     new TH1F("edphivtx",    ";#Delta#phi(vtx) [rad];Electrons",    50,0,0.015));
+  ht.addHist("ehoebc",       new TH1F("ehoebc"    ,    ";h/e;Electrons",                      50,0,0.25));
+  ht.addHist("eempinv",      new TH1F("eempinv",     ";|1/E-1/p| [1/GeV];Electrons",        50,0,0.05));
+  ht.addHist("ed0",          new TH1F("ed0",         ";d_{0} [cm];Electrons",               50,0,0.05));
+  ht.addHist("edz",          new TH1F("edz",         ";d_{z} [cm];Electrons",               50,0,0.05));
+  ht.addHist("emll",         new TH1F("emll",        ";Di-electron invariant mass [GeV];Events",  40,20,200));
 
   //muon specific
   ht.addHist("mmusta",     new TH1F("mmusta",      ";Muon stations;Muons",            15,0,15));   

@@ -10,6 +10,7 @@ from collections import defaultdict
 from sklearn.neighbors import NearestNeighbors
 from HeavyIonsAnalysis.topskim.EventReader import *
 import numpy as np
+import optparse
 
 BDTMETHOD=ROOT.TString('BDTG')
 BDTWGTS="/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_9_4_6_patch1/src/HeavyIonsAnalysis/topskim/scripts/training_dy/weights/TMVAClassification_BDTG.weights.xml"
@@ -138,6 +139,8 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
         for name in DILEPTONBRANCHES:
             out_t_branches[name]=array('f',[0.])
             out_t.Branch(name,out_t_branches[name],'%s/F'%name)
+        out_t_branches['nbjet_sel']=array('i',[0])
+        out_t.Branch('nbjet_sel',out_t_branches['nbjet_sel'],'nbjet_sel/I')            
         out_t_branches['nbjet']=array('i',[0])
         out_t.Branch('nbjet',out_t_branches['nbjet'],'nbjet/I')            
         for name in JETBRANCHES:
@@ -226,8 +229,10 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
                         #jets (have to use the original index)
                         dilCandIdx=dilChoices[mixCandIdx]
                         jets=mixJets[(orig_flav,orig_isZ)][dilCandIdx]
-                        out_t_branches['nbjet'][0]=len(jets)
-                        for ij in range(len(jets)):
+                        out_t_branches['nbjet_sel'][0]=orig_t.nbjet_sel
+                        njets=len(jets)
+                        out_t_branches['nbjet'][0]=njets
+                        for ij in range(njets):
                             for name in JETBRANCHES:
                                 val=getattr(jets[ij],name)
                                 if name=='drSafe': 
@@ -247,14 +252,19 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
 
 def main():
 
-    if len(sys.argv)<3:
-        print 'python prepareCombinatorialBackgroundTree.py input_directory output_directory'
-        return
+    CURSKIM='/eos/cms/store/cmst3/group/hintt/PbPb2018_skim13August'
 
-    url     = sys.argv[1]
-    mixFile = prepareDileptonCollection(url)        
-    outURL  = sys.argv[2]
-    createMixedFriendTrees(url,mixFile,outURL,100,10)
+    #configuration
+    usage = 'usage: %prog -i input_dir -o output_dir [-m mix_file]'
+    parser = optparse.OptionParser(usage)
+    parser.add_option('-i',  dest='input',       help='input directory with files [%default]',  default=CURSKIM,                  type='string')
+    parser.add_option('-o',  dest='output',      help='output directory [%default]',            default=CURSKIM+'/Combinatorial', type='string')
+    parser.add_option('-m',  dest='mix',         help='mix file [%default]',                    default=None,                     type='string')
+    (opt, args) = parser.parse_args()
+
+    if opt.mix is None:
+        opt.mix=prepareDileptonCollection(opt.input) 
+    createMixedFriendTrees(opt.input,opt.mix,opt.output,100,10)
 
 
 
