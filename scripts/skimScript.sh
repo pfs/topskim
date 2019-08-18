@@ -22,6 +22,9 @@ cmsRun $2
 
 
 echo 'copying the output file to where it belongs'
-cp $3 $4
+#cp $3 $4
+#use xrdcp as it's more reliable than local mounts
+outD=${4/\/eos\/cms/}
+xrdcp -f $3 root://eoscms//${outD}/${3}
 echo 'done.'
 
