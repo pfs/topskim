@@ -3,9 +3,14 @@ import ROOT
 
 work='%s/src/HeavyIonsAnalysis/topskim'%os.environ['CMSSW_BASE']
 script='%s/scripts/skimScript.sh'%work
-with open(sys.argv[1],'r') as condor:
-    args=[l.split('=')[1].strip() for l in condor.readlines() if 'arguments' in l]
-
+condor_file=sys.argv[1]
+with open(condor_file,'r') as condor:
+    lines=condor.readlines()
+    args=[l.split('=')[1].strip() for l in lines if 'arguments' in l]
+    header=[l.strip() for l in lines if l.find('arguments')!=0 and l.find('queue')!=0]
+print header
+raw_input()
+    
 redo=[]
 for ia in args:
     a=ia.split()
@@ -35,8 +40,16 @@ for ia in args:
 
     print 'is good with',nentries,'events'
 
-for ia in redo:
-    print 'Reprocessing locally',ia
-    cfg=ia[1]
-    os.system("sed -i 's/file:\/eos\/cms\/store/\/store/g' %s"%cfg)
-    os.system("sh %s %s"%(script,' '.join(ia)))
+with open(condor_file.replace('.condor','_resub.condor'),'w') as condor:
+    for l in header:
+        if len(l)==0 : continue
+        condor.write(l+'\n')
+    for ia in redo:
+        condor.write('arguments = %s\n'%' '.join(ia))
+        condor.write('queue 1\n')
+
+#for ia in redo:
+#    print 'Reprocessing locally',ia
+#    cfg=ia[1]
+#    os.system("sed -i 's/file:\/eos\/cms\/store/\/store/g' %s"%cfg)
+#    os.system("sh %s %s"%(script,' '.join(ia)))
