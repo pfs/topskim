@@ -855,7 +855,13 @@ int main(int argc, char* argv[])
       
       //kinematics selection
       TLorentzVector p4(0,0,0,0);
-      p4.SetPtEtaPhiM(fForestLep.muPt->at(muIter),fForestLep.muEta->at(muIter),fForestLep.muPhi->at(muIter),0.1057);
+      float rawpt(fForestLep.muPt->at(muIter));
+      p4.SetPtEtaPhiM(rawpt,fForestLep.muEta->at(muIter),fForestLep.muPhi->at(muIter),0.1057);
+
+      //no specific calibration for muons:this is just left for symmetry with what is done for electrons
+      float calpt=p4.Pt(); 
+      p4 *= calpt/rawpt;  
+
       if(TMath::Abs(p4.Eta()) > muEtaCut) continue;
       if(p4.Pt() < lepPtCut) continue;
 
@@ -947,11 +953,15 @@ int main(int argc, char* argv[])
 
       //kinematics selection
       TLorentzVector p4(0,0,0,0);
-      p4.SetPtEtaPhiM(fForestLep.elePt->at(eleIter),fForestLep.eleEta->at(eleIter),fForestLep.elePhi->at(eleIter),0.000511);
+      float rawpt(fForestLep.elePt->at(eleIter));
+      p4.SetPtEtaPhiM(rawpt,fForestLep.eleEta->at(eleIter),fForestLep.elePhi->at(eleIter),0.000511);
 
+      //deprecated
       //apply ad-hoc shift for endcap electrons if needed, i.e., PromptReco'18
-      if(!isMC && fForestTree.run<=firstEEScaleShiftRun && TMath::Abs(p4.Eta())>=barrelEndcapEta[1] && GT.find("fixEcalADCToGeV")==string::npos && GT.find("75X")==string::npos)
-        p4 *=eeScaleShift;         
+      //if(!isMC && fForestTree.run<=firstEEScaleShiftRun && TMath::Abs(p4.Eta())>=barrelEndcapEta[1] && GT.find("fixEcalADCToGeV")==string::npos && GT.find("75X")==string::npos)
+      //  p4 *=eeScaleShift;         
+      float calpt=calibratedPt(rawpt, p4.Eta(), cenBin, isMC);
+      p4 *= calpt/rawpt;
 
       if(TMath::Abs(p4.Eta()) > eleEtaCut) continue;
       if(TMath::Abs(p4.Eta()) > barrelEndcapEta[0] && TMath::Abs(p4.Eta()) < barrelEndcapEta[1] ) continue;
@@ -965,7 +975,8 @@ int main(int argc, char* argv[])
       }
 
       LeptonSummary l(11,p4);
-      l.calpt = calibratedPt(p4.Pt(), p4.Eta(), cenBin, isMC);
+      l.calpt = calpt;
+
       l.isTrigMatch=isTrigMatch;
       l.charge  = fForestLep.eleCharge->at(eleIter);
       if(GT.find("75X_mcRun2")==string::npos) {
