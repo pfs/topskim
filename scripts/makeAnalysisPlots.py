@@ -36,6 +36,8 @@ def getDataSummedUp(url,catList=['e','m'],pname='ratevsrun',tag='Skim',normByWgt
     for f in os.listdir(url):
 
         if not '.root' in f : continue
+        if '_Comb' in f : continue
+        if '_oldCharge' in f : continue
 
         #open file
         if f.find(tag)!=0 : continue
@@ -245,7 +247,7 @@ def doEleIDPlots(url):
 
     for reg in ['EB','EE','BB']:
         cats=['zeectrl'+reg,'sszeectrl'+reg]
-        for dist in ['esihih','edphivtx','eempinv','ed0', 'edz','emll','ehoe', 'edetaseedvtx']:
+        for dist in ['esihih','edphivtx','eempinv','ed0', 'edz','emll','ehoebc', 'edetaseedvtx']:
             
             if dist!='emll' and reg=='BB': continue
 

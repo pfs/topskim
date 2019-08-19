@@ -24,6 +24,8 @@ def prepareDileptonCollection(url,tag='Skim',maxEvents=-1):
     for f in os.listdir(url):
         if not '.root' in f: continue
         if not tag in f : continue
+        if '_Combinatorial' in f : continue
+        if '_oldCharge' in f : continue
         t.Add(os.path.join(url,f))
 
     #loop over events
@@ -118,6 +120,8 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
     for f in os.listdir(url):
         if not '.root' in f: continue
         if not 'Skim' in f : continue
+        if '_Combinatorial' in f : continue
+        if '_oldCharge' in f : continue
 
         #create output tree structure
         out_f=ROOT.TFile.Open(os.path.join(outURL,f),'RECREATE')
