@@ -49,7 +49,8 @@ const int firstEEScaleShiftRun = 327402;
 const float barrelEndcapEta[2]={1.4442,1.5660};
 const float hem1516Eta[2]={-3.0,-1.9};
 const float hem1516Phi[2]={-1.6,-0.9};
-const float csvWP = 0.81;
+const float csvWPList[2]={0.81,0.91};
+int csvWP = 0;
 // runs with HLT issues: any path using tracking was disabled => includes L3 muon paths. 
 // total lumi in these runs is 30.103/ub (total lumi available in golden json unblinde period is 425.349/ub)
 std::vector<int> badMuonTriggerRuns={326482,326483,326500,326520,326527,326528,326530,326532,326533,326534,326535,326546,326548,326549,326550,326568,326569,326571};
@@ -150,9 +151,16 @@ static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
 
 // btag efficiencies from the AN
 float btagEfficiencies(int flavor, float cenbin){
-  if      (fabs(flavor) == 5) return (cenbin <= 30 ? 0.556 : 0.683); // bs
-  else if (fabs(flavor) == 0) return (cenbin <= 30 ? 0.057 : 0.042); // unmatched
-  else                        return (cenbin <= 30 ? 0.023 : 0.008); // udsg
+  if(csvWP==0){
+    if      (fabs(flavor) == 5) return (cenbin <= 30 ? 0.556 : 0.683); // bs
+    else if (fabs(flavor) == 0) return (cenbin <= 30 ? 0.057 : 0.042); // unmatched
+    else                        return (cenbin <= 30 ? 0.023 : 0.008); // udsg
+  }
+  else{
+    if      (fabs(flavor) == 5) return (cenbin <= 30 ? 0.385 : 0.546); // bs
+    else if (fabs(flavor) == 0) return (cenbin <= 30 ? 0.013 : 0.008); // unmatched
+    else                        return (cenbin <= 30 ? 0.005 : 0.001); // udsg
+  }
 }
 
 //
@@ -234,13 +242,14 @@ int main(int argc, char* argv[])
   int maxEvents(-1);
   for(int i=1;i<argc;i++){
     string arg(argv[i]);
-    if(arg.find("--in")!=string::npos && i+1<argc)       { inURL=TString(argv[i+1]); i++;}
-    else if(arg.find("--out")!=string::npos && i+1<argc) { outURL=TString(argv[i+1]); i++;}
-    else if(arg.find("--max")!=string::npos && i+1<argc) { sscanf(argv[i+1],"%d",&maxEvents); }
-    else if(arg.find("--mc")!=string::npos)              { isMC=true;  }
-    else if(arg.find("--pp")!=string::npos)              { isPP=true;  }
-    else if(arg.find("--amcatnlo")!=string::npos)        { isAMCATNLO=true;  }
-    else if(arg.find("--skim")!=string::npos)            { isSkim=true;  }
+    if(arg.find("--in")!=string::npos && i+1<argc)         { inURL=TString(argv[i+1]); i++;}
+    else if(arg.find("--out")!=string::npos && i+1<argc)   { outURL=TString(argv[i+1]); i++;}
+    else if(arg.find("--max")!=string::npos && i+1<argc)   { sscanf(argv[i+1],"%d",&maxEvents); }
+    else if(arg.find("--csvWP")!=string::npos && i+1<argc) { sscanf(argv[i+1],"%d",&csvWP); }
+    else if(arg.find("--mc")!=string::npos)                { isMC=true;  }
+    else if(arg.find("--pp")!=string::npos)                { isPP=true;  }
+    else if(arg.find("--amcatnlo")!=string::npos)          { isAMCATNLO=true;  }
+    else if(arg.find("--skim")!=string::npos)              { isSkim=true;  }
   }
 
   bool isSingleMuPD( !isMC && inURL.Contains("SkimMuons"));
@@ -585,8 +594,10 @@ int main(int argc, char* argv[])
 
   // variables per bjet (jets ordered by csvv2)
   Int_t t_nbjet;
+  Bool_t t_bjet_leadPassTight;
   std::vector<Float_t> t_bjet_pt, t_bjet_eta, t_bjet_phi, t_bjet_mass, t_bjet_csvv2;
   outTree->Branch("nbjet"      , &t_nbjet      , "nbjet/I"            );
+  outTree->Branch("bjet_leadPassTight"    , &t_bjet_leadPassTight);
   outTree->Branch("bjet_pt"    , &t_bjet_pt    );
   outTree->Branch("bjet_eta"   , &t_bjet_eta   );
   outTree->Branch("bjet_phi"   , &t_bjet_phi   );
@@ -1175,7 +1186,7 @@ int main(int argc, char* argv[])
 
       if(jp4.Pt()<20.) continue; // smaller pT cut here to avoid the full loop
       if(fabs(jp4.Eta())>2.0) continue;
-      bool isBTagged(csvVal>csvWP);      
+      bool isBTagged(csvVal>csvWPList[csvWP]);      
 
       // simple matching to the closest jet in dR. require at least dR < 0.3
       TLorentzVector matchjp4(0,0,0,0);
@@ -1359,7 +1370,7 @@ int main(int argc, char* argv[])
       float svm(std::get<2>(pfJetsIdx[ij]));
       float csv(std::get<3>(pfJetsIdx[ij]));
       TLorentzVector p4=pfJetsP4[idx];
-      if(csv>csvWP) pfFinalState.push_back(p4);
+      if(csv>csvWPList[csvWP]) pfFinalState.push_back(p4);
       TString ppf(ij==0 ? "1" : "2");
       ht.fill( "pf"+ppf+"jbalance", p4.Pt()/ll.Pt(), plotWgt, categs);
       ht.fill( "pf"+ppf+"jpt",      p4.Pt(),         plotWgt, categs);
@@ -1538,6 +1549,7 @@ int main(int argc, char* argv[])
     }
     
     // fill the jets ordered by b-tag
+    t_bjet_leadPassTight=false;
     t_bjet_pt   .clear();
     t_bjet_eta  .clear();
     t_bjet_phi  .clear();
@@ -1581,7 +1593,7 @@ int main(int argc, char* argv[])
     t_bdt         = reader->EvaluateMVA( methodName );
     t_bdt_rarity  = reader->GetRarity  ( methodName );
     t_fisher2     = readerFisher2->EvaluateMVA( methodNameFisher2 );
-
+    t_bjet_leadPassTight = (t_bjet_csvv2.size()>0 && t_bjet_csvv2[0]>csvWPList[1]);
     t_isData = !isMC;
     
     outTree->Fill();

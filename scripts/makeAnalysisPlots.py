@@ -259,7 +259,7 @@ def doEleIDPlots(url):
                 p.add(plots[cats[0]],title='Z#rightarrowee (data)',color=1,isData=True,spImpose=False,isSyst=False)
                 p.add(plots[cats[1]],title='Comb. (data)',color=17,isData=False,spImpose=False,isSyst=False)
                 p.savelog=True
-                p.show(outDir='./',lumi=LUMI)
+                p.show(outDir='./',lumi=LUMI,noRatio=True)
             except:
                 print 'Failed for',dist,'in',reg
 
@@ -274,7 +274,7 @@ def doMuIDPlots(url):
         p.add(plots[cats[0]],title='Z#rightarrow#mu#mu (data)',color=1,isData=True,spImpose=False,isSyst=False)
         p.add(plots[cats[1]],title='Comb. (data)',color=17,isData=False,spImpose=False,isSyst=False)
         p.savelog=True
-        p.show(outDir='./',lumi=LUMI)
+        p.show(outDir='./',lumi=LUMI,noRatio=True)
         
 
 def doIsolationROCs(url,ch='ee'):
@@ -434,9 +434,9 @@ def doJetHotSpots(url,cats):
 
 def main():
     url=sys.argv[1]
-    #doEleIDPlots(url)
-    #doMuIDPlots(url)
-    showRateVsRun(url)
+    doEleIDPlots(url)
+    doMuIDPlots(url)
+    #showRateVsRun(url)
     #doJetHotSpots(url,['zmm','zee','em'])
 
 if __name__ == "__main__":
