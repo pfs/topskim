@@ -521,12 +521,16 @@ int main(int argc, char* argv[])
   // event and trigger variables
   Int_t  t_run, t_lumi, t_etrig, t_mtrig, t_isData;
   Long_t t_event;
-  Float_t t_weight, t_cenbin, t_ncollWgt, t_trigSF, t_trigSFUnc;
+  Float_t t_vx, t_vy, t_vz, t_weight, t_cenbin, t_ncollWgt, t_trigSF, t_trigSFUnc;
   std::vector<Float_t> t_meWeights;
   outTree->Branch("run"   , &t_run  , "run/I");
   outTree->Branch("lumi"  , &t_lumi , "lumi/I");
   outTree->Branch("event" , &t_event, "event/L");
   outTree->Branch("isData", &t_isData, "isData/I");
+
+  outTree->Branch("vx", &t_vx, "vx/F");
+  outTree->Branch("vy", &t_vy, "vy/F");
+  outTree->Branch("vz", &t_vz, "vz/F");
 
   outTree->Branch("weight", &t_weight, "weight/F");
   outTree->Branch("meWeights", &t_meWeights);
@@ -1395,6 +1399,9 @@ int main(int argc, char* argv[])
     t_run    = fForestTree.run;
     t_lumi   = fForestTree.lumi;
     t_event  = fForestTree.evt;
+    t_vx     = fForestTree.vx;
+    t_vy     = fForestTree.vy;
+    t_vz     = fForestTree.vz;
     t_weight = plotWgt;
     t_meWeights.clear();
     if(isMC){
