@@ -36,7 +36,13 @@ class ElectronEfficiencyWrapper
             gSystem->ExpandPathName(path);
             TFile *f=TFile::Open(path);
             TString key(regs[i]+centr[j]+pfix[k]);
-            sfs_[key]=(TGraphAsymmErrors *)f->Get("g_scalefactors");
+	    TObjArray *tx = key.Tokenize("_");
+	    for (Int_t t = 0; t < tx->GetEntries(); t++) {
+	      if (t==0) {key.Clear(); key.Append(((TObjString *)(tx->At(t)))->String()+"_");}
+	      else if (t<=2) if (t==2 and !pfix[k].Contains("HLT") and !pfix[k].Contains("RECO")) continue; else key.Append(((TObjString *)(tx->At(t)))->String()+"_");
+	      else continue; 
+	    }
+	    sfs_[key]=(TGraphAsymmErrors *)f->Get("g_scalefactors");
             f->Close();
           }
         }
@@ -53,11 +59,10 @@ class ElectronEfficiencyWrapper
     //build the key to the map
     TString reg(isEB ? "EB" : "EE");
     TString cen(cenbin<30 ? "0_30" : "30_100");
-    TString pfix("");
-    if(hlt) pfix.Append("_HLT");
-    if(reco) pfix.Append("_RECO");
+    TString pfix("_");
+    if(hlt) pfix.Append("HLT_");
+    if(reco) pfix.Append("RECO_");
     TString key(reg+cen+pfix);
-
     //check key exists
     if(sfs_.find(key)==sfs_.end()) {
       std::cout << "Unable to find " << key << " in electron SFs map..." << std::endl;

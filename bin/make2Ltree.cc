@@ -257,7 +257,7 @@ int main(int argc, char* argv[])
   bool isMuSkimedMCPD( isMC && inURL.Contains("HINPbPbAutumn18DR_skims") && inURL.Contains("Muons"));
   bool isEleSkimedMCPD( isMC && inURL.Contains("HINPbPbAutumn18DR_skims") && inURL.Contains("Electrons"));
   LumiRun lumiTool;
-  ElectronEfficiencyWrapper eleEff("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data");
+  ElectronEfficiencyWrapper eleEff("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data", false);
 
   //read expected trigger efficiencies
   TString trigEffURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/trigeff_mc.root");
