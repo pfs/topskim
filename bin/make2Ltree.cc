@@ -1517,8 +1517,8 @@ int main(int argc, char* argv[])
         std::pair<float,float > eleIDsf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false, false); //ID
         sfVal=eleIDsf.first;
         sfValUnc=eleIDsf.second;
-	std::pair<float,float > eleRECOsf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false, true); //RECO                                     
-	sfValUnc = sqrt(pow(sfValUnc/sfVal,2)+pow(eleRECOsf.second/eleRECOsf.first,2));
+        std::pair<float,float > eleRECOsf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false, true); //RECO                                     
+        sfValUnc = sqrt(pow(sfValUnc/sfVal,2)+pow(eleRECOsf.second/eleRECOsf.first,2));
         sfVal*=eleRECOsf.first;
       }    
       t_lepSF.push_back(sfVal);
@@ -1526,7 +1526,7 @@ int main(int argc, char* argv[])
 
       TString isoKey(cenBin<30 ? "cen" : "periph");
       isoKey+=abs(selLeptons[ilep].id)==13 ? "_169" : "_121";
-      Int_t xbin=isoEffSFs[isoKey]->GetXaxis()->FindBin( min(selLeptons[ilep].p4.Pt(), isoEffSFs[isoKey]->GetXaxis()->GetXmax()) );
+      Int_t xbin=isoEffSFs[isoKey]->GetXaxis()->FindBin( min(selLeptons[ilep].p4.Pt(), isoEffSFs[isoKey]->GetXaxis()->GetXmax()-0.01) );
       Int_t ybin=isoEffSFs[isoKey]->GetYaxis()->FindBin( min(fabs(selLeptons[ilep].p4.Eta()), isoEffSFs[isoKey]->GetYaxis()->GetXmax()) );
       t_lepIsoSF.push_back( isoEffSFs[isoKey]->GetBinContent(xbin,ybin) );
       t_lepIsoSFUnc.push_back( isoEffSFs[isoKey]->GetBinError(xbin,ybin) );
