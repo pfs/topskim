@@ -1533,10 +1533,15 @@ int main(int argc, char* argv[])
 
       TString isoKey(cenBin<30 ? "cen" : "periph");
       isoKey+=abs(selLeptons[ilep].id)==13 ? "_169" : "_121";
-      Int_t xbin=isoEffSFs[isoKey]->GetXaxis()->FindBin( min(selLeptons[ilep].p4.Pt(), isoEffSFs[isoKey]->GetXaxis()->GetXmax()) );
+      Int_t xbin=isoEffSFs[isoKey]->GetXaxis()->FindBin( min(selLeptons[ilep].p4.Pt(), isoEffSFs[isoKey]->GetXaxis()->GetXmax()-0.01) );
       Int_t ybin=isoEffSFs[isoKey]->GetYaxis()->FindBin( min(fabs(selLeptons[ilep].p4.Eta()), isoEffSFs[isoKey]->GetYaxis()->GetXmax()) );
-      t_lepIsoSF   .push_back( isoEffSFs[isoKey]->GetBinContent(std::min(xbin,isoEffSFs[isoKey]->GetNbinsX()),ybin) ); //protect against overflow
-      t_lepIsoSFUnc.push_back( isoEffSFs[isoKey]->GetBinError  (std::min(xbin,isoEffSFs[isoKey]->GetNbinsX()),ybin) ); //protect against overflow
+      if (isoEffSFs[isoKey]->GetBinContent(xbin,ybin) != 0.){
+        t_lepIsoSF   .push_back( isoEffSFs[isoKey]->GetBinContent(xbin,ybin) );
+        t_lepIsoSFUnc.push_back( isoEffSFs[isoKey]->GetBinError  (xbin,ybin) );
+      } else{
+        t_lepIsoSF   .push_back( 1.00);
+        t_lepIsoSFUnc.push_back( 0.05);
+      }
 
       //isolation-based indices
       bool isIso(true);
