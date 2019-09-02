@@ -300,7 +300,7 @@ int main(int argc, char* argv[])
   
   FilesMC.push_back(FilesMCURL.Data());
   
-  JetCorrector JECMC(FilesData);
+  JetCorrector JECMC(FilesMC);
   TString JECMCURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V4_MC_Uncertainty_AK4PF.txt");
   gSystem->ExpandPathName(JECMCURL);
   JetUncertainty JEUMC(JECMCURL.Data());
