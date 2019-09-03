@@ -29,7 +29,8 @@ def checkPacked(args):
 
     print sub,'good jobs:',nGood,'re-run these jobs:',len(toRun)
     for x in toRun:
-        os.system('sh scripts/wrapAnalysis.sh %s'%(' '.join(x[0])))
+        print 'sh ${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/scripts/wrapAnalysis.sh %s'%(' '.join(x[0]))
+        os.system('sh ${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/scripts/wrapAnalysis.sh %s'%(' '.join(x[0])))
 
 
 task_list=[]

@@ -449,7 +449,7 @@ def main():
     if len(sys.argv)>1:
        
         print 'Processing MC truth from',MCTAG
-        #prepareDileptonCollection(sys.argv[1],MCTAG,maxEvents=100000)
+        prepareDileptonCollection(sys.argv[1],MCTAG,maxEvents=100000)
 
         #readout matched leptons
         print 'Opening pickle file'

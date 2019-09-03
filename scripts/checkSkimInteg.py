@@ -48,6 +48,7 @@ with open(condor_file.replace('.condor','_resub.condor'),'w') as condor:
         condor.write('arguments = %s\n'%' '.join(ia))
         condor.write('queue 1\n')
 
+#local run
 #for ia in redo:
 #    print 'Reprocessing locally',ia
 #    cfg=ia[1]
