@@ -82,6 +82,9 @@ def showEfficiencyCurves(grColl,name):
 def main():
     ROOT.gROOT.SetBatch(True)
     baseDir=sys.argv[1]
+    plottag=''
+    if len(sys.argv)>2:
+        plottag=sys.argv[2]
     mixSig='TTJets_TuneCP5_HydjetDrumMB_5p02TeV-amcatnloFXFX-pythia8.root'
     ppSample='/eos/cms/store/cmst3/group/hintt/PbPb2018_skim27Apr/TT_TuneCP5_5p02TeV-powheg-pythia8.root'
     ptRange=[30,120]
@@ -109,7 +112,7 @@ def main():
 
     #tune the working point
     wpEff=0.05
-    #wpEff=0.01
+    wpEff=0.01
     bestCut=0.0
     bestEff=csv['udsg'].Eval(bestCut)
     for x in np.arange(bestCut,1,0.01):
@@ -130,7 +133,7 @@ def main():
                           ('udsgeff',      ['udsg', 'udsg (0-30)', 'udsg (30-100)']),
                           ('unmatchedeff', ['unmatched', 'unmatched (0-30)', 'unmatched (30-100)']),
                           ]:
-        showEfficiencyCurves(grColl=[csv[x].Clone() for x in grNames],name=name)
+        showEfficiencyCurves(grColl=[csv[x].Clone() for x in grNames],name=name+plottag)
 
 
 if __name__ == "__main__":

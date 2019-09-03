@@ -109,7 +109,7 @@ python scripts/mergeOutputs.py ${out}
 
 Prepare data-trees for the combinatorial background from event mixing
 ```
-python scripts/prepareCombinatorialBackgroundTree.py ${out} ${out}/Combinatorial
+python scripts/prepareCombinatorialBackgroundTree.py -i ${out} -o ${out}/Combinatorial
 ```
 
 Prepare CMG tools directory structure for plotting etc.
@@ -119,7 +119,7 @@ python scripts/makeStructure.py ${out}
 
 Optimize isolation cuts (it will use the summary pck file produced by the prepareCombinatorialBackgroundTree.py script).
 ```
-python scripts/optimizeLeptonIsolation.py
+python scripts/optimizeLeptonIsolation.py ${out}
 ```
 
 Optimize b-tagging (ttbar dilepton based)
@@ -143,5 +143,5 @@ python scripts/createTrigEffSummary.py ${out}/TTJets_TuneCP5_HydjetDrumMB-amcatn
 ```
 export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda/bin:$PATH
 json=/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/HI/PromptReco/Cert_326381-327564_HI_PromptReco_Collisions18_JSON.txt
-brilcalc lumi -b "STABLE BEAMS" -u /ub -i $json
+brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_BRIL.json -u /ub -i ${json}
 ```
