@@ -19,6 +19,12 @@ def checkPacked(args):
                         print 'file has size 0', outF
                         raise ValueError
                     fIn=ROOT.TFile.Open(outF)
+                    if not fIn:
+                        print 'file is a null pointer', outF
+                        raise ValueError
+                    if (fIn.IsZombie()):
+                        print 'file is zombie', outF
+                        raise ValueError
                     n=fIn.GetListOfKeys().GetSize()
                     if n<=1:
                         print 'no keys', outF
