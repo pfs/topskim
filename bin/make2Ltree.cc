@@ -257,7 +257,7 @@ int main(int argc, char* argv[])
   bool isMuSkimedMCPD( isMC && inURL.Contains("HINPbPbAutumn18DR_skims") && inURL.Contains("Muons"));
   bool isEleSkimedMCPD( isMC && inURL.Contains("HINPbPbAutumn18DR_skims") && inURL.Contains("Electrons"));
   LumiRun lumiTool;
-  ElectronEfficiencyWrapper eleEff("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data");
+  ElectronEfficiencyWrapper eleEff("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data", false);
 
   //read expected trigger efficiencies
   TString trigEffURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/trigeff_mc.root");
@@ -300,7 +300,7 @@ int main(int argc, char* argv[])
   
   FilesMC.push_back(FilesMCURL.Data());
   
-  JetCorrector JECMC(FilesData);
+  JetCorrector JECMC(FilesMC);
   TString JECMCURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V4_MC_Uncertainty_AK4PF.txt");
   gSystem->ExpandPathName(JECMCURL);
   JetUncertainty JEUMC(JECMCURL.Data());
@@ -521,12 +521,16 @@ int main(int argc, char* argv[])
   // event and trigger variables
   Int_t  t_run, t_lumi, t_etrig, t_mtrig, t_isData;
   Long_t t_event;
-  Float_t t_weight, t_cenbin, t_ncollWgt, t_trigSF, t_trigSFUnc;
+  Float_t t_vx, t_vy, t_vz, t_weight, t_cenbin, t_ncollWgt, t_trigSF, t_trigSFUnc;
   std::vector<Float_t> t_meWeights;
   outTree->Branch("run"   , &t_run  , "run/I");
   outTree->Branch("lumi"  , &t_lumi , "lumi/I");
   outTree->Branch("event" , &t_event, "event/L");
   outTree->Branch("isData", &t_isData, "isData/I");
+
+  outTree->Branch("vx", &t_vx, "vx/F");
+  outTree->Branch("vy", &t_vy, "vy/F");
+  outTree->Branch("vz", &t_vz, "vz/F");
 
   outTree->Branch("weight", &t_weight, "weight/F");
   outTree->Branch("meWeights", &t_meWeights);
@@ -583,11 +587,13 @@ int main(int argc, char* argv[])
   outTree->Branch("lepIsoSFUnc",      &t_lepIsoSFUnc);
 
   // variables from dilepton system
-  Float_t t_llpt, t_lleta, t_llphi, t_llm, t_dphi, t_deta, t_sumeta;
+  Float_t t_llpt, t_llpt_raw, t_lleta, t_llphi, t_llm, t_llm_raw, t_dphi, t_deta, t_sumeta;
   outTree->Branch("llpt"   , &t_llpt   , "llpt/F");
+  outTree->Branch("llpt_raw", &t_llpt_raw   , "llpt_raw/F");
   outTree->Branch("lleta"  , &t_lleta  , "lleta/F");
   outTree->Branch("llphi"  , &t_llphi  , "llphi/F");
   outTree->Branch("llm"    , &t_llm    , "llm/F");
+  outTree->Branch("llm_raw", &t_llm_raw, "llm_raw/F");
   outTree->Branch("dphi"   , &t_dphi   , "dphi/F");
   outTree->Branch("deta"   , &t_deta   , "deta/F");
   outTree->Branch("sumeta" , &t_sumeta , "sumeta/F");
@@ -884,7 +890,7 @@ int main(int argc, char* argv[])
       }
       
       LeptonSummary l(13,p4);
-      l.calpt = p4.Pt(); // calpt == pt for muons
+      l.rawpt = p4.Pt()*(rawpt/calpt); // calpt == pt for muons
       l.isTrigMatch=isTrigMatch;
       l.charge  = fForestLep.muCharge->at(muIter);
       l.chiso   = fForestLep.muPFChIso->at(muIter);
@@ -973,11 +979,9 @@ int main(int argc, char* argv[])
       //  p4 *=eeScaleShift;         
       float calpt=calibratedPt(rawpt, p4.Eta(), cenBin, isMC);
       p4 *= calpt/rawpt;
-
       if(TMath::Abs(p4.Eta()) > eleEtaCut) continue;
       if(TMath::Abs(p4.Eta()) > barrelEndcapEta[0] && TMath::Abs(p4.Eta()) < barrelEndcapEta[1] ) continue;
-      if(p4.Pt() < lepPtCut) continue;	      
-      
+      if(p4.Pt() < lepPtCut) continue;
       bool isTrigMatch(false);
       for(auto hp4: eleHLTP4) {
         if(hp4.DeltaR(p4)>0.2) continue;
@@ -986,8 +990,7 @@ int main(int argc, char* argv[])
       }
 
       LeptonSummary l(11,p4);
-      l.calpt = calpt;
-
+      l.rawpt = p4.Pt()*(rawpt/calpt);
       l.isTrigMatch=isTrigMatch;
       l.charge  = fForestLep.eleCharge->at(eleIter);
       if(GT.find("75X_mcRun2")==string::npos) {
@@ -1117,10 +1120,13 @@ int main(int argc, char* argv[])
 
     //dilepton selection
     TLorentzVector ll(selLeptons[0].p4+selLeptons[1].p4);
+    TLorentzVector ll_raw(selLeptons[0].p4*(selLeptons[0].rawpt/selLeptons[0].p4.Pt())+selLeptons[1].p4*(selLeptons[1].rawpt/selLeptons[1].p4.Pt()));
     t_llpt=ll.Pt();
+    t_llpt_raw=ll_raw.Pt();
     t_lleta=ll.Eta();
     t_llphi=ll.Phi();
     t_llm=ll.M();
+    t_llm_raw=ll_raw.M();
     t_dphi=TMath::Abs(selLeptons[0].p4.DeltaPhi(selLeptons[1].p4));
     t_deta=fabs(selLeptons[0].p4.Eta()-selLeptons[1].p4.Eta());
     t_sumeta=selLeptons[0].p4.Eta()+selLeptons[1].p4.Eta();
@@ -1395,6 +1401,9 @@ int main(int argc, char* argv[])
     t_run    = fForestTree.run;
     t_lumi   = fForestTree.lumi;
     t_event  = fForestTree.evt;
+    t_vx     = fForestTree.vx;
+    t_vy     = fForestTree.vy;
+    t_vz     = fForestTree.vz;
     t_weight = plotWgt;
     t_meWeights.clear();
     if(isMC){
@@ -1438,6 +1447,7 @@ int main(int argc, char* argv[])
         ltrigEff.push_back(  std::pair<float,float>(tnp_weight_trig_pbpb(pt,eta,300),0.0) );
         float mutrigSF=tnp_weight_trig_pbpb(pt,eta,0);
         float deltaTnp=max(fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,-1)),fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,-2)));
+	deltaTnp += pow(0.05,2);                                                             //HTL centrality dependence
         float deltaStat=max(fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,1)),fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,2)));
         float deltaSF=sqrt(deltaTnp*deltaTnp+deltaStat*deltaStat);
         ltrigSF.push_back(  std::pair<float,float>(mutrigSF,deltaSF)  );        
@@ -1483,8 +1493,8 @@ int main(int argc, char* argv[])
     t_lep_ind1 = -1;
     t_lep_ind2 = -1;
     for (int ilep = 0; ilep < t_nlep; ++ilep){
-      t_lep_pt    .push_back( selLeptons[ilep].p4.Pt()  );
-      t_lep_calpt .push_back( selLeptons[ilep].calpt    );
+      t_lep_pt    .push_back( selLeptons[ilep].rawpt  );
+      t_lep_calpt .push_back( selLeptons[ilep].p4.Pt()  );
       t_lep_eta   .push_back( selLeptons[ilep].p4.Eta() );
       t_lep_phi   .push_back( selLeptons[ilep].p4.Phi() );
       t_lep_idflags.push_back(selLeptons[ilep].idFlags);
@@ -1511,14 +1521,16 @@ int main(int argc, char* argv[])
         sfVal=tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(), 0 );                         //central value
         sfValUnc += pow(fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(),+1)-sfVal),2); //stat
         sfValUnc += pow(fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(),-1)-sfVal),2); //syst
-        sfValUnc += pow(0.0032,2);                                                          //centrality dependence
+        sfValUnc += pow(0.006,2);                                                           //tracking uncertainty
+	sfValUnc += pow(0.02,2);                                                            //tracking centrality dependence
+	sfValUnc += pow(0.01,2);                                                            //identification centrality dependence
         sfValUnc = sqrt(sfValUnc);
       }else {
         std::pair<float,float > eleIDsf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false, false); //ID
         sfVal=eleIDsf.first;
         sfValUnc=eleIDsf.second;
-	std::pair<float,float > eleRECOsf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false, true); //RECO                                     
-	sfValUnc = sqrt(pow(sfValUnc/sfVal,2)+pow(eleRECOsf.second/eleRECOsf.first,2));
+        std::pair<float,float > eleRECOsf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false, true); //RECO                                     
+        sfValUnc = sqrt(pow(sfValUnc/sfVal,2)+pow(eleRECOsf.second/eleRECOsf.first,2));
         sfVal*=eleRECOsf.first;
       }    
       t_lepSF.push_back(sfVal);
@@ -1526,10 +1538,15 @@ int main(int argc, char* argv[])
 
       TString isoKey(cenBin<30 ? "cen" : "periph");
       isoKey+=abs(selLeptons[ilep].id)==13 ? "_169" : "_121";
-      Int_t xbin=isoEffSFs[isoKey]->GetXaxis()->FindBin( min(selLeptons[ilep].p4.Pt(), isoEffSFs[isoKey]->GetXaxis()->GetXmax()) );
+      Int_t xbin=isoEffSFs[isoKey]->GetXaxis()->FindBin( min(selLeptons[ilep].p4.Pt(), isoEffSFs[isoKey]->GetXaxis()->GetXmax()-0.01) );
       Int_t ybin=isoEffSFs[isoKey]->GetYaxis()->FindBin( min(fabs(selLeptons[ilep].p4.Eta()), isoEffSFs[isoKey]->GetYaxis()->GetXmax()) );
-      t_lepIsoSF.push_back( isoEffSFs[isoKey]->GetBinContent(xbin,ybin) );
-      t_lepIsoSFUnc.push_back( isoEffSFs[isoKey]->GetBinError(xbin,ybin) );
+      if (isoEffSFs[isoKey]->GetBinContent(xbin,ybin) != 0.){
+        t_lepIsoSF   .push_back( isoEffSFs[isoKey]->GetBinContent(xbin,ybin) );
+        t_lepIsoSFUnc.push_back( isoEffSFs[isoKey]->GetBinError  (xbin,ybin) );
+      } else{
+        t_lepIsoSF   .push_back( 1.00);
+        t_lepIsoSFUnc.push_back( 0.05);
+      }
 
       //isolation-based indices
       bool isIso(true);
