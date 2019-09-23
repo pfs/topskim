@@ -152,7 +152,7 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
             if name=='drSafe' : 
                 atype,atempl,btype='B',[False]*100,'O'
             if 'flavor' in name:
-                atype,atempl,btype='I',[0]*100,'I'
+                atype,atempl,btype='i',[0]*100,'I'
             out_t_branches['bjet_'+name]=array(atype,atempl)
             out_t.Branch('bjet_'+name,out_t_branches['bjet_'+name],'bjet_%s[nbjet]/%s'%(name,btype))
 
@@ -236,7 +236,7 @@ def createMixedFriendTrees(url,mixFile,outURL,nEventsPerChunk=100,maxChunks=-1):
                         out_t_branches['nbjet_sel'][0]=orig_t.nbjet_sel
                         njets=len(jets)
                         out_t_branches['nbjet'][0]=njets
-                        for ij in range(njets):
+                        for ij in range(njets):                            
                             for name in JETBRANCHES:
                                 val=getattr(jets[ij],name)
                                 if name=='drSafe': 
