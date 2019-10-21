@@ -19,7 +19,7 @@ def canvasHeader(extraTxt=[]):
     txt.SetTextAlign(12)
     txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
     txt.SetTextAlign(ROOT.kHAlignRight+ROOT.kVAlignCenter)
-    txt.DrawLatex(0.95,0.97,'#scale[0.8]{1618 #mub^{-1} (#sqrt{s_{NN}}=5.02 TeV)}')
+    txt.DrawLatex(0.95,0.97,'#scale[0.8]{1752 #mub^{-1} (#sqrt{s_{NN}}=5.02 TeV)}')
     txt.SetTextAlign(ROOT.kHAlignLeft+ROOT.kVAlignCenter)
     txt.SetTextSize(0.035)
     for i in range(len(extraTxt)):
