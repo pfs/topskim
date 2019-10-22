@@ -414,6 +414,15 @@ int main(int argc, char* argv[])
   ht.addHist("npfjets",    new TH1F("npfjets",    ";Jet multiplicity;Events",8,0,8));
   ht.addHist("npfbjets",   new TH1F("npfbjets",   ";b-jet multiplicity;Events",5,0,5));    
   ht.addHist("npfsvtx",    new TH1F("npfsvtx",    ";Secondary vertex multiplicity;Events",5,0,5));
+
+  ht.addHist("jetptprequench" ,    new TH1F("jetptprequench" , ";jets pT pre quenching" ,25,0,100.));
+  ht.addHist("jetptpostquench",    new TH1F("jetptpostquench", ";jets pT post quenching",25,0,100.));
+  ht.addHist("jetquenchloss"  ,    new TH1F("jetquenchloss"  , ";pT loss in quenching"  ,10,0,30.));
+
+  ht.addHist("jetptprequenchB" ,    new TH1F("jetptprequenchB" , ";matched b: jets pT pre quenching" ,25,0,100.));
+  ht.addHist("jetptpostquenchB",    new TH1F("jetptpostquenchB", ";matched b: jets pT post quenching",25,0,100.));
+  ht.addHist("jetquenchlossB"  ,    new TH1F("jetquenchlossB"  , ";matched b: pT loss in quenching"  ,10,0,30.));
+
   for(size_t j=1; j<=2; j++){
     TString ppf(j==1 ? "1" : "2");
     ht.addHist("pf"+ppf+"jbalance",    new TH1F("pf"+ppf+"jbalance", ";R = p_{T}(j)/p_{T}(ll);Events",50,0,3));
@@ -1293,6 +1302,15 @@ int main(int argc, char* argv[])
 
         if (jp4.Pt()                  > 30. && isBTagged) t_nbjet_sel_quenchup += 1;
         if (jp4.Pt()-tmp_quench_loss*centralitySuppression  > 30. && isBTagged) t_nbjet_sel_quenchdn += 1;
+        ht.fill("jetptprequench" ,  jp4.Pt()                                      ,  plotWgt);
+        ht.fill("jetquenchloss"  ,  tmp_quench_loss*centralitySuppression         ,  plotWgt);
+        if (jp4.Pt()-tmp_quench_loss*centralitySuppression > 20.)  ht.fill("jetptpostquench",  jp4.Pt()-tmp_quench_loss*centralitySuppression,  plotWgt);
+
+        if (abs(refFlavorForB) == 5){
+            ht.fill("jetptprequenchB" ,  jp4.Pt()                                      ,  plotWgt);
+            ht.fill("jetquenchlossB"  ,  tmp_quench_loss*centralitySuppression         ,  plotWgt);
+            if (jp4.Pt()-tmp_quench_loss*centralitySuppression > 20.)  ht.fill("jetptpostquenchB",  jp4.Pt()-tmp_quench_loss*centralitySuppression,  plotWgt);
+        }
 
         bool isBTaggedNew(0);
         float tmp_btageff = btagEfficiencies(refFlavorForB, cenBin);
