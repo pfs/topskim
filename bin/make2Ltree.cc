@@ -433,6 +433,7 @@ int main(int argc, char* argv[])
     ht.addHist("pf"+ppf+"jsvtxntk",    new TH1F("pf"+ppf+"jsvtxntk", ";Secondary vertex track multiplicity;Events",5,0,5));
     ht.addHist("pf"+ppf+"jcsv",        new TH1F("pf"+ppf+"jcsv",     ";CSVv2;Events",25,0,1));
   }
+  ht.addHist("jptvsjptquench",  new TH2F("jptvsjptquench", ";Reconstructed jet p_{T} [GeV];Quenched jet p_{T} [GeV];Jets",50,0,100,50,0,100) );
 
   // Initialize the btagging SF stuff
   BTagSFUtil * myBTagUtil = new BTagSFUtil(42);
@@ -1453,7 +1454,19 @@ int main(int argc, char* argv[])
       ht.fill( "pf"+ppf+"jsvtxntk", svm,             plotWgt, categs);
       ht.fill( "pf"+ppf+"jcsv",     csv,             plotWgt, categs);
       ht.fill2D( "pf"+ppf+"jetavsphi",   p4.Eta(),p4.Phi(),   plotWgt, categs);
+
+
+      quenchingModel->SetParameter(0, 50.); // this sets the omega_c parameter. if we want to make this centrality dependent
+      float tmp_quench_loss = quenchingModel->GetRandom();
+      tmp_quench_loss = TMath::Abs(TMath::Sin(p4.Theta())*tmp_quench_loss); // make it only on the transverse part...
+      // make it centrality dependent
+      float centralitySuppression = centralityModel->Eval(cenBin/100.);
+      float quenchedPt=p4.Pt()-tmp_quench_loss*centralitySuppression;
+      ht.fill2D("jptvsjptquench", p4.Pt(), quenchedPt, plotWgt,categs);
     }
+
+
+
     
     std::vector<float> rapMoments=getRapidityMoments(pfFinalState);
     ht.fill( "pfrapavg",     rapMoments[0], plotWgt, categs);

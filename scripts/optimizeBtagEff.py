@@ -3,49 +3,65 @@ import sys
 import numpy as np
 from optimizeLeptonIsolation import canvasHeader
 
-def getEfficiency(fileList,flavList,ptRange,cenRange=None):
+def getEfficiency(url,flavList,ptRange):
 
     t=ROOT.TChain('tree')
-    for f in fileList : 
-        t.AddFile(f)
+    t.AddFile(url)
 
-    csv_num=ROOT.TH1F('csv_num',';CSV;Jets',50,0,1)
-    csv_num.Sumw2()
-    csv_den=csv_num.Clone('csvden')
+    baseHistos={'csv'     : ROOT.TH1F('csv',';CSV;Jets',50,0,1),
+                'csvdisc' : ROOT.TH1F('csv',';CSV;Jets',20,0,1),
+                'pt'      : ROOT.TH1F('pt',';Transverse momentum [GeV];Jets',20,30,250),
+                'eta'     : ROOT.TH1F('eta',';Pseudo-rapidity;Jets',20,0,2.0),
+                'cent'    : ROOT.TH1F('centrality',';Centrality;Jets',10,0,100) }
+    histos={}
+    for key in baseHistos:
+        for pfix in ['den','num','numtight']:
+            histos[key+'_'+pfix]=baseHistos[key].Clone(key+'_'+pfix)
+            histos[key+'_'+pfix].SetDirectory(0)
+            histos[key+'_'+pfix].Sumw2()
+
     for i in range(t.GetEntries()):
         t.GetEntry(i)
-
-        ncoll=1.
-        if cenRange:
-            if t.cenbin<cenRange[0] : continue
-            if t.cenbin>cenRange[1] : continue
-
-        if hasattr(t,'ncoll'):
-            ncoll=t.ncoll
-            if ncoll<=0 : ncoll=1.
-
+        ncoll=t.ncollWgt        
         for j in range(t.nbjet):
 
             genpt=t.bjet_genpt[j]
+            geneta=t.bjet_geneta[j]
+            if(abs(geneta)>2.0) : continue
             if genpt<ptRange[0] : continue
             if genpt>ptRange[1] : continue
 
             bflav=t.bjet_flavorB[j]
             if not abs(bflav) in flavList : continue
+            csvVal=min(1.,max(0.,t.bjet_csvv2[j]))            
 
-            csvVal=min(1.,max(0.,t.bjet_csvv2[j]))
-            xbin=csv_num.GetXaxis().FindBin(csvVal)
-            for ix in range(csv_num.GetNbinsX()+1):
-                xcen=csv_num.GetXaxis().GetBinCenter(ix+1)
+            #for efficiency extraction
+            xbin=histos['csv_num'].GetXaxis().FindBin(csvVal)
+            for ix in range(histos['csv_num'].GetNbinsX()+1):
+                xcen=histos['csv_num'].GetXaxis().GetBinCenter(ix+1)
                 if ix<xbin:
-                    csv_num.Fill(xcen,ncoll)
-                csv_den.Fill(xcen,ncoll)
+                    histos['csv_num'].Fill(xcen,ncoll)
+                histos['csv_den'].Fill(xcen,ncoll)
+                
+            histos['csvdisc_den'].Fill(csvVal,ncoll)
+            histos['pt_den'].Fill(genpt,ncoll)
+            histos['eta_den'].Fill(abs(geneta),ncoll)
+            histos['cent_den'].Fill(t.cenbin,ncoll)
+            if csvVal>0.81:
+                histos['csvdisc_num'].Fill(csvVal,ncoll)
+                histos['pt_num'].Fill(genpt,ncoll)
+                histos['eta_num'].Fill(abs(geneta),ncoll)
+                histos['cent_num'].Fill(t.cenbin,ncoll)
+            if csvVal>0.91:
+                histos['csvdisc_numtight'].Fill(csvVal,ncoll)
+                histos['pt_numtight'].Fill(genpt,ncoll)
+                histos['eta_numtight'].Fill(abs(geneta),ncoll)
+                histos['cent_numtight'].Fill(t.cenbin,ncoll)
+
 
     gr_eff=ROOT.TGraphAsymmErrors()
-    gr_eff.Divide(csv_num,csv_den)
-    csv_num.Delete()
-    csv_den.Delete()
-    return gr_eff
+    gr_eff.Divide(histos['csv_num'],histos['csv_den'])    
+    return gr_eff,histos
 
 
 def showEfficiencyCurves(grColl,name):
@@ -79,36 +95,92 @@ def showEfficiencyCurves(grColl,name):
         c.SaveAs('%s.%s'%(name,ext))
 
 
+def showHistos(histos,flav):
+
+    c=ROOT.TCanvas('c','c',500,500)
+    c.SetTopMargin(0.05)
+    c.SetLeftMargin(0.12)
+    c.SetRightMargin(0.03)
+    c.SetBottomMargin(0.1)
+    c.SetGridy()
+    c.SetLogy()
+    for key in histos:
+        if '_num' in key: continue
+
+        frame=histos[key].Clone('frame')
+        frame.Reset('ICE')
+        frame.GetYaxis().SetTitle('Efficiency or PDF')
+        frame.GetYaxis().SetRangeUser(1e-3,1)
+        frame.Draw()
+
+        gr_eff=ROOT.TGraphAsymmErrors()
+        gr_eff.SetMarkerStyle(20)
+        gr_eff.Divide(histos[key.replace('_den','_num')],histos[key])
+
+        gr_efftight=ROOT.TGraphAsymmErrors()
+        gr_efftight.SetMarkerStyle(24)
+        gr_efftight.SetMarkerColor(ROOT.kGray+1)
+        gr_efftight.SetLineColor(ROOT.kGray+1)
+        gr_efftight.Divide(histos[key.replace('_den','_numtight')],histos[key])
+
+        histos[key].Scale(1./histos[key].Integral())        
+        histos[key].Draw('histsame')
+        histos[key].SetFillStyle(1001)
+        histos[key].SetFillColor(ROOT.kGray)
+        histos[key].SetLineColor(1)
+
+        gr_eff.Draw('p')
+        gr_efftight.Draw('p')
+        
+        if flav!='b':
+            leg=ROOT.TLegend(0.65,0.93,0.95,0.75)
+        else:
+            leg=ROOT.TLegend(0.65,0.75,0.95,0.5)
+        leg.SetFillStyle(0)
+        leg.SetBorderSize(0)
+        leg.SetTextFont(42)
+        leg.AddEntry(gr_eff,'Loose w.p.','ep')
+        leg.AddEntry(gr_efftight,'Tight w.p.','ep')
+        leg.AddEntry(histos[key],'Distribution','l')
+        leg.Draw()
+
+        canvasHeader(extraTxt=[flav])
+        c.RedrawAxis()
+        c.Modified()
+        c.Update()
+        for ext in ['png','pdf']:
+            c.SaveAs('%s_%s.%s'%(key,flav,ext))
+        frame.Delete()
+        gr_eff.Delete()
+
+
 def main():
     ROOT.gROOT.SetBatch(True)
+    ROOT.gStyle.SetOptStat(0)
+    ROOT.gStyle.SetOptTitle(0)
     baseDir=sys.argv[1]
     plottag=''
     if len(sys.argv)>2:
         plottag=sys.argv[2]
     mixSig='TTJets_TuneCP5_HydjetDrumMB_5p02TeV-amcatnloFXFX-pythia8.root'
     ppSample='/eos/cms/store/cmst3/group/hintt/PbPb2018_skim27Apr/TT_TuneCP5_5p02TeV-powheg-pythia8.root'
-    ptRange=[30,120]
+    ptRange=[30,500]
 
     #get the efficiency curves
     csv={}
-    for tag,sample,flav,cenRange,ms,ci in [ ('b',                  baseDir+mixSig, [5],        None,     20, 1),
-                                            ('b (0-30)',           baseDir+mixSig, [5],        [0,30],   20, ROOT.kRed ),
-                                            ('b (30-100)',         baseDir+mixSig, [5],        [30,100], 20, ROOT.kGray ),
-                                            #('b (pp)',             ppSample,       [5],        None,     20, ROOT.kGreen),
-                                            ('udsg',               baseDir+mixSig, [1,2,3,21], None,     24, 1),
-                                            ('udsg (0-30)',        baseDir+mixSig, [1,2,3,21], [0,30],   24, ROOT.kRed),
-                                            ('udsg (30-100)',      baseDir+mixSig, [1,2,3,21], [30,100], 24, ROOT.kGray),
-                                            #('udsg (pp)',          ppSample,       [1,2,3,21], None,     24, ROOT.kGreen),
-                                            ('unmatched',          baseDir+mixSig, [0],        None,     21, 1),
-                                            ('unmatched (0-30)',   baseDir+mixSig, [0],        [0,30],   21, ROOT.kRed),
-                                            ('unmatched (30-100)', baseDir+mixSig, [0],        [30,100], 21, ROOT.kGray),
-                                            #('unmatched (pp)',     ppSample,  [0],             None,     21, ROOT.kGreen)
-                                            ]:
-        csv[tag]=getEfficiency([sample],flav,ptRange,cenRange)
+    for tag,url,flavList,ms,ci in [ ('b',         baseDir+mixSig, [5],         20, 1),
+                                    ('udsg',      baseDir+mixSig, [1,2,3,21],  24, 1),
+                                    ('unmatched', baseDir+mixSig, [0],         21, 1),
+                                ]:
+        
+        csv[tag],histos=getEfficiency(url,flavList,ptRange)
         csv[tag].SetTitle(tag)
         csv[tag].SetMarkerStyle(ms)
         csv[tag].SetLineColor(ci)
         csv[tag].SetMarkerColor(ci)
+
+        showHistos(histos,tag)
+
 
     #tune the working point
     wpEff=0.05
