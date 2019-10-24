@@ -100,26 +100,26 @@ float calibratedPt(float pt, float eta, float cen, bool isMC) {
 
   float newpt;
   float scale = 0.;
-
+  //https://twiki.cern.ch/twiki/pub/CMS/HiEgamma2019/electron-aa-scalesmear-190918.pdf
   if (isMC){
     if (fabs(eta) < 1.45) {
-      if      (cen < 10.) scale = 0.974;
-      else if (cen < 30.) scale = 0.992;
-      else                scale = 1.005;
+      if      (cen < 10.) scale = 0.971;
+      else if (cen < 30.) scale = 0.990;
+      else                scale = 1.003;
     }else {
-      if      (cen < 10.) scale = 0.913;
-      else if (cen < 30.) scale = 0.952;
-      else                scale = 0.992;
+      if      (cen < 10.) scale = 0.910;
+      else if (cen < 30.) scale = 0.951;
+      else                scale = 0.988;
     }
   } else {
     if (fabs(eta) < 1.45) {
-      if      (cen < 10.) scale = 0.990;
+      if      (cen < 10.) scale = 0.989;
       else if (cen < 30.) scale = 1.006;
       else                scale = 1.016;
     }else {
-      if      (cen < 10.) scale = 0.976;
-      else if (cen < 30.) scale = 1.015;
-      else                scale = 1.052;
+      if      (cen < 10.) scale = 0.967;
+      else if (cen < 30.) scale = 1.018;
+      else                scale = 1.054;
     }
   }
 
@@ -129,13 +129,13 @@ float calibratedPt(float pt, float eta, float cen, bool isMC) {
 
   if (isMC){
     if (fabs(eta) < 1.45) {
-      if      (cen < 10.) smear = 0.904;
-      else if (cen < 30.) smear = 1.379;
-      else                smear = 1.786;
+      if      (cen < 10.) smear = 1.19113;
+      else if (cen < 30.) smear = 1.28262;
+      else                smear = 2.20549;
     } else {
-      if      (cen < 10.) smear = 3.051;
-      else if (cen < 30.) smear = 1.214;
-      else                smear = 3.451;
+      if      (cen < 10.) smear = 3.13988;
+      else if (cen < 30.) smear = 3.15340;
+      else                smear = 3.17194;
     }
 
     newpt = newpt * smearRand->Gaus(1., smear / 91.1876);
@@ -290,26 +290,26 @@ int main(int argc, char* argv[])
   
   // initialize the JEC and associated unc files
   std::vector<std::string> FilesData;
-  TString DATA_L2RelativeURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V4_DATA_L2Relative_AK4PF.txt");
+  TString DATA_L2RelativeURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V6_DATA_L2Relative_AK4PF.txt");
   gSystem->ExpandPathName(DATA_L2RelativeURL);
-  TString DATA_L2ResidualURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V4_DATA_L2Residual_AK4PF.txt");
-  gSystem->ExpandPathName(DATA_L2ResidualURL);
+  TString DATA_L2L3ResidualURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V6_DATA_L2L3Residual_AK4PF.txt");
+  gSystem->ExpandPathName(DATA_L2L3ResidualURL);
   FilesData.push_back(DATA_L2RelativeURL.Data());
-  FilesData.push_back(DATA_L2ResidualURL.Data());
+  FilesData.push_back(DATA_L2L3ResidualURL.Data());
   
   JetCorrector JECData(FilesData);
-  TString JEUDataURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V4_DATA_Uncertainty_AK4PF.txt");
+  TString JEUDataURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V6_DATA_Uncertainty_AK4PF.txt");
   gSystem->ExpandPathName(DATA_L2RelativeURL);
   JetUncertainty JEUData(DATA_L2RelativeURL.Data());
   
   std::vector<std::string> FilesMC;
-  TString FilesMCURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V4_MC_L2Relative_AK4PF.txt");
+  TString FilesMCURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V6_MC_L2Relative_AK4PF.txt");
   gSystem->ExpandPathName(FilesMCURL);
   
   FilesMC.push_back(FilesMCURL.Data());
   
   JetCorrector JECMC(FilesMC);
-  TString JECMCURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V4_MC_Uncertainty_AK4PF.txt");
+  TString JECMCURL("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data/Autumn18_HI_V6_MC_Uncertainty_AK4PF.txt");
   gSystem->ExpandPathName(JECMCURL);
   JetUncertainty JEUMC(JECMCURL.Data());
   
@@ -1507,11 +1507,10 @@ int main(int argc, char* argv[])
         ltrigSF.push_back( eleEff.eval(pt, abseta<barrelEndcapEta[0], cenBin, true, false) ); //HLT (L1 is unity by definition in this trigger menu)
       }else{
 
-        ltrigEff.push_back(  std::pair<float,float>(tnp_weight_trig_pbpb(pt,eta,300),0.0) );
-        float mutrigSF=tnp_weight_trig_pbpb(pt,eta,0);
-        float deltaTnp=max(fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,-1)),fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,-2)));
-	deltaTnp += pow(0.05,2);                                                             //HTL centrality dependence
-        float deltaStat=max(fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,1)),fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,2)));
+        ltrigEff.push_back(  std::pair<float,float>(tnp_weight_trig_pbpb(pt,eta,cenBin),0.0) );
+        float mutrigSF=tnp_weight_trig_pbpb(pt,eta,cenBin,0);
+        float deltaTnp=max(fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,cenBin,-1)),fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,cenBin,-2)));
+        float deltaStat=max(fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,cenBin,1)),fabs(mutrigSF-tnp_weight_trig_pbpb(pt,eta,cenBin,2)));
         float deltaSF=sqrt(deltaTnp*deltaTnp+deltaStat*deltaStat);
         ltrigSF.push_back(  std::pair<float,float>(mutrigSF,deltaSF)  );        
       }
@@ -1583,13 +1582,20 @@ int main(int argc, char* argv[])
       //reco/tracking+id scale factors
       float sfVal(1.0),sfValUnc(0.0);
       if(abs(selLeptons[ilep].id)==13) {
+	//ID
         sfVal=tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(), 0 );                         //central value
-        sfValUnc += pow(fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(),+1)-sfVal),2); //stat
-        sfValUnc += pow(fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(),-1)-sfVal),2); //syst
-        sfValUnc += pow(0.006,2);                                                           //tracking uncertainty
-	sfValUnc += pow(0.02,2);                                                            //tracking centrality dependence
+        sfValUnc += pow(fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(),+1)-sfVal),2); //stat, +1 sigma
+        sfValUnc += pow(fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(),-1)-sfVal),2); //stat, -1 sigma
+	sfValUnc += pow(fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(),+2)-sfVal),2); //syst, +1 sigma                                                                                         
+	sfValUnc += pow(fabs(tnp_weight_muid_pbpb( selLeptons[ilep].p4.Eta(),-2)-sfVal),2); //syst, -1 sigma
 	sfValUnc += pow(0.01,2);                                                            //identification centrality dependence
-        sfValUnc = sqrt(sfValUnc);
+	//Tracking
+	sfVal*=tnp_weight_glbtrk_pbpb( selLeptons[ilep].p4.Eta(), cenBin,0 );                      //central value                                                                                
+	sfValUnc += pow(fabs(tnp_weight_glbtrk_pbpb( selLeptons[ilep].p4.Eta(),cenBin,+1)-sfVal),2); //stat, +1 sigma                                                                                 
+	sfValUnc += pow(fabs(tnp_weight_glbtrk_pbpb( selLeptons[ilep].p4.Eta(),cenBin,-1)-sfVal),2); //stat, -1 sigma                                                                                    
+	sfValUnc += pow(fabs(tnp_weight_glbtrk_pbpb( selLeptons[ilep].p4.Eta(),cenBin,+2)-sfVal),2); //syst, +1 sigma                                                                                    
+	sfValUnc += pow(fabs(tnp_weight_glbtrk_pbpb( selLeptons[ilep].p4.Eta(),cenBin,-2)-sfVal),2); //syst, -1 sigma                                                                                    
+	sfValUnc = sqrt(sfValUnc);
       }else {
         std::pair<float,float > eleIDsf=eleEff.eval(selLeptons[ilep].p4.Pt(), fabs(selLeptons[ilep].p4.Eta())<barrelEndcapEta[0], cenBin, false, false); //ID
         sfVal=eleIDsf.first;
