@@ -116,7 +116,7 @@ def compareFitResult(plotsPrefit,plotsPostfit,plotName,xtitle,extraTxt=[]):
    tex.SetTextAlign(ROOT.kHAlignLeft+ROOT.kVAlignCenter)
    tex.DrawLatex(0.12,0.93,'#bf{CMS} #it{preliminary}')
    tex.SetTextAlign(ROOT.kHAlignRight+ROOT.kVAlignCenter)
-   tex.DrawLatex(0.95,0.93,'1.752 nb^{-1} (#sqrt{s_{NN}}=5.02 TeV)')
+   tex.DrawLatex(0.95,0.93,'1.7 nb^{-1} (#sqrt{s_{NN}}=5.02 TeV)')
    tex.SetTextAlign(ROOT.kHAlignLeft+ROOT.kVAlignCenter)
    for it in range(len(extraTxt)):
       tex.DrawLatex(0.2,0.8+it*0.05,extraTxt[it])

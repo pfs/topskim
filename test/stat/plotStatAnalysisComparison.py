@@ -14,63 +14,64 @@ import numpy as np
 from statAnalysisTools import *
 from plotPostFitDistributions import *
 
+basedir = '/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_9_4_6_patch1/src/CMGTools/TTHAnalysis/python/plotter/hin-ttbar/'
 
 def main():
 
     fitres={
-        'sameFlavorsphericity'        : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix/sphericity/sameFlavor.card',
-                                         'title':'$S,ee,\mu\mu$'},
-        'sameFlavorsphericity25'      : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix/sphericity/sameFlavor.card',
-                                         'title':'$S,ee,\mu\mu,25/25$'},
-        'sameFlavorsphericitybtags'   : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix_jetAnalysis/sphericity/sameFlavor.card',
-                                         'title':'$S,ee,\mu\mu+b$'},
-        'sameFlavorsphericitybtags25' : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix_jetAnalysis/sphericity/sameFlavor.card',
-                                         'title':'$S,ee,\mu\mu+b,25/25$'},
-        'sameFlavorbdtcomb'           : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix/bdtcomb/sameFlavor.card',
-                                         'title':'BDT,$ee,\mu\mu$'},
-        'sameFlavorbdtcomb25'         : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix/bdtcomb/sameFlavor.card',
-                                         'title':'$BDT,ee,\mu\mu,25/25$'},
-        'sameFlavorbdtcombbtags'      : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix_jetAnalysis/bdtcomb/sameFlavor.card',
-                                         'title':'$BDT,ee,\mu\mu+b$'},
-        'sameFlavorbdtcombbtags25'    : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix_jetAnalysis/bdtcomb/sameFlavor.card',
-                                         'title':'$BDT,ee,\mu\mu+b,25/25$'},
-        'emsphericity'                : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix/sphericity/em.card',
-                                         'title':'$S,e\mu$'},
-        'emsphericity25'              : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix/sphericity/em.card',
-                                         'title':'$S,e\mu,25/25$'},
-        'emsphericitybtags'           : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix_jetAnalysis/sphericity/em.card',
-                                         'title':'$S,e\mu+b$'},
-        'emsphericitybtags25'         : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix_jetAnalysis/sphericity/em.card',
-                                         'title':'$S,e\mu+b,25/25$'},
-        'embdtcomb'                   : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix/bdtcomb/em.card',
-                                         'title':'$BDT,e\mu$'},
-        'embdtcomb25'                 : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix/bdtcomb/em.card',
-                                         'title':'$BDT,e\mu,25/25$'},
-        'embdtcombbtags'              : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix_jetAnalysis/bdtcomb/em.card',
-                                         'title':'$BDT,e\mu+b$'},
-        'embdtcombbtags25'            : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix_jetAnalysis/bdtcomb/em.card',
-                                         'title':'$BDT,e\mu+b,25/25$'},
-        'allFlavorssphericity'        : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix/sphericity/allFlavors.card',
+        ## 'sameFlavorsphericity'        : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix/sphericity/sameFlavor.card',
+        ##                                  'title':'$S,ee,\mu\mu$'},
+        ## 'sameFlavorsphericity25'      : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix/sphericity/sameFlavor.card',
+        ##                                  'title':'$S,ee,\mu\mu,25/25$'},
+        ## 'sameFlavorsphericitybtags'   : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix_jetAnalysis/sphericity/sameFlavor.card',
+        ##                                  'title':'$S,ee,\mu\mu+b$'},
+        ## 'sameFlavorsphericitybtags25' : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix_jetAnalysis/sphericity/sameFlavor.card',
+        ##                                  'title':'$S,ee,\mu\mu+b,25/25$'},
+        ## 'sameFlavorbdtcomb'           : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix/bdtcomb/sameFlavor.card',
+        ##                                  'title':'BDT,$ee,\mu\mu$'},
+        ## 'sameFlavorbdtcomb25'         : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix/bdtcomb/sameFlavor.card',
+        ##                                  'title':'$BDT,ee,\mu\mu,25/25$'},
+        ## 'sameFlavorbdtcombbtags'      : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix_jetAnalysis/bdtcomb/sameFlavor.card',
+        ##                                  'title':'$BDT,ee,\mu\mu+b$'},
+        ## 'sameFlavorbdtcombbtags25'    : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix_jetAnalysis/bdtcomb/sameFlavor.card',
+        ##                                  'title':'$BDT,ee,\mu\mu+b,25/25$'},
+        ## 'emsphericity'                : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix/sphericity/em.card',
+        ##                                  'title':'$S,e\mu$'},
+        ## 'emsphericity25'              : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix/sphericity/em.card',
+        ##                                  'title':'$S,e\mu,25/25$'},
+        ## 'emsphericitybtags'           : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix_jetAnalysis/sphericity/em.card',
+        ##                                  'title':'$S,e\mu+b$'},
+        ## 'emsphericitybtags25'         : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix_jetAnalysis/sphericity/em.card',
+        ##                                  'title':'$S,e\mu+b,25/25$'},
+        ## 'embdtcomb'                   : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix/bdtcomb/em.card',
+        ##                                  'title':'$BDT,e\mu$'},
+        ## 'embdtcomb25'                 : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix/bdtcomb/em.card',
+        ##                                  'title':'$BDT,e\mu,25/25$'},
+        ## 'embdtcombbtags'              : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix_jetAnalysis/bdtcomb/em.card',
+        ##                                  'title':'$BDT,e\mu+b$'},
+        ## 'embdtcombbtags25'            : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix_jetAnalysis/bdtcomb/em.card',
+        ##                                  'title':'$BDT,e\mu+b,25/25$'},
+        'allFlavorssphericity'        : {'dir':basedir+'datacards_2019-10-21_forApproval/sphericity/combinedCard/',
                                          'title':'$S,ee,\mu\mu,e\mu$'},
-        'allFlavorssphericity25'      : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix/sphericity/allFlavors.card',
-                                         'title':'$S,ee,\mu\mu,e\mu,25/25$'},
-        'allFlavorssphericitybtags'   : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix_jetAnalysis/sphericity/allFlavors.card',
+        ## 'allFlavorssphericity25'      : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix/sphericity/allFlavors.card',
+        ##                                  'title':'$S,ee,\mu\mu,e\mu,25/25$'},
+        'allFlavorssphericitybtags'   : {'dir':basedir+'datacards_2019-10-21_forApproval_jetAnalysis/sphericity/combinedCard/',
                                          'title':'$S,ee,\mu\mu,e\mu+b$'},
-        'allFlavorssphericitybtags25' : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix_jetAnalysis/sphericity/allFlavors.card',
-                                         'title':'$S,ee,\mu\mu,e\mu+b,25/25$'},
-        'allFlavorsbdtcomb'           : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix/bdtcomb/allFlavors.card',
+        ## 'allFlavorssphericitybtags25' : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix_jetAnalysis/sphericity/allFlavors.card',
+        ##                                  'title':'$S,ee,\mu\mu,e\mu+b,25/25$'},
+        'allFlavorsbdtcomb'           : {'dir':basedir+'datacards_2019-10-21_forApproval/bdtcomb/combinedCard/',
                                          'title':'$BDT,ee,\mu\mu,e\mu$'},
-        'allFlavorsbdtcomb25'         : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix/bdtcomb/allFlavors.card',
-                                         'title':'$BDT,ee,\mu\mu,e\mu,25/25$'},
-        'allFlavorsbdtcombbtags'      : {'dir':'datacards_2019-09-19_elPt25muPt20_ttbarBRFix_jetAnalysis/bdtcomb/allFlavors.card',
+        ## 'allFlavorsbdtcomb25'         : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix/bdtcomb/allFlavors.card',
+        ##                                  'title':'$BDT,ee,\mu\mu,e\mu,25/25$'},
+        'allFlavorsbdtcombbtags'      : {'dir':basedir+'datacards_2019-10-21_forApproval_jetAnalysis/bdtcomb/combinedCard/',
                                          'title':'$BDT,ee,\mu\mu,e\mu+b$'},
-        'allFlavorsbdtcombbtags25'    : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix_jetAnalysis/bdtcomb/allFlavors.card',
-                                         'title':'$BDT,ee,\mu\mu,e\mu+b,25/25$'},
+        ## 'allFlavorsbdtcombbtags25'    : {'dir':'datacards_2019-09-20_elPt25muPt25_ttbarBRFix_jetAnalysis/bdtcomb/allFlavors.card',
+        ##                                  'title':'$BDT,ee,\mu\mu,e\mu+b,25/25$'},
     }
     toCompare=[]
-    for ch in ['sameFlavor','em','allFlavors']:
+    for ch in ['allFlavors']: ##'sameFlavor','em'
         for d in ['sphericity','bdtcomb']:
-            for a in ['','25','btags','btags25']:
+            for a in ['','btags']: ##'25', 'btags25'
                 toCompare.append(ch+d+a)
 
     """
@@ -142,7 +143,7 @@ def main():
 
 
         #compare toys with observations
-        for var,xtitle,xbins,xran,yran in [ ('r',   '$\mu=\sigma/\sigma_{exp}$', 25, (0.25,1.75), (0,120)),
+        for var,xtitle,xbins,xran,yran in [ ('r',   '$\mu=\sigma/\sigma_{exp}$', 25, (0.25,1.7), (0,120)),
                                             ('sig', 'Significance',              50, (0.,10.),    (0,120))]:
             toys=fitres[r][var+'toys']
             obs=fitres[r][var+'obs'] 
@@ -210,7 +211,7 @@ def main():
         tex.SetTextAlign(ROOT.kHAlignLeft+ROOT.kVAlignCenter)
         tex.DrawLatex(0.32,0.96,'#bf{CMS} #it{preliminary}')
         tex.SetTextAlign(ROOT.kHAlignRight+ROOT.kVAlignCenter)
-        tex.DrawLatex(0.95,0.96,'1.752 nb^{-1} (#sqrt{s_{NN}}=5.02 TeV)')
+        tex.DrawLatex(0.95,0.96,'1.7 nb^{-1} (#sqrt{s_{NN}}=5.02 TeV)')
     
         c.Modified()
         c.Update()

@@ -2,6 +2,10 @@
 
 card=$1
 outdir=${card%.*}
+
+echo making directory $outdir
+echo $outdir
+
 mkdir -p ${outdir}
 
 echo "Creating workspace"
@@ -18,6 +22,7 @@ combine -M MultiDimFit workspace.root  --algo singles --cl=0.68 ${fitOpts} -t 50
 combine -M MultiDimFit workspace.root  ${fitOpts} ${expOpts} --algo singles --cl=0.68 --saveFitResult -n expsingles
 combine -M MultiDimFit workspace.root  ${fitOpts}            --algo singles --cl=0.68 --saveFitResult -n obssingles
 combine -M FitDiagnostics workspace.root  ${fitOpts} --saveShapes --saveWithUncertainties -n obs
+combine -M FitDiagnostics workspace.root  ${fitOpts} ${expOpts} --saveShapes --saveWithUncertainties -n exp
 
 #impacts
 combineTool.py -M Impacts -d workspace.root --doInitialFit        ${commonOpts} ${expOpts}
@@ -43,5 +48,6 @@ combine -M MultiDimFit workspace.root ${scanOpts} ${fitOpts}            -n obssc
 #significance
 combine -M Significance workspace.root ${sigOpts} -t 1000 --expectSignal 1 -n sig_toys
 combine -M Significance workspace.root ${sigOpts}                          -n sig_obs
+combine -M Significance workspace.root ${expOpts}                          -n sig_exp
 
 cd -

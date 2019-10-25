@@ -65,7 +65,7 @@ def getResultsFromToys(url,branch='limit'):
 
 
 
-def finalizePlot(plt,ax,name,title='',banner='1.752 nb$^{-1}$ ($\sqrt{s_{NN}}$=5.02 TeV)'):
+def finalizePlot(plt,ax,name,title='',banner='1.7 nb$^{-1}$ ($\sqrt{s_{NN}}$=5.02 TeV)'):
 
     """ final cosmetics on the plot """
     
