@@ -23,7 +23,7 @@ class ElectronEfficiencyWrapper
       TString baseF("ScaleFactors_PbPb_LooseWP");
       TString regs[2]={"EB","EE"};
       TString centr[2]={"0_30","30_100"};
-      TString pfix[3]={useOldId ? "" : "_AlpaFixedDataOnly_BWResCBErfExp_preliminary_v2","_HLT","_RECO"};
+      TString pfix[3]={useOldId ? "_AlpaFixedDataOnly_BWResCBErfExp_preliminary_v2" : "" ,"_HLT","_RECO"};
       for(size_t i=0; i<2; i++) {
         for(size_t j=0; j<2; j++) {
           for(size_t k=0; k<3; k++) {
