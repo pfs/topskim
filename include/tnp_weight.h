@@ -312,7 +312,7 @@ double tnp_weight_trig_pbpb(double pt, double eta, double cent, int idx)
 {
   // Check input variables
   double abseta = fabs(eta);
-  if (pt<15) { std::cout << "[WARNING] Muon pT (" << pt <<") < 15 GeV/c" << std::endl; return 1.0; }
+  if (pt<15) { /*std::cout << "[WARNING] Muon pT (" << pt <<") < 15 GeV/c" << std::endl;*/ return 1.0; }
   if (abseta>2.4) { std::cout << "[WARNING] Muon pseudo-rapidity (" << eta << ") outside [-2.4, 2.4]" << std::endl; return 1.0; }
   if (cent<0 || cent>100) { std::cout << "[ERROR] Centrality (" << cent << ") outside [0%, 100%]" << std::endl; return 1.0; }
 

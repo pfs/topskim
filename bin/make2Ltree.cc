@@ -264,6 +264,8 @@ int main(int argc, char* argv[])
   bool isSingleElePD( !isMC && inURL.Contains("SkimElectrons"));
   bool isMuSkimedMCPD( isMC && inURL.Contains("HINPbPbAutumn18DR_skims") && inURL.Contains("Muons"));
   bool isEleSkimedMCPD( isMC && inURL.Contains("HINPbPbAutumn18DR_skims") && inURL.Contains("Electrons"));
+  bool isDYMC( isMC and inURL.Contains("DYJetsToLL") );
+
   LumiRun lumiTool;
   ElectronEfficiencyWrapper eleEff("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data", false);
 
@@ -547,6 +549,12 @@ int main(int argc, char* argv[])
   outTree->Branch("event" , &t_event, "event/L");
   outTree->Branch("isData", &t_isData, "isData/I");
 
+  Int_t t_decayId(0),t_tauDecayId(0);
+  Bool_t t_matchedDecays(false);
+  outTree->Branch("decayId",       &t_decayId,       "decayId/I");
+  outTree->Branch("tauDecayId",    &t_tauDecayId,    "tauDecayId/I");
+  outTree->Branch("matchedDecays", &t_matchedDecays, "matchedDecays/O");
+
   outTree->Branch("vx", &t_vx, "vx/F");
   outTree->Branch("vy", &t_vy, "vy/F");
   outTree->Branch("vz", &t_vz, "vz/F");
@@ -747,7 +755,7 @@ int main(int argc, char* argv[])
     //gen level analysis
     float evWgt(1.0),topPtWgt(1.0),topMassUpWgt(1.0),topMassDnWgt(1.0);
     int genDileptonCat(1.);
-    std::vector<TLorentzVector> genLeptons, genZLeptons, genBjets;
+    std::vector<TLorentzVector> genLeptons, genZLeptons, genZTauLeptons, genBjets;
     std::vector<bool> genTauLeptons;
     std::vector<int> genLeptonIds;
     bool isGenDilepton(false),isLeptonFiducial(false),is1bFiducial(false),is2bFiducial(false);    
@@ -756,6 +764,7 @@ int main(int argc, char* argv[])
       //gen level selection
       int nlFromTopW(0);
       TLorentzVector topP4(0,0,0,0),antitopP4(0,0,0,0);
+      int neFromZ(0),nmFromZ(0),ntFromZ(0);
       for(size_t i=0; i<fForestGen.mcPID->size(); i++) {
         int pid=fForestGen.mcPID->at(i);
         //int sta=fForestGen.mcStatus->at(i);
@@ -775,6 +784,14 @@ int main(int argc, char* argv[])
         bool isFromZ( abs(mom_pid)==23 || abs(gmom_pid)==23 );
         bool isFromW( abs(mom_pid)==24 || abs(gmom_pid)==24 );
         bool isTauFeedDown( abs(mom_pid)==15 );
+
+        if(abs(mom_pid)==23) {
+          if( abs(pid)==11) neFromZ++;
+          if( abs(pid)==13) nmFromZ++;
+        }
+        if(abs(gmom_pid)==23 && abs(pid)==16) {
+          ntFromZ++;
+        }
         
         //count W leptonic decays
         if( abs(pid)==11 || abs(pid)==13 )
@@ -800,16 +817,23 @@ int main(int argc, char* argv[])
           //leptons from Z->ll or Z->tt->ll
           if(isFromZ || isTauFeedDown){
             genZLeptons.push_back(p4);
+            if(isTauFeedDown) genZTauLeptons.push_back(p4);
           }
         }
 
         //neutrinos
-        if(abs(pid)==12 || abs(pid)==14 || abs(pid)==16){
-          if(isFromZ || isTauFeedDown) {
-            genZLeptons.push_back(p4);
-          }
+        //if(abs(pid)==12 || abs(pid)==14 || abs(pid)==16){
+        //  }
+      }
+
+      if(isDYMC){
+        t_decayId=(neFromZ +8*nmFromZ + 16*ntFromZ);
+        t_tauDecayId=0;
+        if(ntFromZ>0) {
+          t_tauDecayId=genTauLeptons.size();
         }
       }
+  
       t_weight_BRW=getMadgraphBRWlCorrection(nlFromTopW);
       ht.fill("br",2*nlFromTopW,1);
       ht.fill("br",2*nlFromTopW+1,t_weight_BRW);
@@ -1148,9 +1172,10 @@ int main(int argc, char* argv[])
     }
 
     //require at least two leptons matched to trigger objects
-    if(selLeptons.size()<2) continue;
-    bool hasOneTrigMatchLepton(selLeptons[0].isTrigMatch || selLeptons[1].isTrigMatch);
-    if( !hasOneTrigMatchLepton ) continue;
+    if(selLeptons.size()<2 && !isDYMC) continue;
+    bool hasOneTrigMatchLepton(false);
+    if(selLeptons.size()>1) hasOneTrigMatchLepton=(selLeptons[0].isTrigMatch || selLeptons[1].isTrigMatch);
+    if( !hasOneTrigMatchLepton && !isDYMC) continue;
     
     //apply trigger preselection & duplicate event removal
     //in skim mode assume that the hltobject matched to offline will give the HLT trigger bit
@@ -1179,19 +1204,27 @@ int main(int argc, char* argv[])
     }
 
     //dilepton selection
-    TLorentzVector ll(selLeptons[0].p4+selLeptons[1].p4);
-    TLorentzVector ll_raw(selLeptons[0].p4*(selLeptons[0].rawpt/selLeptons[0].p4.Pt())+selLeptons[1].p4*(selLeptons[1].rawpt/selLeptons[1].p4.Pt()));
+    TLorentzVector ll(0,0,0,0);
+    TLorentzVector ll_raw(0,0,0,0);
+    int dilCode(0);
+    if(selLeptons.size()>1) {
+      ll=(selLeptons[0].p4+selLeptons[1].p4);
+      ll_raw=(selLeptons[0].p4*(selLeptons[0].rawpt/selLeptons[0].p4.Pt())+selLeptons[1].p4*(selLeptons[1].rawpt/selLeptons[1].p4.Pt()));
+      t_dphi=TMath::Abs(selLeptons[0].p4.DeltaPhi(selLeptons[1].p4));
+      t_deta=fabs(selLeptons[0].p4.Eta()-selLeptons[1].p4.Eta());
+      t_sumeta=selLeptons[0].p4.Eta()+selLeptons[1].p4.Eta();
+      dilCode=(selLeptons[0].id*selLeptons[1].id);
+    }
     t_llpt=ll.Pt();
     t_llpt_raw=ll_raw.Pt();
     t_lleta=ll.Eta();
     t_llphi=ll.Phi();
     t_llm=ll.M();
     t_llm_raw=ll_raw.M();
-    t_dphi=TMath::Abs(selLeptons[0].p4.DeltaPhi(selLeptons[1].p4));
-    t_deta=fabs(selLeptons[0].p4.Eta()-selLeptons[1].p4.Eta());
-    t_sumeta=selLeptons[0].p4.Eta()+selLeptons[1].p4.Eta();
-    int dilCode(selLeptons[0].id*selLeptons[1].id);
-    TString dilCat("mm");
+
+
+    TString dilCat("");
+    if(dilCode==13*13) dilCat="mm";
     if(dilCode==11*13) dilCat="em";
     if(dilCode==11*11) dilCat="ee";
 
@@ -1269,7 +1302,12 @@ int main(int argc, char* argv[])
       }
 
       //cross clean wrt to leptons
-      if(jp4.DeltaR(selLeptons[0].p4)<0.4 || jp4.DeltaR(selLeptons[1].p4)<0.4) continue;
+      if(selLeptons.size()>0) {
+        if(jp4.DeltaR(selLeptons[0].p4)<0.4) continue;
+        if(selLeptons.size()>1) {
+          if(jp4.DeltaR(selLeptons[1].p4)<0.4) continue;
+        }
+      }
       
       pfJetsIdx.push_back(std::make_tuple(pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4,refFlavor,refFlavorForB));
       pfJetsP4.push_back(jp4);
@@ -1415,8 +1453,8 @@ int main(int argc, char* argv[])
 
         
     //fill histograms
-    for(int i=0; i<2; i++) {
-      TString pf(Form("l%d",i+1));
+    for(size_t i=0; i<TMath::Min(selLeptons.size(),(size_t)2); i++) {
+      TString pf(Form("l%d",(int)i+1));
       float pt(selLeptons[i].p4.Pt());
       ht.fill(pf+"pt",             pt,                            plotWgt, categs);
       ht.fill(pf+"eta",            fabs(selLeptons[i].p4.Eta()),  plotWgt, categs);
@@ -1428,17 +1466,19 @@ int main(int argc, char* argv[])
 
     ht.fill( "acopl",     1-fabs(t_dphi)/TMath::Pi(),                   plotWgt, categs);
     ht.fill( "detall",    t_deta,                                       plotWgt, categs);
-    ht.fill( "drll",      selLeptons[0].p4.DeltaR(selLeptons[1].p4),    plotWgt, categs);
     ht.fill( "mll",       t_llm,                                        plotWgt, categs);
     ht.fill( "ptll",      t_llpt,                                       plotWgt, categs);
-    ht.fill( "ptsum",     selLeptons[0].p4.Pt()+selLeptons[1].p4.Pt(),  plotWgt, categs);
+    if(selLeptons.size()>1){
+      ht.fill( "drll",      selLeptons[0].p4.DeltaR(selLeptons[1].p4),    plotWgt, categs);
+      ht.fill( "ptsum",     selLeptons[0].p4.Pt()+selLeptons[1].p4.Pt(),  plotWgt, categs);
+    }
 
     //PF jets
     ht.fill( "npfjets",   npfjets,   plotWgt, categs);
     ht.fill( "npfbjets",  npfbjets,  plotWgt, categs);
     std::vector<TLorentzVector> pfFinalState;
-    pfFinalState.push_back(selLeptons[0].p4);
-    pfFinalState.push_back(selLeptons[1].p4);
+    if(selLeptons.size()>0) pfFinalState.push_back(selLeptons[0].p4);
+    if(selLeptons.size()>1) pfFinalState.push_back(selLeptons[1].p4);
     for(size_t ij=0; ij<min(pfJetsIdx.size(),size_t(2)); ij++) {     
       int idx(std::get<0>(pfJetsIdx[ij]));
       int ntks(std::get<1>(pfJetsIdx[ij]));
@@ -1517,7 +1557,7 @@ int main(int argc, char* argv[])
 
     //get expected trigger efficiencies and measured scale factors
     std::vector<std::pair<float,float>  > ltrigEff, ltrigSF;
-    for(size_t ilep=0; ilep<2; ilep++){
+    for(size_t ilep=0; ilep<TMath::Min((size_t)2,selLeptons.size()); ilep++){
       float pt(selLeptons[ilep].p4.Pt()),eta(selLeptons[ilep].p4.Eta()),abseta(fabs(eta));
 
       if(abs(selLeptons[ilep].id)==11){
@@ -1535,13 +1575,17 @@ int main(int argc, char* argv[])
     }
 
     //trigeff = e1*e2 +e1*(1-e2)+e2*(1-e1), the rest is scale factor and error propagation
-    t_trigSF  = (ltrigSF[0].first*ltrigEff[0].first+ltrigSF[1].first*ltrigEff[1].first-ltrigSF[0].first*ltrigSF[1].first*ltrigEff[0].first*ltrigEff[1].first);
-    t_trigSF /= (           
+    t_trigSF=0;
+    t_trigSFUnc=0;
+    if(selLeptons.size()>1){
+      t_trigSF  = (ltrigSF[0].first*ltrigEff[0].first+ltrigSF[1].first*ltrigEff[1].first-ltrigSF[0].first*ltrigSF[1].first*ltrigEff[0].first*ltrigEff[1].first);
+      t_trigSF /= (           
       ltrigEff[0].first+                 ltrigEff[1].first-                                  ltrigEff[0].first*ltrigEff[1].first);
 
-    t_trigSFUnc  = pow( ltrigSF[0].second*(ltrigEff[0].first-ltrigSF[1].first*ltrigEff[0].first*ltrigEff[1].first), 2 );
-    t_trigSFUnc += pow( ltrigSF[1].second*(ltrigEff[1].first-ltrigSF[0].first*ltrigEff[0].first*ltrigEff[1].first), 2 );
-    t_trigSFUnc  = sqrt(t_trigSFUnc);
+      t_trigSFUnc  = pow( ltrigSF[0].second*(ltrigEff[0].first-ltrigSF[1].first*ltrigEff[0].first*ltrigEff[1].first), 2 );
+      t_trigSFUnc += pow( ltrigSF[1].second*(ltrigEff[1].first-ltrigSF[0].first*ltrigEff[0].first*ltrigEff[1].first), 2 );
+      t_trigSFUnc  = sqrt(t_trigSFUnc);
+    }
 
     // fill the leptons ordered by pt
     t_lep_pt    .clear();
@@ -1688,17 +1732,20 @@ int main(int argc, char* argv[])
     t_mht = vis.Pt();
     
     // now set the 4 variables that we added for the tmva reader for the bdt evaluation
-    bdt_l1pt      = t_lep_calpt[0];
-    bdt_apt       = (t_lep_calpt[0]-t_lep_calpt[1])/(t_lep_calpt[0]+t_lep_calpt[1]);
-    bdt_abslleta  = fabs(t_lleta);
-    bdt_dphilll2  = fabs(dphi_2(t_lep_calpt[0],t_lep_eta[0],t_lep_phi[0],t_lep_calpt[1],t_lep_eta[1],t_lep_phi[1],2)); // this function is in functions.cc in scripts/
-    bdt_sumabseta = fabs(t_lep_eta[0])+fabs(t_lep_eta[1]);
-    //bdt_flavor    = abs(t_lep_pdgId[0]*t_lep_pdgId[1]); //abs should be fine here, it's an int
-    t_apt         = bdt_apt;
-    t_dphilll2    = bdt_dphilll2;
-    t_bdt         = reader->EvaluateMVA( methodName );
-    t_bdt_rarity  = reader->GetRarity  ( methodName );
-    t_fisher2     = readerFisher2->EvaluateMVA( methodNameFisher2 );
+    if(selLeptons.size()>1) {
+      bdt_l1pt      = t_lep_calpt[0];
+      bdt_apt       = (t_lep_calpt[0]-t_lep_calpt[1])/(t_lep_calpt[0]+t_lep_calpt[1]);
+      bdt_abslleta  = fabs(t_lleta);
+      bdt_dphilll2  = fabs(dphi_2(t_lep_calpt[0],t_lep_eta[0],t_lep_phi[0],t_lep_calpt[1],t_lep_eta[1],t_lep_phi[1],2)); // this function is in functions.cc in scripts/
+      bdt_sumabseta = fabs(t_lep_eta[0])+fabs(t_lep_eta[1]);
+      //bdt_flavor    = abs(t_lep_pdgId[0]*t_lep_pdgId[1]); //abs should be fine here, it's an int
+      t_apt         = bdt_apt;
+      t_dphilll2    = bdt_dphilll2;
+      t_bdt         = reader->EvaluateMVA( methodName );
+      t_bdt_rarity  = reader->GetRarity  ( methodName );
+      t_fisher2     = readerFisher2->EvaluateMVA( methodNameFisher2 );
+    }
+
     t_bjet_leadPassTight = (t_bjet_csvv2.size()>0 && t_bjet_csvv2[0]>csvWPList[1]);
     t_isData = !isMC;
     
