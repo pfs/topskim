@@ -4,7 +4,22 @@
  
 See details in the analysis twiki page https://twiki.cern.ch/twiki/bin/view/CMS/PbPbTTBar2018
 
-## Running HiForrest over the grid
+## Installation
+
+### Analysis-only installation
+
+If you are just running the analysis on pre-made HiForestTree ntuples the installation is as follows
+
+```
+cmsrel CMSSW_10_3_3_patch1
+cd CMSSW_10_3_3_patch1/src/
+cmsenv
+git clone -b marc_bbos https://github.com/mdunser/topskim.git HeavyIonsAnalysis/topskim
+scram b -j8
+```
+ 
+
+### Full installation and running HiForest on the grid
 
 The full installation is as follows
 
@@ -29,6 +44,8 @@ git pull --rebase --no-tags
 git cms-addpkg RecoHI/ZDCRecHit
 git cms-addpkg RecoVertex/PrimaryVertexProducer
 git cms-addpkg HLTrigger/HLTanalyzers
+scram b -j 8
+git clone -b marc_bbos https://github.com/mdunser/topskim.git HeavyIonsAnalysis/topskim
 scram b -j 8
 ```
 
