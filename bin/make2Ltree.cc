@@ -40,7 +40,7 @@
 
 
 const bool isDebug = true;
-const float lepPtCut  = 15.;
+const float lepPtCut  = 5.;
 const float muEtaCut = 2.4;
 const float eleEtaCut = 2.1;
 //see https://indico.cern.ch/event/803679/contributions/3342407/attachments/1808912/2953435/egm-minipog-190308.pdf
@@ -1002,7 +1002,7 @@ int main(int argc, char* argv[])
       TString cat("zmmctrl");
       if(charge>0) cat="ss"+cat;
       float mmm((p4[0]+p4[1]).M());
-      if(mmm<20) continue;
+      // no lower mll cut if(mmm<20) continue;
 
       ht.fill("mmll",  mmm,         plotWgt,cat);
       if( fabs(mmm-91)<15 && isSingleMuPD && mtrig>0 ) {
@@ -1102,7 +1102,7 @@ int main(int argc, char* argv[])
       int eidx[2]          = {noIdEle[0].origIdx,noIdEle[1].origIdx};
       int charge(noIdEle[0].charge*noIdEle[1].charge);
       float mee((p4[0]+p4[1]).M());
-      if(mee<20) continue;
+      // no lower mll cut if(mee<20) continue;
       
       TString basecat("zeectrl");
       if(charge>0) basecat="ss"+basecat;      
