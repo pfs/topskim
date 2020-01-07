@@ -1188,7 +1188,7 @@ int main(int argc, char* argv[])
     }
 
     int trig=etrig+mtrig;
-    if(trig==0) continue;
+    if(trig==0 && !isDYMC) continue;
 
     if(isSingleMuPD || isMuSkimedMCPD) {
       if(std::find(badMuonTriggerRuns.begin(), badMuonTriggerRuns.end(), fForestTree.run) != badMuonTriggerRuns.end() and !isMuSkimedMCPD) continue;
