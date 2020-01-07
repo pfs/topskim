@@ -549,11 +549,10 @@ int main(int argc, char* argv[])
   outTree->Branch("event" , &t_event, "event/L");
   outTree->Branch("isData", &t_isData, "isData/I");
 
-  Int_t t_decayId(0),t_tauDecayId(0);
-  Bool_t t_matchedDecays(false);
+  Int_t t_decayId(0),t_tauDecayId(0),t_matchedDecays(0);
   outTree->Branch("decayId",       &t_decayId,       "decayId/I");
   outTree->Branch("tauDecayId",    &t_tauDecayId,    "tauDecayId/I");
-  outTree->Branch("matchedDecays", &t_matchedDecays, "matchedDecays/O");
+  outTree->Branch("matchedDecays", &t_matchedDecays, "matchedDecays/I");
 
   outTree->Branch("vx", &t_vx, "vx/F");
   outTree->Branch("vy", &t_vy, "vy/F");
@@ -781,16 +780,16 @@ int main(int argc, char* argv[])
         }
         
         bool isFromTop(abs(mom_pid)==6 || abs(gmom_pid)==6 );
-        bool isFromZ( abs(mom_pid)==23 || abs(gmom_pid)==23 );
         bool isFromW( abs(mom_pid)==24 || abs(gmom_pid)==24 );
         bool isTauFeedDown( abs(mom_pid)==15 );
 
         if(abs(mom_pid)==23) {
-          if( abs(pid)==11) neFromZ++;
-          if( abs(pid)==13) nmFromZ++;
+          if( abs(pid)==11) { neFromZ++; genZLeptons.push_back(p4); }
+          if( abs(pid)==13) { nmFromZ++; genZLeptons.push_back(p4); }
         }
-        if(abs(gmom_pid)==23 && abs(pid)==16) {
-          ntFromZ++;
+        if(abs(gmom_pid)==23) {
+          if(isTauFeedDown && (abs(pid)==11 || abs(pid)==13)) genZTauLeptons.push_back(p4);
+          if(abs(pid)==16) ntFromZ++;
         }
         
         //count W leptonic decays
@@ -813,12 +812,6 @@ int main(int argc, char* argv[])
             genLeptonIds.push_back(pid);
             genDileptonCat *= abs(pid);
           }
-
-          //leptons from Z->ll or Z->tt->ll
-          if(isFromZ || isTauFeedDown){
-            genZLeptons.push_back(p4);
-            if(isTauFeedDown) genZTauLeptons.push_back(p4);
-          }
         }
 
         //neutrinos
@@ -830,7 +823,7 @@ int main(int argc, char* argv[])
         t_decayId=(neFromZ +8*nmFromZ + 16*ntFromZ);
         t_tauDecayId=0;
         if(ntFromZ>0) {
-          t_tauDecayId=genTauLeptons.size();
+          t_tauDecayId=genZTauLeptons.size();
         }
       }
   
@@ -988,12 +981,26 @@ int main(int argc, char* argv[])
       l.origIdx = muIter;
       l.isMatched=false;
       l.isTauFeedDown=false;
-      for(size_t ig=0;ig<genLeptons.size(); ig++) {
-        if(genLeptons[ig].DeltaR(l.p4)<0.1) continue;
-        l.isMatched=true;
-        l.isTauFeedDown=genTauLeptons[ig];
+      if(isDYMC) {
+        for(size_t ig=0;ig<genZLeptons.size(); ig++) {
+          if(genZLeptons[ig].DeltaR(l.p4)<0.1) continue;
+          l.isMatched=true;
+          l.isTauFeedDown=false;
+        }
+        for(size_t ig=0;ig<genZTauLeptons.size(); ig++) {
+          if(genZTauLeptons[ig].DeltaR(l.p4)<0.1) continue;
+          l.isMatched=true;
+          l.isTauFeedDown=true;
+        }
       }
-    
+      else{
+        for(size_t ig=0;ig<genLeptons.size(); ig++) {
+          if(genLeptons[ig].DeltaR(l.p4)<0.1) continue;
+          l.isMatched=true;
+          l.isTauFeedDown=genTauLeptons[ig];
+        }
+      }
+
       noIdMu.push_back(l);
 
       //id (Tight muon requirements)
@@ -1096,10 +1103,24 @@ int main(int argc, char* argv[])
       l.origIdx=eleIter;
       l.isMatched=false;
       l.isTauFeedDown=false;
-      for(size_t ig=0;ig<genLeptons.size(); ig++) {
-        if(genLeptons[ig].DeltaR(l.p4)<0.1) continue;
-        l.isMatched=true;
-        l.isTauFeedDown=genTauLeptons[ig];
+      if(isDYMC) {
+        for(size_t ig=0;ig<genZLeptons.size(); ig++) {
+          if(genZLeptons[ig].DeltaR(l.p4)<0.1) continue;
+          l.isMatched=true;
+          l.isTauFeedDown=false;
+        }
+        for(size_t ig=0;ig<genZTauLeptons.size(); ig++) {
+          if(genZTauLeptons[ig].DeltaR(l.p4)<0.1) continue;
+          l.isMatched=true;
+          l.isTauFeedDown=true;
+        }
+      }
+      else{
+        for(size_t ig=0;ig<genLeptons.size(); ig++) {
+          if(genLeptons[ig].DeltaR(l.p4)<0.1) continue;
+          l.isMatched=true;
+          l.isTauFeedDown=genTauLeptons[ig];
+        }
       }
 
       noIdEle.push_back(l);
@@ -1156,10 +1177,12 @@ int main(int argc, char* argv[])
     //sort selected electrons by pt
     std::sort(selLeptons.begin(),selLeptons.end(),orderByPt);
 
-    //monitor trigger efficiency
-    if(selLeptons.size()>=2){
+    //monitor trigger/matching efficiency
+    t_matchedDecays=0;
+    if(selLeptons.size()>1){
       for(size_t ilep=0; ilep<2; ilep++){
         if(!selLeptons[ilep].isMatched) continue;
+        t_matchedDecays += 1;
         TString cat( abs(selLeptons[ilep].id)==11 ? "e" : "m");
         float pt(selLeptons[ilep].p4.Pt()), abseta(fabs(selLeptons[ilep].p4.Eta()));
         ht.fill("trig_pt",  pt,     ncoll, cat);          
@@ -1495,7 +1518,6 @@ int main(int argc, char* argv[])
       ht.fill( "pf"+ppf+"jcsv",     csv,             plotWgt, categs);
       ht.fill2D( "pf"+ppf+"jetavsphi",   p4.Eta(),p4.Phi(),   plotWgt, categs);
 
-
       quenchingModel->SetParameter(0, 50.); // this sets the omega_c parameter. if we want to make this centrality dependent
       float tmp_quench_loss = quenchingModel->GetRandom();
       tmp_quench_loss = TMath::Abs(TMath::Sin(p4.Theta())*tmp_quench_loss); // make it only on the transverse part...
@@ -1504,9 +1526,6 @@ int main(int argc, char* argv[])
       float quenchedPt=p4.Pt()-tmp_quench_loss*centralitySuppression;
       ht.fill2D("jptvsjptquench", p4.Pt(), quenchedPt, plotWgt,categs);
     }
-
-
-
     
     std::vector<float> rapMoments=getRapidityMoments(pfFinalState);
     ht.fill( "pfrapavg",     rapMoments[0], plotWgt, categs);
