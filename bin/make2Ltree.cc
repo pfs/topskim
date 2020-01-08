@@ -553,6 +553,11 @@ int main(int argc, char* argv[])
   outTree->Branch("decayId",       &t_decayId,       "decayId/I");
   outTree->Branch("tauDecayId",    &t_tauDecayId,    "tauDecayId/I");
   outTree->Branch("matchedDecays", &t_matchedDecays, "matchedDecays/I");
+  Float_t t_genllpt(0),t_genlleta(0),t_genllphi(0),t_genllm(0);
+  outTree->Branch("genllpt",       &t_genllpt,      "genllpt/F");
+  outTree->Branch("genlleta",      &t_genlleta,     "genlleta/F");
+  outTree->Branch("genllphi",      &t_genllphi,     "genllphi/F");
+  outTree->Branch("genllm",        &t_genllm,       "genllm/F");
 
   outTree->Branch("vx", &t_vx, "vx/F");
   outTree->Branch("vy", &t_vy, "vy/F");
@@ -760,6 +765,9 @@ int main(int argc, char* argv[])
     bool isGenDilepton(false),isLeptonFiducial(false),is1bFiducial(false),is2bFiducial(false);    
     if(isMC) {
 
+      std::vector<int> id_firstLeptons;
+      std::vector<TLorentzVector> p4_firstLeptons;
+
       //gen level selection
       int nlFromTopW(0);
       TLorentzVector topP4(0,0,0,0),antitopP4(0,0,0,0);
@@ -773,27 +781,45 @@ int main(int argc, char* argv[])
         TLorentzVector p4(0,0,0,0);
         p4.SetPtEtaPhiM( fForestGen.mcPt->at(i), fForestGen.mcEta->at(i), fForestGen.mcPhi->at(i), fForestGen.mcMass->at(i) );
 
+        bool isFromTop(abs(mom_pid)==6 || abs(gmom_pid)==6 );
+        bool isFromW( abs(mom_pid)==24 || abs(gmom_pid)==24 );
+        bool isTauFeedDown( abs(mom_pid)==15 );
+        bool isEle(abs(pid)==11);
+        bool isMu(abs(pid)==13);
+
+        //save first two leptons found (fallback for DY->ll MC truth...)
+        if(id_firstLeptons.size()<2 && (isEle || isMu)) {
+          id_firstLeptons.push_back(pid);
+          p4_firstLeptons.push_back(p4);
+        }
+
         if(pid==6)  topP4=p4;
         if(pid==-6) antitopP4=p4;
         if( abs(pid)<6  && abs(mom_pid)==6 ) {          
           if(p4.Pt()>30 && fabs(p4.Eta())<2.5) genBjets.push_back(p4);          
         }
         
-        bool isFromTop(abs(mom_pid)==6 || abs(gmom_pid)==6 );
-        bool isFromW( abs(mom_pid)==24 || abs(gmom_pid)==24 );
-        bool isTauFeedDown( abs(mom_pid)==15 );
-
+        //clear Z->ll decays
         if(abs(mom_pid)==23) {
-          if( abs(pid)==11) { neFromZ++; genZLeptons.push_back(p4); }
-          if( abs(pid)==13) { nmFromZ++; genZLeptons.push_back(p4); }
+          if(isEle) { neFromZ++; genZLeptons.push_back(p4); }
+          if(isMu)  { nmFromZ++; genZLeptons.push_back(p4); }
         }
-        if(abs(gmom_pid)==23) {
-          if(isTauFeedDown && (abs(pid)==11 || abs(pid)==13)) genZTauLeptons.push_back(p4);
-          if(abs(pid)==16) ntFromZ++;
+        //clear Z->tautau->X decays
+        else if(abs(gmom_pid)==23) {
+          if(isTauFeedDown && (isEle || isMu)) genZTauLeptons.push_back(p4);
+          if(abs(pid)==16) ntFromZ++;          
+        }
+        //unclear Z decays, fall back for taus
+        //this is guess work as in some cases (~5%) some information seems missing
+        //assumes if within the first particles in the the MC truth it is from the hard process
+        else if( isTauFeedDown && i<10) { 
+          if(abs(pid)==16) ntFromZ++;  
+          if(isEle || isMu) genZTauLeptons.push_back(p4);
         }
         
+        //ttbar MC truth
         //count W leptonic decays
-        if( abs(pid)==11 || abs(pid)==13 )
+        if( isEle || isMu )
           {
             if(isFromTop && isFromW) nlFromTopW++;
           }
@@ -803,7 +829,7 @@ int main(int argc, char* argv[])
           }
 
         //charged leptons
-        if(abs(pid)==11 || abs(pid)==13) {
+        if(isEle || isMu) {
 
           //leptons from t->W->l or W->tau->l
           if(isFromW && (isTauFeedDown || isFromTop ) ) {
@@ -819,12 +845,47 @@ int main(int argc, char* argv[])
         //  }
       }
 
+      //process DY MC truth further
       if(isDYMC){
+        
+        //generator level dilepton information
+        TLorentzVector ll(0,0,0,0);
+        if(genZLeptons.size()>1) {
+          ll=genZLeptons[0]+genZLeptons[1];
+        }
+
+        //Z decay
         t_decayId=(neFromZ +8*nmFromZ + 16*ntFromZ);
+        
+        //another fall back, check if the first two leptons in list
+        //are compatible with a OS M>50
+        if(t_decayId==0 && p4_firstLeptons.size()>1) {
+          int llid=id_firstLeptons[0]*id_firstLeptons[1];
+          if(llid==-13*13 || llid==-11*11) {
+            ll=p4_firstLeptons[0]+p4_firstLeptons[1];
+            if(ll.M()>50) {
+              if(llid==-11*11) t_decayId=2;
+              if(llid==-13*13) t_decayId=2*8;              
+            }
+          }
+        }
+        
+        //count tau leptonic decays
         t_tauDecayId=0;
         if(ntFromZ>0) {
           t_tauDecayId=genZTauLeptons.size();
+
+          //update dilepton information in case of tautau->ll+X
+          if(t_tauDecayId>1) {
+            ll=genZTauLeptons[0]+genZTauLeptons[1];
+          }
         }
+
+        //save final dilepton information
+        t_genllpt=ll.Pt();
+        t_genlleta=ll.Eta();
+        t_genllphi=ll.Phi();
+        t_genllm=ll.M();
       }
   
       t_weight_BRW=getMadgraphBRWlCorrection(nlFromTopW);
