@@ -264,7 +264,7 @@ int main(int argc, char* argv[])
   bool isSingleElePD( !isMC && inURL.Contains("SkimElectrons"));
   bool isMuSkimedMCPD( isMC && inURL.Contains("HINPbPbAutumn18DR_skims") && inURL.Contains("Muons"));
   bool isEleSkimedMCPD( isMC && inURL.Contains("HINPbPbAutumn18DR_skims") && inURL.Contains("Electrons"));
-  bool isDYMC( isMC and inURL.Contains("DYJetsToLL") );
+  bool isDYMC( isMC && (inURL.Contains("DYJetsToLL") || inURL.Contains("gg2")) );
 
   LumiRun lumiTool;
   ElectronEfficiencyWrapper eleEff("${CMSSW_BASE}/src/HeavyIonsAnalysis/topskim/data", false);
