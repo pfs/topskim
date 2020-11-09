@@ -4,5 +4,6 @@
 <use name="roottmva"/>
 <environment>
   <bin name="make2Ltree"         file="make2Ltree.cc"></bin>
+  <bin name="make1Ltree"         file="make1Ltree.cc"></bin>
 </environment>
 <Flags CXXFLAGS="-g"/>

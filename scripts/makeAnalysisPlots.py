@@ -88,6 +88,9 @@ def showRateVsRun(url,catList=['e','m']):
         histos[c].SetMarkerStyle(marker)
         histos[c].SetMarkerColor(color)
         histos[c].SetTitle(title)        
+        histos[c].Fit('pol1','MR+','',50,1000)
+        print title
+        histos[c].GetFunction('pol1').SetLineColor(color)
         p.add(histos[c],title=title,color=color,isData=False,spImpose=True,isSyst=False)
     p.show(outDir='./',lumi=LUMI)
 
@@ -434,10 +437,10 @@ def doJetHotSpots(url,cats):
 
 def main():
     url=sys.argv[1]
-    doEleIDPlots(url)
-    doMuIDPlots(url)
+    #doEleIDPlots(url)
+    #doMuIDPlots(url)
     #showRateVsRun(url)
-    #doJetHotSpots(url,['zmm','zee','em'])
+    doJetHotSpots(url,['mm','ee','em'])
 
 if __name__ == "__main__":
     sys.exit(main())
