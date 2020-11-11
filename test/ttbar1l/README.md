@@ -31,3 +31,7 @@ and merge the outputs (hadds all the chunks according to the tag defined)
 ```
 python scripts/mergeOutputs.py /eos/cms/store/cmst3/group/hintt/PbPb2018_skim9Nov_loose
 ```
+Prepare the directory structure for to use the CMGTools plotting scripts as in HIN-19-001
+```
+python scripts/makeStructure.py
+```
