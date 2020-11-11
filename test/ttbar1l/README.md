@@ -21,3 +21,13 @@ Jobs finalize in approximately 30min if queues are empty.
 If needed, edit the script below for the input and output directories before running.
 ```
 python test/ttbar1l/runanalysis.py
+```
+
+Once jobs are done check that all ran fine
+```
+python test/ttbar1l/checkCondorJobs.py skim1ljobs_csv0/
+```
+and merge the outputs (hadds all the chunks according to the tag defined)
+```
+python scripts/mergeOutputs.py /eos/cms/store/cmst3/group/hintt/PbPb2018_skim9Nov_loose
+```
